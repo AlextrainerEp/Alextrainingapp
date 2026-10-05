@@ -23,10 +23,39 @@
             --danger: #f44336;
         }
 
+        html {
+            scroll-padding-top: 70px;
+        }
+
         body {
             font-family: 'Segoe UI', sans-serif;
-            background: #f8f9fa;
+            background: #1a1a1a;
             color: #333;
+            position: relative;
+        }
+
+        #loginView {
+            background: linear-gradient(135deg, rgba(15, 15, 15, 0.95) 0%, rgba(26, 26, 26, 0.95) 100%);
+            min-height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #loginView::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 800px;
+            height: 800px;
+            background-image: url('fondo-leon.jpeg');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            opacity: 0.15;
+            pointer-events: none;
+            z-index: 1;
         }
 
         /* HEADER */
@@ -37,7 +66,7 @@
             box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
             position: sticky;
             top: 0;
-            z-index: 100;
+            z-index: 1000;
         }
 
         .header-container {
@@ -58,13 +87,13 @@
         }
 
         .header-logo {
-            width: 48px;
-            height: 48px;
+            width: 56px;
+            height: 56px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 8px;
-            background: rgba(212, 175, 55, 0.1);
+            border-radius: 6px;
+            background: rgba(212, 175, 55, 0.05);
             border: 2px solid var(--primary);
             overflow: hidden;
         }
@@ -72,7 +101,8 @@
         .header-logo img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
+            padding: 2px;
         }
 
         .header-text {
@@ -98,1184 +128,1631 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            color: var(--light);
-            font-size: 0.95em;
-            font-weight: 600;
         }
 
-        .badge {
-            background: var(--primary);
-            color: var(--dark);
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.8em;
-            font-weight: 700;
-        }
-
-        .logout-btn {
-            background: rgba(212, 175, 55, 0.15);
-            border: 1px solid var(--primary);
-            color: var(--primary);
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .logout-btn:hover {
-            background: var(--primary);
-            color: var(--dark);
-        }
-
-        /* HERO LOGIN */
-        .hero-section {
-            background: linear-gradient(135deg, rgba(15, 15, 15, 0.85) 0%, rgba(26, 26, 26, 0.85) 50%, rgba(15, 15, 15, 0.85) 100%), 
-                        url('/Alextrainingapp/assets/logo.jpeg') center/cover no-repeat;
-            background-attachment: fixed;
-            padding: 80px 20px;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .hero-content {
-            max-width: 500px;
-            width: 100%;
-        }
-
-        .hero-logo {
-            text-align: center;
-            margin-bottom: 30px;
-            animation: float 3s ease-in-out infinite;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
-
-        .hero-logo img {
-            width: 150px;
-            height: 150px;
-            object-fit: contain;
-            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
-        }
-
-        .hero-text {
+        .btn-logout {
+            background: var(--danger);
             color: white;
-            text-align: center;
-            margin-bottom: 30px;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: bold;
         }
 
-        .hero-text h1 {
-            font-size: 2.5em;
-            font-weight: 900;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            margin-bottom: 12px;
-            color: var(--primary);
+        .btn-logout:hover {
+            background: #d32f2f;
         }
 
-        .hero-text .tagline {
-            font-size: 1.1em;
-            color: var(--light);
-            letter-spacing: 2px;
-            text-transform: uppercase;
+        .user-badge {
+            background: var(--primary);
+            color: #000;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
 
-        /* MAIN */
-        .main-container {
+        .user-badge:hover {
+            background: #e5c158;
+            transform: scale(1.05);
+        }
+
+        /* MAIN CONTAINER */
+        .container {
             max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
-        }
-
-        /* SECTION BANNER */
-        .section-banner {
-            background: linear-gradient(to right, rgba(15, 15, 15, 0.95) 0%, rgba(26, 26, 26, 0.95) 50%, rgba(15, 15, 15, 0.95) 100%);
-            border-left: 4px solid var(--primary);
-            padding: 24px 20px;
-            margin-bottom: 30px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            justify-content: space-between;
-        }
-
-        .section-logo {
-            flex: 0 0 80px;
-            width: 80px;
-            height: 80px;
-            border-radius: 8px;
-            background: rgba(212, 175, 55, 0.1);
-            border: 2px solid rgba(212, 175, 55, 0.3);
-            padding: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-        }
-
-        .section-logo img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-
-        .section-text {
-            flex: 1;
-            color: white;
-        }
-
-        .section-text h2 {
-            font-size: 1.4em;
-            font-weight: 800;
-            letter-spacing: 1px;
-            color: var(--primary);
-            margin-bottom: 6px;
-        }
-
-        .section-text p {
-            font-size: 0.95em;
-            color: #a0a0a0;
-        }
-
-        .back-btn {
-            background: rgba(212, 175, 55, 0.15);
-            border: 1px solid var(--primary);
-            color: var(--primary);
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 0.9em;
-        }
-
-        .back-btn:hover {
-            background: rgba(212, 175, 55, 0.25);
+            min-height: calc(100vh - 100px);
         }
 
         /* TABS */
-        .tabs-nav {
+        .tabs {
             display: flex;
             gap: 10px;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #ddd;
-            padding-bottom: 0;
+            margin-bottom: 20px;
             flex-wrap: wrap;
+            border-bottom: 2px solid #ddd;
         }
 
         .tab-btn {
-            background: transparent;
+            background: #f0f0f0;
             border: none;
-            padding: 16px 24px;
-            font-size: 1em;
-            font-weight: 600;
-            color: #999;
+            padding: 10px 16px;
             cursor: pointer;
-            border-bottom: 3px solid transparent;
-            margin-bottom: -2px;
-            transition: color 0.3s ease;
-        }
-
-        .tab-btn:hover {
-            color: var(--primary);
+            font-size: 0.95em;
+            border-radius: 5px 5px 0 0;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            color: #333;
         }
 
         .tab-btn.active {
+            background: white;
             color: var(--primary);
-            border-bottom-color: var(--primary);
+            border-bottom: 3px solid var(--primary);
         }
 
         .tab-content {
             display: none;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         .tab-content.active {
             display: block;
         }
 
-        /* CARD */
-        .card {
-            background: white;
-            border-radius: 8px;
-            padding: 24px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-            margin-bottom: 20px;
-        }
-
-        .card h3 {
-            color: var(--dark);
-            margin-bottom: 16px;
-            font-size: 1.2em;
-        }
-
         /* FORMS */
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
 
-        .form-group label {
+        label {
             display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: var(--dark);
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: #333;
+            font-size: 0.95em;
         }
 
-        .form-group input,
-        .form-group textarea,
-        .form-group select {
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"],
+        input[type="date"],
+        input[type="number"],
+        textarea,
+        select {
             width: 100%;
-            padding: 12px;
+            padding: 10px;
             border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 1em;
+            border-radius: 5px;
+            font-size: 0.95em;
             font-family: inherit;
         }
 
-        .form-group input:focus,
-        .form-group textarea:focus,
-        .form-group select:focus {
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+            box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.1);
         }
 
-        .file-input-wrapper {
-            position: relative;
-            overflow: hidden;
-            display: inline-block;
-            width: 100%;
-        }
-
-        .file-input-wrapper input[type="file"] {
-            position: absolute;
-            left: -9999px;
-        }
-
-        .file-input-label {
-            display: block;
-            padding: 12px;
-            background: rgba(212, 175, 55, 0.1);
-            border: 2px dashed var(--primary);
-            border-radius: 6px;
-            text-align: center;
-            cursor: pointer;
-            color: var(--primary);
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .file-input-label:hover {
-            background: rgba(212, 175, 55, 0.2);
+        .row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
         }
 
         /* BUTTONS */
         .btn {
-            padding: 12px 24px;
+            padding: 12px 20px;
             border: none;
-            border-radius: 6px;
-            font-size: 1em;
-            font-weight: 600;
+            border-radius: 5px;
             cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 600;
             transition: all 0.3s ease;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, var(--primary) 0%, #e0c57d 100%);
-            color: var(--dark);
+            background: var(--primary);
+            color: #000;
         }
 
         .btn-primary:hover {
+            background: #e5c158;
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
         }
 
         .btn-secondary {
-            background: rgba(212, 175, 55, 0.1);
-            color: var(--primary);
-            border: 2px solid var(--primary);
+            background: #555;
+            color: white;
+            margin-top: 10px;
         }
 
         .btn-secondary:hover {
-            background: rgba(212, 175, 55, 0.2);
+            background: #333;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.85em;
         }
 
         .btn-danger {
             background: var(--danger);
             color: white;
-            padding: 8px 16px;
-            font-size: 0.9em;
         }
 
-        .btn-small {
-            padding: 8px 16px;
-            font-size: 0.9em;
+        .btn-danger:hover {
+            background: #d32f2f;
         }
 
-        /* ALERTS */
+        /* ALERT */
         .alert {
-            padding: 16px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            display: none;
-        }
-
-        .alert.show {
-            display: block;
+            padding: 12px 16px;
+            border-radius: 5px;
+            margin-bottom: 16px;
+            font-weight: 500;
         }
 
         .alert-success {
-            background: #e8f5e9;
-            color: #2e7d32;
-            border-left: 4px solid var(--success);
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
         }
 
-        .alert-error {
-            background: #ffebee;
-            color: #c62828;
-            border-left: 4px solid var(--danger);
+        .alert-danger {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #f44336;
         }
 
         .alert-info {
-            background: #e3f2fd;
-            color: #1565c0;
-            border-left: 4px solid #2196f3;
+            background: #d1ecf1;
+            color: #0c5460;
+            border-left: 4px solid #17a2b8;
         }
 
-        .alert-warning {
-            background: #fff3e0;
-            color: #e65100;
-            border-left: 4px solid #ff9800;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .workout-item {
-            background: #f5f5f5;
-            padding: 16px;
-            border-radius: 6px;
-            margin-bottom: 12px;
-            border-left: 4px solid var(--primary);
-        }
-
-        .workout-item h4 {
-            color: var(--dark);
-            margin-bottom: 8px;
-            font-size: 1.1em;
-        }
-
-        .workout-item p {
-            color: #666;
-            margin: 4px 0;
-            font-size: 0.95em;
-        }
-
-        .table-responsive {
-            overflow-x: auto;
-            margin-bottom: 20px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.95em;
-        }
-
-        table th {
-            background: var(--dark);
-            color: white;
-            padding: 12px;
-            text-align: left;
-            font-weight: 600;
-        }
-
-        table td {
-            padding: 12px;
-            border-bottom: 1px solid #eee;
-        }
-
-        table tr:hover {
-            background: #f9f9f9;
-        }
-
-        /* CLIENT CARD */
-        .client-card {
+        /* CLIENTE CARD */
+        .cliente-card {
             background: white;
-            border-radius: 8px;
             padding: 16px;
+            border-radius: 8px;
             margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
             border-left: 4px solid var(--primary);
+        }
+
+        .cliente-card:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            transform: translateX(4px);
+        }
+
+        .cliente-card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            margin-bottom: 8px;
         }
 
-        .client-card:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            transform: translateY(-2px);
-            background: #fffbf0;
-        }
-
-        .client-card-info {
-            flex: 1;
-        }
-
-        .client-card-info h4 {
-            color: var(--dark);
+        .cliente-name {
             font-size: 1.1em;
-            margin-bottom: 4px;
             font-weight: 700;
+            color: var(--primary);
         }
 
-        .client-card-info p {
+        .cliente-codigo {
+            font-size: 0.85em;
             color: #999;
-            font-size: 0.9em;
-            margin: 2px 0;
+            font-weight: 500;
         }
 
-        .client-actions {
+        /* ANAMNESIS SECTIONS */
+        .anamnesis-section {
+            background: #f9f9f9;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .anamnesis-section h3 {
+            color: var(--primary);
+            margin-bottom: 12px;
+            font-size: 1.05em;
+        }
+
+        .checkbox-group,
+        .radio-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .checkbox-group label,
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            font-weight: normal;
+            width: auto;
+        }
+
+        .checkbox-group input[type="checkbox"],
+        .radio-group input[type="radio"] {
+            width: auto;
+            margin: 0;
+        }
+
+        .scale-input {
             display: flex;
             gap: 8px;
+            flex-wrap: wrap;
         }
 
+        .scale-input label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            background: white;
+            width: auto;
+            padding: 4px 8px;
+        }
+
+        .scale-input input[type="radio"] {
+            width: auto;
+            margin-right: 4px;
+        }
+
+        /* MODAL */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            overflow-y: auto;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 900px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .modal-title {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .modal-close:hover {
+            color: #333;
+        }
+
+        /* LISTA CLIENTES */
+        .clientes-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .cliente-item {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .cliente-item:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transform: translateX(4px);
+        }
+
+        .cliente-item-name {
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+
+        .cliente-item-info {
+            font-size: 0.85em;
+            color: #999;
+        }
+
+        /* MOBILE */
         @media (max-width: 768px) {
-            .header-container {
-                flex-direction: column;
-                align-items: flex-start;
+            .container {
+                padding: 12px;
             }
 
-            .hero-text h1 {
-                font-size: 1.8em;
+            .row {
+                grid-template-columns: 1fr;
             }
 
-            .section-banner {
-                flex-direction: column;
-                text-align: center;
-            }
-
-            .tabs-nav {
-                gap: 0;
+            .tabs {
+                gap: 6px;
             }
 
             .tab-btn {
-                padding: 12px 16px;
-                font-size: 0.9em;
-                flex: 1;
+                font-size: 0.85em;
+                padding: 8px 12px;
             }
 
-            .client-card {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .client-actions {
-                width: 100%;
-                margin-top: 12px;
+            .modal-content {
+                width: 95%;
+                padding: 20px;
             }
         }
     </style>
 </head>
 <body>
     <!-- HEADER -->
-    <div class="app-header" id="appHeader">
+    <header class="app-header">
         <div class="header-container">
-            <div class="header-brand">
+            <div class="header-brand" onclick="goToHome()">
                 <div class="header-logo">
-                    <img src="/Alextrainingapp/assets/logo.jpeg" alt="Logo" onerror="this.style.display='none'">
+                    <img src="logo.jpeg" alt="Logo" style="border-radius: 4px;">
                 </div>
                 <div class="header-text">
                     <div class="header-title">ALEX TRAINING LAB</div>
-                    <div class="header-subtitle">Tu Entrenador Personal</div>
+                    <div class="header-subtitle">Entrenamiento Personal</div>
                 </div>
             </div>
-            <div class="header-user" id="headerUser">
-                <span id="userName">Usuario</span>
-                <span class="badge" id="userBadge">Cliente</span>
-                <button class="logout-btn" id="logoutBtn">Cerrar Sesión</button>
+            <div class="header-user">
+                <span style="color: #999; font-size: 0.9em;">Usuario:</span>
+                <span class="user-badge" id="userDisplay"></span>
+                <span style="color: #666;">|</span>
+                <span class="user-badge" id="userType" style="background: var(--primary); cursor: default;"></span>
+                <button class="btn-logout" onclick="logout()">Cerrar Sesión</button>
             </div>
         </div>
-    </div>
+    </header>
 
-    <!-- LOGIN -->
-    <div id="loginSection" class="hero-section">
-        <div class="hero-content">
-            <div class="hero-logo">
-                <img src="/Alextrainingapp/assets/logo.jpeg" alt="Logo" onerror="this.style.display='none'">
-            </div>
-            <div class="hero-text">
-                <h1>Alex Training Lab</h1>
-                <p class="tagline">Tu Entrenador Personal</p>
-            </div>
-
-            <div class="card">
-                <div id="alertContainer"></div>
+    <!-- MAIN CONTAINER -->
+    <div class="container">
+        <!-- LOGIN VIEW -->
+        <div id="loginView" style="display: none; position: relative; z-index: 2;">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: calc(100vh - 70px); padding: 40px 20px; text-align: center;">
                 
-                <div class="form-group">
-                    <label>Tu Código o Contraseña</label>
-                    <input type="text" id="loginInput" placeholder="Ingresa tu código de acceso o contraseña de entrenador" autofocus autocomplete="off">
+                <!-- LOGO GRANDE -->
+                <div style="margin-bottom: 30px;">
+                    <img src="logo.jpeg" alt="Alex Training Lab" style="max-height: 120px; border-radius: 8px; filter: drop-shadow(0 4px 12px rgba(212, 175, 55, 0.3));">
                 </div>
 
-                <button class="btn btn-primary" id="btnLogin" style="width: 100%; margin-top: 20px;">Acceder</button>
+                <!-- TÍTULO -->
+                <h1 style="color: var(--primary); font-size: 3em; font-weight: 800; margin: 20px 0 10px 0; letter-spacing: 3px; text-shadow: 0 2px 8px rgba(0,0,0,0.5);">ALEX TRAINING LAB</h1>
+                <p style="color: #fff; font-size: 1.3em; margin: 0 0 40px 0; letter-spacing: 2px; font-weight: 300;">TU ENTRENADOR PERSONAL</p>
+
+                <!-- FORMULARIO -->
+                <div style="background: rgba(255, 255, 255, 0.95); padding: 40px; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); max-width: 450px; width: 100%;">
+                    <h2 style="text-align: left; margin-bottom: 24px; color: #333; font-size: 1.1em;">Tu Código o Contraseña</h2>
+                    <div class="form-group">
+                        <input type="text" id="loginInput" autocomplete="off" placeholder="Ingresa tu código de acceso o contraseña de entrenador" style="width: 100%; padding: 14px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.95em;">
+                    </div>
+                    <button class="btn btn-primary" onclick="handleLogin()" style="width: 100%; padding: 14px; margin-top: 16px;">Acceder</button>
+                    <div id="loginAlert" style="margin-top: 16px;"></div>
+                </div>
+
+                <!-- ESLOGAN ABAJO -->
+                <p style="color: #999; font-size: 0.95em; margin-top: 30px; max-width: 600px;">Esta es tu app de entrenamiento personal, donde puedes cumplir todos tus retos</p>
+            </div>
+        </div>
+
+        <!-- ENTRENADOR VIEW -->
+        <div id="trainerView" style="display: none;">
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('tab-clientes', this)">👥 Mis Clientes</button>
+                <button class="tab-btn" onclick="switchTab('tab-nuevo-cliente', this)">➕ Nuevo Cliente</button>
+            </div>
+
+            <!-- TAB: CLIENTES -->
+            <div id="tab-clientes" class="tab-content active">
+                <h2 style="margin-bottom: 20px; color: var(--primary);">Lista de Clientes</h2>
+                <div id="clientesList" class="clientes-list"></div>
+            </div>
+
+            <!-- TAB: NUEVO CLIENTE -->
+            <div id="tab-nuevo-cliente" class="tab-content">
+                <h2 style="margin-bottom: 20px; color: var(--primary);">Registrar Nuevo Cliente</h2>
+                <div class="form-group">
+                    <label>Nombre Completo *</label>
+                    <input type="text" id="newClientName" placeholder="Nombre y apellidos">
+                </div>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="newClientEmail" placeholder="cliente@ejemplo.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Código (generado automáticamente)</label>
+                        <input type="text" id="newClientCode" readonly style="background: #f0f0f0;">
+                    </div>
+                </div>
+                <p style="color: #666; margin-bottom: 16px; font-size: 0.9em;">El cliente completará su anamnesis en la plataforma.</p>
+                <button class="btn btn-primary" onclick="createNewClient()">✅ Crear Cliente</button>
+                <div id="newClientAlert" style="margin-top: 12px;"></div>
+            </div>
+
+            <!-- FICHA CLIENTE MODAL -->
+            <div id="fichaClienteModal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <div>
+                            <h2 class="modal-title" id="fichaClienteNombre"></h2>
+                            <p style="color: #999; font-size: 0.9em; margin-top: 4px;" id="fichaClienteCodigo"></p>
+                        </div>
+                        <button class="modal-close" onclick="closeFichaCliente()">✕</button>
+                    </div>
+
+                    <div class="tabs">
+                        <button class="tab-btn active" onclick="switchTabInModal('modal-entrenamientos', this)">📊 Entrenamientos</button>
+                        <button class="tab-btn" onclick="switchTabInModal('modal-historial', this)">📅 Historial</button>
+                        <button class="tab-btn" onclick="switchTabInModal('modal-anamnesis', this)">📝 Anamnesis</button>
+                        <button class="tab-btn" onclick="switchTabInModal('modal-datos', this)">👤 Datos</button>
+                    </div>
+
+                    <!-- TAB: ENTRENAMIENTOS -->
+                    <div id="modal-entrenamientos" class="tab-content active">
+                        <h3>Subir Entrenamientos</h3>
+                        <p style="margin: 16px 0; color: #666;">Sube un archivo Excel con los entrenamientos. Columnas requeridas: Fecha, Título, Descripción, Ejercicios.</p>
+                        <div class="form-group">
+                            <label>Archivo Excel</label>
+                            <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv">
+                        </div>
+                        <button class="btn btn-primary" onclick="handleExcelUpload()">📤 Cargar Excel</button>
+                        <div id="excelAlert" style="margin-top: 12px;"></div>
+                        <div id="excelPreview" style="margin-top: 20px;"></div>
+                        <button class="btn btn-secondary" onclick="downloadTemplate()">📥 Descargar Plantilla</button>
+                    </div>
+
+                    <!-- TAB: HISTORIAL -->
+                    <div id="modal-historial" class="tab-content">
+                        <h3>Historial de Entrenamientos</h3>
+                        <div id="historialList" style="margin-top: 16px;"></div>
+                    </div>
+
+                    <!-- TAB: ANAMNESIS -->
+                    <div id="modal-anamnesis" class="tab-content">
+                        <h3>Anamnesis del Cliente</h3>
+                        <button class="btn btn-primary" onclick="editarAnamnesis()">✏️ Editar Anamnesis</button>
+                        <div id="anamnesisDisplay" style="margin-top: 20px;"></div>
+                    </div>
+
+                    <!-- TAB: DATOS -->
+                    <div id="modal-datos" class="tab-content">
+                        <h3>Datos del Cliente</h3>
+                        <div class="form-group">
+                            <label>Nombre</label>
+                            <input type="text" id="clientDataName" readonly style="background: #f0f0f0;">
+                        </div>
+                        <div class="row">
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="email" id="clientDataEmail">
+                            </div>
+                            <div class="form-group">
+                                <label>Código</label>
+                                <input type="text" id="clientDataCode" readonly style="background: #f0f0f0;">
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" onclick="updateClientData()">💾 Guardar Cambios</button>
+                        <div id="datosAlert" style="margin-top: 12px;"></div>
+                    </div>
+
+                    <div style="margin-top: 20px;">
+                        <button class="btn btn-secondary" onclick="closeFichaCliente()">← Volver</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CLIENTE VIEW -->
+        <div id="clientView" style="display: none;">
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('tab-client-entrenamientos', this)">📋 Entrenamientos</button>
+                <button class="tab-btn" onclick="switchTab('tab-client-historial', this)">📅 Historial</button>
+                <button class="tab-btn" onclick="switchTab('tab-client-perfil', this)">👤 Perfil</button>
+                <button class="tab-btn" onclick="switchTab('tab-client-anamnesis', this)">📝 Anamnesis</button>
+            </div>
+
+            <!-- TAB: ENTRENAMIENTOS -->
+            <div id="tab-client-entrenamientos" class="tab-content active">
+                <h2 style="margin-bottom: 20px; color: var(--primary);">Mis Entrenamientos</h2>
+                <div id="clientEntrenamientosList"></div>
+            </div>
+
+            <!-- TAB: HISTORIAL -->
+            <div id="tab-client-historial" class="tab-content">
+                <h2 style="margin-bottom: 20px; color: var(--primary);">Historial</h2>
+                <div id="clientHistorialList"></div>
+            </div>
+
+            <!-- TAB: PERFIL -->
+            <div id="tab-client-perfil" class="tab-content">
+                <h2 style="margin-bottom: 20px; color: var(--primary);">Mi Perfil</h2>
+                <div class="form-group">
+                    <label>Nombre</label>
+                    <input type="text" id="clientProfileName" readonly style="background: #f0f0f0;">
+                </div>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="clientProfileEmail">
+                    </div>
+                    <div class="form-group">
+                        <label>Código</label>
+                        <input type="text" id="clientProfileCode" readonly style="background: #f0f0f0;">
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="updateClientProfile()">💾 Guardar Cambios</button>
+                <div id="profileAlert" style="margin-top: 12px;"></div>
+            </div>
+
+            <!-- TAB: ANAMNESIS -->
+            <div id="tab-client-anamnesis" class="tab-content">
+                <h2 style="margin-bottom: 20px; color: var(--primary);">Mi Anamnesis</h2>
+                <button class="btn btn-primary" onclick="editarAnamnesisCliente()">✏️ Editar Anamnesis</button>
+                <div id="clientAnamnesisDisplay" style="margin-top: 20px;"></div>
             </div>
         </div>
     </div>
 
-    <!-- APP -->
-    <div id="appSection" class="hidden">
-        <div class="main-container">
-            <!-- Banner -->
-            <div class="section-banner">
-                <div class="section-logo">
-                    <img src="/Alextrainingapp/assets/logo.jpeg" alt="Logo" onerror="this.style.display='none'">
+    <!-- MODAL ANAMNESIS -->
+    <div id="anamnesisModal" class="modal">
+        <div class="modal-content" style="max-width: 1000px;">
+            <div class="modal-header">
+                <div>
+                    <h2 class="modal-title">Anamnesis Inicial</h2>
+                    <p style="color: #999; font-size: 0.9em; margin-top: 4px;">Completa tu información personal y de salud</p>
                 </div>
-                <div class="section-text">
-                    <h2 id="bannerTitle">Mis Entrenamientos</h2>
-                    <p id="bannerDesc">Aquí encontrarás tu programa personalizado</p>
+                <button class="modal-close" onclick="closeAnamnesisModal()">✕</button>
+            </div>
+
+            <form id="anamnesisForm">
+                <!-- SECCIÓN 1: DATOS PERSONALES -->
+                <div class="anamnesis-section">
+                    <h3>1. Datos Personales</h3>
+                    <div class="row">
+                        <div class="form-group">
+                            <label>Fecha de la entrevista</label>
+                            <input type="date" name="fecha_entrevista">
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha de nacimiento</label>
+                            <input type="date" name="fecha_nacimiento">
+                        </div>
+                        <div class="form-group">
+                            <label>Sexo</label>
+                            <input type="text" name="sexo" placeholder="Ej: Masculino/Femenino">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="form-group">
+                            <label>Teléfono</label>
+                            <input type="tel" name="telefono">
+                        </div>
+                        <div class="form-group">
+                            <label>Email (si es diferente)</label>
+                            <input type="email" name="email_anamnesis">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="form-group">
+                            <label>Dirección de sesiones</label>
+                            <input type="text" name="direccion">
+                        </div>
+                        <div class="form-group">
+                            <label>Profesión</label>
+                            <input type="text" name="profesion">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="form-group">
+                            <label>Contacto de emergencia (nombre y teléfono)</label>
+                            <input type="text" name="emergencia">
+                        </div>
+                        <div class="form-group">
+                            <label>¿Cómo nos has conocido?</label>
+                            <input type="text" name="referencia">
+                        </div>
+                    </div>
                 </div>
-                <button class="back-btn hidden" id="backBtn" onclick="goBackToClients()">← Volver</button>
-            </div>
 
-            <!-- Alertas -->
-            <div id="appAlerts"></div>
+                <!-- SECCIÓN 2: OBJETIVOS -->
+                <div class="anamnesis-section">
+                    <h3>2. Objetivos y Motivación</h3>
+                    <label style="display: block; margin-bottom: 12px; font-weight: 500;">Objetivo principal (puedes seleccionar varios)</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" name="objetivo_grasa"> Perder grasa</label>
+                        <label><input type="checkbox" name="objetivo_fuerza"> Ganar fuerza</label>
+                        <label><input type="checkbox" name="objetivo_musculo"> Ganar masa muscular</label>
+                        <label><input type="checkbox" name="objetivo_salud"> Salud general</label>
+                        <label><input type="checkbox" name="objetivo_movilidad"> Movilidad o dolor</label>
+                        <label><input type="checkbox" name="objetivo_rendimiento"> Rendimiento deportivo</label>
+                        <label><input type="checkbox" name="objetivo_energia"> Energía y bienestar</label>
+                        <label><input type="checkbox" name="objetivo_otro"> Otro</label>
+                    </div>
+                    <div class="form-group">
+                        <label>¿Por qué ahora? ¿Qué ha cambiado?</label>
+                        <textarea name="motivacion"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="form-group">
+                            <label>¿Qué sería éxito en 3 meses?</label>
+                            <textarea name="exito_3m"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>¿Y en un año?</label>
+                            <textarea name="exito_1a"></textarea>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>¿Qué te ha impedido conseguirlo antes?</label>
+                        <textarea name="obstaculos"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Nivel de compromiso ahora mismo (1-10)</label>
+                        <div class="scale-input">
+                            <label><input type="radio" name="compromiso" value="1"> 1</label>
+                            <label><input type="radio" name="compromiso" value="2"> 2</label>
+                            <label><input type="radio" name="compromiso" value="3"> 3</label>
+                            <label><input type="radio" name="compromiso" value="4"> 4</label>
+                            <label><input type="radio" name="compromiso" value="5"> 5</label>
+                            <label><input type="radio" name="compromiso" value="6"> 6</label>
+                            <label><input type="radio" name="compromiso" value="7"> 7</label>
+                            <label><input type="radio" name="compromiso" value="8"> 8</label>
+                            <label><input type="radio" name="compromiso" value="9"> 9</label>
+                            <label><input type="radio" name="compromiso" value="10"> 10</label>
+                        </div>
+                    </div>
+                </div>
 
-            <!-- VISTA CLIENTE -->
-            <div id="clientView" class="hidden">
-                <div class="tabs-nav" id="clientTabsNav"></div>
-                <div id="tabEntrenamientos" class="tab-content"></div>
-                <div id="tabHistorial" class="tab-content"></div>
-                <div id="tabPerfil" class="tab-content"></div>
-            </div>
+                <!-- SECCIÓN 3: CRIBADO DE SALUD -->
+                <div class="anamnesis-section">
+                    <h3>3. Cribado de Salud (PAR-Q)</h3>
+                    <p style="color: #666; font-size: 0.9em; margin-bottom: 12px;">Si alguna respuesta es "Sí", será necesario informe médico.</p>
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" name="parq_corazon"> ¿Algún médico te ha dicho que tienes un problema de corazón o tensión arterial alta?
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" name="parq_dolor_pecho"> ¿Sientes dolor en el pecho en reposo o al hacer ejercicio?
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" name="parq_mareo"> ¿Has perdido el equilibrio por mareo o conocimiento en los últimos 12 meses?
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" name="parq_cronica"> ¿Tienes diagnosticada alguna enfermedad crónica?
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" name="parq_medicacion"> ¿Tomas medicación para alguna enfermedad crónica?
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" name="parq_oseo"> ¿Tienes algún problema óseo, articular o de tejidos blandos?
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" name="parq_supervisado"> ¿Solo haces actividad física supervisada por personal sanitario?
+                        </label>
+                    </div>
+                    <div class="row">
+                        <div class="form-group">
+                            <label>Enfermedades, diagnósticos o medicación relevante</label>
+                            <textarea name="enfermedades"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Cirugías u hospitalizaciones</label>
+                            <textarea name="cirugias"></textarea>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="form-group">
+                            <label>Embarazo, posparto o suelo pélvico (si aplica)</label>
+                            <input type="text" name="posparto">
+                        </div>
+                        <div class="form-group">
+                            <label>Alergias relevantes</label>
+                            <input type="text" name="alergias">
+                        </div>
+                    </div>
+                </div>
 
-            <!-- VISTA ENTRENADOR - LISTA CLIENTES -->
-            <div id="trainerListView">
-                <div class="tabs-nav" id="trainerTabsNav"></div>
-                <div id="tabClientes" class="tab-content"></div>
-            </div>
+                <!-- SECCIÓN 4: LESIONES Y DOLOR -->
+                <div class="anamnesis-section">
+                    <h3>4. Lesiones y Dolor</h3>
+                    <div class="form-group">
+                        <label>Lesiones actuales o pasadas (zona, cuándo, si se trató y cómo)</label>
+                        <textarea name="lesiones"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="form-group">
+                            <label>¿Tienes dolor ahora? ¿Dónde?</label>
+                            <input type="text" name="dolor_actual">
+                        </div>
+                        <div class="form-group">
+                            <label>Movimientos o posturas que molestan</label>
+                            <input type="text" name="movimientos_molesto">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Intensidad del dolor habitual (0-10)</label>
+                        <div class="scale-input">
+                            <label><input type="radio" name="intensidad_dolor" value="0"> 0</label>
+                            <label><input type="radio" name="intensidad_dolor" value="1"> 1</label>
+                            <label><input type="radio" name="intensidad_dolor" value="2"> 2</label>
+                            <label><input type="radio" name="intensidad_dolor" value="3"> 3</label>
+                            <label><input type="radio" name="intensidad_dolor" value="4"> 4</label>
+                            <label><input type="radio" name="intensidad_dolor" value="5"> 5</label>
+                            <label><input type="radio" name="intensidad_dolor" value="6"> 6</label>
+                            <label><input type="radio" name="intensidad_dolor" value="7"> 7</label>
+                            <label><input type="radio" name="intensidad_dolor" value="8"> 8</label>
+                            <label><input type="radio" name="intensidad_dolor" value="9"> 9</label>
+                            <label><input type="radio" name="intensidad_dolor" value="10"> 10</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>¿Te trata algún fisioterapeuta u otro profesional?</label>
+                        <input type="text" name="profesional">
+                    </div>
+                </div>
 
-            <!-- VISTA ENTRENADOR - CLIENTE SELECCIONADO -->
-            <div id="trainerClientView" class="hidden">
-                <div class="tabs-nav" id="selectedClientTabsNav"></div>
-                <div id="tabSubirEntrenamientos" class="tab-content"></div>
-                <div id="tabClientHistorial" class="tab-content"></div>
-                <div id="tabAnamnesis" class="tab-content"></div>
-                <div id="tabClientDatos" class="tab-content"></div>
-            </div>
+                <!-- SECCIÓN 5: HISTORIAL DEPORTIVO -->
+                <div class="anamnesis-section">
+                    <h3>5. Historial Deportivo</h3>
+                    <div class="row">
+                        <div class="form-group">
+                            <label>Actividad física actual (qué, cuántos días, cuánto tiempo)</label>
+                            <textarea name="actividad_actual"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Deportes practicados antes</label>
+                            <textarea name="deportes_antes"></textarea>
+                        </div>
+                    </div>
+                    <label style="display: block; margin-bottom: 12px; font-weight: 500;">Experiencia con entrenamiento de fuerza</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="experiencia_fuerza" value="ninguna"> Ninguna</label>
+                        <label><input type="radio" name="experiencia_fuerza" value="menos_6m"> Menos de 6 meses</label>
+                        <label><input type="radio" name="experiencia_fuerza" value="6m_2a"> 6 meses a 2 años</label>
+                        <label><input type="radio" name="experiencia_fuerza" value="mas_2a"> Más de 2 años</label>
+                    </div>
+                    <div class="form-group">
+                        <label style="margin-top: 16px;">¿Has tenido entrenador antes? ¿Qué funcionó y qué no?</label>
+                        <textarea name="entrenador_antes"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Ejercicios que te gustan y que odias</label>
+                        <textarea name="ejercicios_preferen"></textarea>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN 6: ESTILO DE VIDA -->
+                <div class="anamnesis-section">
+                    <h3>6. Estilo de Vida</h3>
+                    <label style="display: block; margin-bottom: 12px; font-weight: 500;">Tipo de trabajo</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="tipo_trabajo" value="sedentario"> Sedentario</label>
+                        <label><input type="radio" name="tipo_trabajo" value="pie"> De pie</label>
+                        <label><input type="radio" name="tipo_trabajo" value="exigente"> Físicamente exigente</label>
+                        <label><input type="radio" name="tipo_trabajo" value="turnos"> Turnos o viajes</label>
+                    </div>
+                    <div class="row" style="margin-top: 16px;">
+                        <div class="form-group">
+                            <label>Horas sentado al día</label>
+                            <input type="text" name="horas_sentado">
+                        </div>
+                        <div class="form-group">
+                            <label>Pasos diarios aproximados</label>
+                            <input type="text" name="pasos_diarios">
+                        </div>
+                        <div class="form-group">
+                            <label>¿Usas reloj o pulsera de actividad?</label>
+                            <input type="text" name="reloj_actividad">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="form-group">
+                            <label>Horas de sueño</label>
+                            <input type="text" name="horas_sueno">
+                        </div>
+                        <div class="form-group">
+                            <label>¿Descansas bien? ¿Te despiertas por la noche?</label>
+                            <input type="text" name="calidad_sueno">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Nivel de estrés habitual (1-10)</label>
+                        <div class="scale-input">
+                            <label><input type="radio" name="nivel_estres" value="1"> 1</label>
+                            <label><input type="radio" name="nivel_estres" value="2"> 2</label>
+                            <label><input type="radio" name="nivel_estres" value="3"> 3</label>
+                            <label><input type="radio" name="nivel_estres" value="4"> 4</label>
+                            <label><input type="radio" name="nivel_estres" value="5"> 5</label>
+                            <label><input type="radio" name="nivel_estres" value="6"> 6</label>
+                            <label><input type="radio" name="nivel_estres" value="7"> 7</label>
+                            <label><input type="radio" name="nivel_estres" value="8"> 8</label>
+                            <label><input type="radio" name="nivel_estres" value="9"> 9</label>
+                            <label><input type="radio" name="nivel_estres" value="10"> 10</label>
+                        </div>
+                    </div>
+                    <div class="row" style="margin-top: 16px;">
+                        <div class="form-group">
+                            <label>Tabaco</label>
+                            <input type="text" name="tabaco">
+                        </div>
+                        <div class="form-group">
+                            <label>Alcohol (frecuencia)</label>
+                            <input type="text" name="alcohol">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN 7: ALIMENTACIÓN -->
+                <div class="anamnesis-section">
+                    <h3>7. Alimentación e Hidratación</h3>
+                    <div class="row">
+                        <div class="form-group">
+                            <label>Comidas al día y horarios</label>
+                            <input type="text" name="comidas_dia">
+                        </div>
+                        <div class="form-group">
+                            <label>Agua al día</label>
+                            <input type="text" name="agua_dia">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="form-group">
+                            <label>Preferencias o tipo de dieta (vegetariana, etc.)</label>
+                            <input type="text" name="tipo_dieta">
+                        </div>
+                        <div class="form-group">
+                            <label>¿Te sigue algún nutricionista?</label>
+                            <input type="text" name="nutricionista">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Suplementación</label>
+                        <input type="text" name="suplementacion">
+                    </div>
+                </div>
+
+                <!-- SECCIÓN 8: LOGÍSTICA -->
+                <div class="anamnesis-section">
+                    <h3>8. Logística a Domicilio</h3>
+                    <label style="display: block; margin-bottom: 12px; font-weight: 500;">Días disponibles</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" name="dia_lunes"> Lunes</label>
+                        <label><input type="checkbox" name="dia_martes"> Martes</label>
+                        <label><input type="checkbox" name="dia_miercoles"> Miércoles</label>
+                        <label><input type="checkbox" name="dia_jueves"> Jueves</label>
+                        <label><input type="checkbox" name="dia_viernes"> Viernes</label>
+                        <label><input type="checkbox" name="dia_sabado"> Sábado</label>
+                        <label><input type="checkbox" name="dia_domingo"> Domingo</label>
+                    </div>
+                    <div class="row" style="margin-top: 16px;">
+                        <div class="form-group">
+                            <label>Franja horaria preferida</label>
+                            <input type="text" name="franja_horaria">
+                        </div>
+                        <div class="form-group">
+                            <label>Sesiones por semana deseadas</label>
+                            <input type="text" name="sesiones_semana">
+                        </div>
+                    </div>
+                    <label style="display: block; margin-bottom: 12px; font-weight: 500; margin-top: 16px;">Espacio disponible</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" name="espacio_salon"> Salón</label>
+                        <label><input type="checkbox" name="espacio_garaje"> Garaje</label>
+                        <label><input type="checkbox" name="espacio_jardin"> Jardín o terraza</label>
+                        <label><input type="checkbox" name="espacio_gimnasio"> Gimnasio en casa</label>
+                        <label><input type="checkbox" name="espacio_zona_comun"> Zona común</label>
+                        <label><input type="checkbox" name="espacio_parque"> Parque cercano</label>
+                    </div>
+                    <div class="row" style="margin-top: 16px;">
+                        <div class="form-group">
+                            <label>Metros aproximados y altura de techo</label>
+                            <input type="text" name="metros_techo">
+                        </div>
+                        <div class="form-group">
+                            <label>Material que ya tienen en casa</label>
+                            <input type="text" name="material_casa">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Acceso y aparcamiento</label>
+                        <input type="text" name="acceso_aparcamiento">
+                    </div>
+                </div>
+
+                <!-- SECCIÓN 9: CONSENTIMIENTO -->
+                <div class="anamnesis-section">
+                    <h3>9. Declaración y Consentimiento</h3>
+                    <p style="color: #666; margin-bottom: 12px; font-size: 0.95em;">Declaro que la información facilitada es veraz y que comunicaré cualquier cambio en mi estado de salud. Entiendo que el ejercicio físico conlleva riesgos.</p>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" name="acepta_datos" required> Acepto el tratamiento de mis datos personales</label>
+                        <label><input type="checkbox" name="acepta_fotos"> Acepto que se tomen fotos o vídeos para mi seguimiento</label>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 12px; margin-top: 30px; justify-content: space-between;">
+                    <button type="button" class="btn btn-secondary" onclick="closeAnamnesisModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">💾 Guardar Anamnesis</button>
+                </div>
+            </form>
         </div>
     </div>
 
     <script>
-        // CONFIG
         const SUPABASE_URL = 'https://zxarhydagapzgozrxaee.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_pcdggueDF2w9LVHDhvRpWg_NhLd1jb9';
-        const TRAINER_PASSWORD = 'Alex app';
         
-        let supabaseClient = null;
+        let supabaseClient;
         let currentUser = null;
-        let isTrainer = false;
-        let selectedClientId = null;
-        let selectedClientCode = null;
-        let selectedClientName = null;
+        let currentUserType = null;
+        let currentClientCode = null;
+        let selectedClientForFicha = null;
 
-        // INIT SUPABASE
+        // Initialize Supabase
         async function initSupabase() {
-            try {
-                const { createClient } = window.supabase;
-                supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
-                console.log('✅ Supabase inicializado correctamente');
-                return true;
-            } catch (error) {
-                console.error('❌ Error al inicializar Supabase:', error);
-                showAlert('Error al inicializar la base de datos', 'error');
-                return false;
-            }
+            const { createClient } = window.supabase;
+            supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+            console.log('Supabase initialized');
+            showLoginView();
         }
 
-        // LOGIN ÚNICO
-        async function loginUser() {
+        function showLoginView() {
+            document.getElementById('loginView').style.display = 'block';
+            document.getElementById('trainerView').style.display = 'none';
+            document.getElementById('clientView').style.display = 'none';
+            currentUser = null;
+            currentUserType = null;
+        }
+
+        function handleLogin() {
             const input = document.getElementById('loginInput').value.trim();
-
             if (!input) {
-                showAlert('Ingresa tu código o contraseña', 'info');
+                showLoginAlert('Por favor ingresa un usuario o código', 'danger');
                 return;
             }
 
-            if (input === TRAINER_PASSWORD) {
-                currentUser = { nombre: 'Administrador', id: 'admin', codigo: 'ADMIN' };
-                isTrainer = true;
-                showApp();
-                setupTrainerView();
-                return;
-            }
-
-            try {
-                const { data, error } = await supabaseClient
-                    .from('clientes')
-                    .select('*')
-                    .eq('codigo', input)
-                    .single();
-
-                if (error || !data) {
-                    showAlert('Código de acceso inválido', 'error');
-                    return;
-                }
-
-                currentUser = data;
-                isTrainer = false;
-                showApp();
-                setupClientView();
-                loadClientWorkouts();
-            } catch (error) {
-                console.error('Error:', error);
-                showAlert('Error al conectar', 'error');
+            if (input === 'Alex app') {
+                currentUser = 'Alex app';
+                currentUserType = 'trainer';
+                loadTrainerView();
+            } else if (input.match(/^[A-Z]{3}-\d{3}$/)) {
+                currentUser = input;
+                currentUserType = 'client';
+                currentClientCode = input;
+                loadClientView();
+            } else {
+                showLoginAlert('Usuario o código inválido', 'danger');
             }
         }
 
-        // SHOW APP
-        function showApp() {
-            document.getElementById('loginSection').classList.add('hidden');
-            document.getElementById('appSection').classList.remove('hidden');
-            document.getElementById('userName').textContent = currentUser.nombre || 'Usuario';
-            document.getElementById('userBadge').textContent = isTrainer ? 'Entrenador' : 'Cliente';
-            document.getElementById('userBadge').style.background = isTrainer ? '#2196f3' : '#4caf50';
+        function showLoginAlert(msg, type) {
+            const alert = document.getElementById('loginAlert');
+            alert.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
         }
 
-        // SETUP CLIENT VIEW
-        function setupClientView() {
-            document.getElementById('clientView').classList.remove('hidden');
-            document.getElementById('trainerListView').classList.add('hidden');
-            document.getElementById('trainerClientView').classList.add('hidden');
-            document.getElementById('backBtn').classList.add('hidden');
-
-            const tabsNav = document.getElementById('clientTabsNav');
-            tabsNav.innerHTML = `
-                <button class="tab-btn active" onclick="showClientTab('Entrenamientos', event)">📅 Entrenamientos</button>
-                <button class="tab-btn" onclick="showClientTab('Historial', event)">📊 Historial</button>
-                <button class="tab-btn" onclick="showClientTab('Perfil', event)">👤 Perfil</button>
-            `;
-
-            document.getElementById('tabEntrenamientos').innerHTML = '<div class="card"><h3>Mis Entrenamientos</h3><div id="workoutsList"></div></div>';
-            document.getElementById('tabHistorial').innerHTML = '<div class="card"><h3>Historial de Entrenamientos</h3><p style="color: #999;">Historial vacío</p></div>';
-            document.getElementById('tabPerfil').innerHTML = `
-                <div class="card">
-                    <h3>Mi Perfil</h3>
-                    <p><strong>Nombre:</strong> ${currentUser.nombre || 'N/A'}</p>
-                    <p><strong>Código de Acceso:</strong> ${currentUser.codigo || 'N/A'}</p>
-                    <p><strong>Email:</strong> ${currentUser.email || 'No registrado'}</p>
-                </div>
-            `;
-
-            showClientTab('Entrenamientos');
+        async function loadTrainerView() {
+            document.getElementById('loginView').style.display = 'none';
+            document.getElementById('trainerView').style.display = 'block';
+            document.getElementById('clientView').style.display = 'none';
+            document.getElementById('userDisplay').textContent = currentUser;
+            document.getElementById('userType').textContent = 'Entrenador';
+            
+            await loadClientes();
         }
 
-        // SETUP TRAINER VIEW
-        function setupTrainerView() {
-            document.getElementById('clientView').classList.add('hidden');
-            document.getElementById('trainerListView').classList.remove('hidden');
-            document.getElementById('trainerClientView').classList.add('hidden');
-            document.getElementById('backBtn').classList.add('hidden');
+        async function loadClientView() {
+            document.getElementById('loginView').style.display = 'none';
+            document.getElementById('trainerView').style.display = 'none';
+            document.getElementById('clientView').style.display = 'block';
+            document.getElementById('userDisplay').textContent = currentClientCode;
+            document.getElementById('userType').textContent = 'Cliente';
+            
+            const { data, error } = await supabaseClient
+                .from('clientes')
+                .select('*')
+                .eq('codigo', currentClientCode)
+                .single();
 
-            document.getElementById('bannerTitle').textContent = 'Mis Clientes';
-            document.getElementById('bannerDesc').textContent = 'Selecciona un cliente para gestionar su entrenamiento';
-
-            const tabsNav = document.getElementById('trainerTabsNav');
-            tabsNav.innerHTML = `
-                <button class="tab-btn active" onclick="showTrainerTab('Clientes', event)">👥 Mis Clientes</button>
-            `;
-
-            document.getElementById('tabClientes').innerHTML = `
-                <div class="card">
-                    <h3>➕ Crear Nuevo Cliente</h3>
-                    <div class="form-group">
-                        <label>Nombre Completo</label>
-                        <input type="text" id="clientName" placeholder="Nombre del cliente">
-                    </div>
-                    <div class="form-group">
-                        <label>Código de Acceso (único)</label>
-                        <input type="text" id="clientCode" placeholder="Ej: CLI-001" maxlength="20">
-                    </div>
-                    <div class="form-group">
-                        <label>Email (opcional)</label>
-                        <input type="email" id="clientEmail" placeholder="email@ejemplo.com">
-                    </div>
-                    <button class="btn btn-primary" onclick="createClient()">Crear Cliente</button>
-                </div>
-
-                <div class="card">
-                    <h3>📋 Tus Clientes Registrados</h3>
-                    <p style="color: #666; margin-bottom: 16px; font-size: 0.9em;">Haz click en un cliente para acceder a su ficha</p>
-                    <div id="clientsList"></div>
-                </div>
-            `;
-
-            showTrainerTab('Clientes');
-            loadClients();
-        }
-
-        // LOAD CLIENTS
-        async function loadClients() {
-            try {
-                showAlert('Cargando clientes...', 'info');
+            if (data) {
+                currentUser = data.nombre;
+                document.getElementById('clientProfileName').value = data.nombre;
+                document.getElementById('clientProfileEmail').value = data.email || '';
+                document.getElementById('clientProfileCode').value = data.codigo;
                 
-                if (!supabaseClient) {
-                    showAlert('Error: Supabase no inicializado', 'error');
-                    return;
+                if (data.anamnesis) {
+                    displayAnamnesis(data.anamnesis, 'clientAnamnesisDisplay');
+                } else {
+                    document.getElementById('clientAnamnesisDisplay').innerHTML = '<p style="color: #999;">Aún no has completado tu anamnesis.</p>';
                 }
-
-                const { data, error } = await supabaseClient
-                    .from('clientes')
-                    .select('*')
-                    .order('nombre', { ascending: true });
-
-                if (error) {
-                    console.error('Supabase error completo:', error);
-                    showAlert('Error al cargar clientes: ' + (error.message || JSON.stringify(error)), 'error');
-                    return;
-                }
-
-                const container = document.getElementById('clientsList');
-                if (!data || data.length === 0) {
-                    container.innerHTML = '<p style="color: #999;">No tienes clientes registrados aún. Crea uno arriba.</p>';
-                    return;
-                }
-
-                container.innerHTML = data.map(c => `
-                    <div class="client-card" onclick="openClientAsTrainer('${c.id}', '${c.nombre}', '${c.codigo}', '${c.email || ''}')">
-                        <div class="client-card-info">
-                            <h4>👤 ${c.nombre}</h4>
-                            <p><strong>Código:</strong> ${c.codigo}</p>
-                            <p><strong>Email:</strong> ${c.email || 'No registrado'}</p>
-                        </div>
-                        <div class="client-actions">
-                            <button class="btn btn-danger btn-small" onclick="event.stopPropagation(); deleteClient('${c.id}')">🗑️ Eliminar</button>
-                        </div>
-                    </div>
-                `).join('');
-            } catch (error) {
-                console.error('Error:', error);
-                showAlert('Error al cargar los clientes', 'error');
             }
         }
 
-        // CREATE CLIENT
-        async function createClient() {
-            const name = document.getElementById('clientName').value.trim();
-            const code = document.getElementById('clientCode').value.trim();
-            const email = document.getElementById('clientEmail').value.trim();
+        async function loadClientes() {
+            const { data, error } = await supabase
+                .from('clientes')
+                .select('*')
+                .order('nombre');
 
-            if (!name || !code) {
-                showAlert('Completa los campos requeridos', 'warning');
+            if (error) {
+                console.error('Error cargando clientes:', error);
                 return;
             }
 
-            try {
-                const { error } = await supabaseClient
-                    .from('clientes')
-                    .insert([{ nombre: name, codigo: code, email: email }]);
+            const lista = document.getElementById('clientesList');
+            lista.innerHTML = '';
 
-                if (error) throw error;
-                showAlert(`✅ Cliente "${name}" creado exitosamente`, 'success');
-                document.getElementById('clientName').value = '';
-                document.getElementById('clientCode').value = '';
-                document.getElementById('clientEmail').value = '';
-                loadClients();
-            } catch (error) {
-                showAlert('Error al crear el cliente: ' + error.message, 'error');
-                console.error(error);
+            if (data.length === 0) {
+                lista.innerHTML = '<p style="color: #999;">No hay clientes registrados.</p>';
+                return;
             }
+
+            data.forEach(cliente => {
+                const card = document.createElement('div');
+                card.className = 'cliente-item';
+                card.innerHTML = `
+                    <div class="cliente-item-name">${cliente.nombre}</div>
+                    <div class="cliente-item-info">${cliente.codigo} • ${cliente.email || 'sin email'}</div>
+                `;
+                card.onclick = () => openFichaCliente(cliente);
+                lista.appendChild(card);
+            });
         }
 
-        // DELETE CLIENT
-        async function deleteClient(id) {
-            if (!confirm('¿Estás seguro que quieres eliminar este cliente?')) return;
-            try {
-                const { error } = await supabaseClient.from('clientes').delete().eq('id', id);
-                if (error) throw error;
-                showAlert('✅ Cliente eliminado', 'success');
-                loadClients();
-            } catch (error) {
-                showAlert('Error al eliminar: ' + error.message, 'error');
+        function openFichaCliente(cliente) {
+            selectedClientForFicha = cliente;
+            document.getElementById('fichaClienteNombre').textContent = cliente.nombre;
+            document.getElementById('fichaClienteCodigo').textContent = cliente.codigo;
+            
+            document.getElementById('clientDataName').value = cliente.nombre;
+            document.getElementById('clientDataEmail').value = cliente.email || '';
+            document.getElementById('clientDataCode').value = cliente.codigo;
+            
+            if (cliente.anamnesis) {
+                displayAnamnesis(cliente.anamnesis, 'anamnesisDisplay');
+            } else {
+                document.getElementById('anamnesisDisplay').innerHTML = '<p style="color: #999;">El cliente aún no ha completado su anamnesis.</p>';
             }
+
+            loadHistorial(cliente.codigo);
+            
+            document.getElementById('fichaClienteModal').classList.add('active');
+            switchTabInModal('modal-entrenamientos', document.querySelector('[onclick*="modal-entrenamientos"]'));
         }
 
-        // OPEN CLIENT AS TRAINER
-        async function openClientAsTrainer(clientId, clientName, clientCode, clientEmail) {
-            selectedClientId = clientId;
-            selectedClientCode = clientCode;
-            selectedClientName = clientName;
-
-            document.getElementById('clientView').classList.add('hidden');
-            document.getElementById('trainerListView').classList.add('hidden');
-            document.getElementById('trainerClientView').classList.remove('hidden');
-            document.getElementById('backBtn').classList.remove('hidden');
-
-            document.getElementById('bannerTitle').textContent = `${clientName}`;
-            document.getElementById('bannerDesc').textContent = `Código: ${clientCode} | Email: ${clientEmail || 'No registrado'}`;
-
-            // Setup tabs
-            const tabsNav = document.getElementById('selectedClientTabsNav');
-            tabsNav.innerHTML = `
-                <button class="tab-btn active" onclick="showSelectedClientTab('SubirEntrenamientos', event)">📊 Subir Entrenamientos</button>
-                <button class="tab-btn" onclick="showSelectedClientTab('ClientHistorial', event)">📅 Historial</button>
-                <button class="tab-btn" onclick="showSelectedClientTab('Anamnesis', event)">📝 Anamnesis</button>
-                <button class="tab-btn" onclick="showSelectedClientTab('ClientDatos', event)">👤 Datos</button>
-            `;
-
-            // TAB: Subir Entrenamientos
-            document.getElementById('tabSubirEntrenamientos').innerHTML = `
-                <div class="card">
-                    <h3>📊 Subir Entrenamientos desde Excel</h3>
-                    <p style="color: #666; margin-bottom: 16px; font-size: 0.9em;">
-                        Carga un archivo Excel con entrenamientos para <strong>${clientName}</strong>.<br>
-                        <strong>Columnas requeridas:</strong> Fecha | Título | Descripción | Ejercicios
-                    </p>
-                    <div class="form-group">
-                        <label>Selecciona archivo Excel (.xlsx)</label>
-                        <div class="file-input-wrapper">
-                            <input type="file" id="clientExcelFile" accept=".xlsx,.xls" onchange="handleClientExcelUpload()">
-                            <label for="clientExcelFile" class="file-input-label">📁 Arrastra tu archivo aquí o haz click</label>
-                        </div>
-                    </div>
-                    <div id="clientExcelPreview"></div>
-                </div>
-            `;
-
-            // TAB: Historial
-            document.getElementById('tabClientHistorial').innerHTML = `<div class="card"><h3>📅 Historial de Entrenamientos</h3><div id="clientHistorialList"></div></div>`;
-
-            // TAB: Anamnesis
-            document.getElementById('tabAnamnesis').innerHTML = `
-                <div class="card">
-                    <h3>📝 Anamnesis del Cliente</h3>
-                    <div class="form-group">
-                        <label>Edad</label>
-                        <input type="number" id="anamnesiAge" placeholder="Años">
-                    </div>
-                    <div class="form-group">
-                        <label>Objetivos Principales</label>
-                        <textarea id="ananesisObjectives" placeholder="Ej: Pérdida de peso, ganancia muscular, mejorar resistencia..." rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Lesiones o Problemas de Salud</label>
-                        <textarea id="ananesisInjuries" placeholder="Describe cualquier limitación física..." rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Experiencia Previa en Ejercicio</label>
-                        <textarea id="ananesisExperience" placeholder="Nivel de experiencia, deportes previos..." rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Otros Datos de Interés</label>
-                        <textarea id="ananesisOther" placeholder="Información adicional relevante..." rows="3"></textarea>
-                    </div>
-                    <button class="btn btn-primary" onclick="saveAnamnesis()">💾 Guardar Anamnesis</button>
-                </div>
-            `;
-
-            // TAB: Datos
-            document.getElementById('tabClientDatos').innerHTML = `
-                <div class="card">
-                    <h3>👤 Datos del Cliente</h3>
-                    <div class="form-group">
-                        <label>Nombre</label>
-                        <input type="text" id="editClientName" value="${clientName}">
-                    </div>
-                    <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" id="editClientEmail" value="${clientEmail || ''}">
-                    </div>
-                    <button class="btn btn-primary" onclick="updateClientAsTrainer()">💾 Guardar Cambios</button>
-                </div>
-            `;
-
-            // Cargar datos
-            await loadClientHistorialAsTrainer(clientCode);
-            await loadAnamnesis();
-
-            showSelectedClientTab('SubirEntrenamientos');
+        function closeFichaCliente() {
+            document.getElementById('fichaClienteModal').classList.remove('active');
         }
 
-        // LOAD ANAMNESIS
-        async function loadAnamnesis() {
-            try {
-                const { data } = await supabaseClient
-                    .from('clientes')
-                    .select('anamnesis')
-                    .eq('id', selectedClientId)
-                    .single();
+        async function loadHistorial(codigo) {
+            const { data, error } = await supabase
+                .from('entrenamientos')
+                .select('*')
+                .eq('cliente_codigo', codigo)
+                .order('fecha', { ascending: false });
 
-                if (data && data.anamnesis) {
-                    const a = data.anamnesis;
-                    document.getElementById('anamnesiAge').value = a.age || '';
-                    document.getElementById('ananesisObjectives').value = a.objectives || '';
-                    document.getElementById('ananesisInjuries').value = a.injuries || '';
-                    document.getElementById('ananesisExperience').value = a.experience || '';
-                    document.getElementById('ananesisOther').value = a.other || '';
-                }
-            } catch (error) {
-                console.error('Error cargando anamnesis:', error);
+            if (error) {
+                console.error('Error cargando historial:', error);
+                return;
             }
-        }
 
-        // SAVE ANAMNESIS
-        async function saveAnamnesis() {
-            try {
-                const anamnesis = {
-                    age: document.getElementById('anamnesiAge').value,
-                    objectives: document.getElementById('ananesisObjectives').value,
-                    injuries: document.getElementById('ananesisInjuries').value,
-                    experience: document.getElementById('ananesisExperience').value,
-                    other: document.getElementById('ananesisOther').value
-                };
+            const lista = document.getElementById('historialList');
+            lista.innerHTML = '';
 
-                const { error } = await supabaseClient
-                    .from('clientes')
-                    .update({ anamnesis })
-                    .eq('id', selectedClientId);
-
-                if (error) throw error;
-                showAlert('✅ Anamnesis guardada', 'success');
-            } catch (error) {
-                showAlert('Error al guardar: ' + error.message, 'error');
+            if (data.length === 0) {
+                lista.innerHTML = '<p style="color: #999;">Sin entrenamientos registrados.</p>';
+                return;
             }
+
+            data.forEach(ent => {
+                const item = document.createElement('div');
+                item.style.cssText = 'background: #f9f9f9; padding: 12px; margin-bottom: 12px; border-radius: 6px;';
+                item.innerHTML = `
+                    <div style="font-weight: 600; color: var(--primary); margin-bottom: 4px;">${ent.titulo}</div>
+                    <div style="font-size: 0.9em; color: #666; margin-bottom: 4px;">${ent.fecha}</div>
+                    <div style="font-size: 0.9em; color: #999;">${ent.descripcion || ''}</div>
+                `;
+                lista.appendChild(item);
+            });
         }
 
-        // LOAD HISTORIAL
-        async function loadClientHistorialAsTrainer(clientCode) {
-            try {
-                const { data } = await supabaseClient
-                    .from('entrenamientos')
-                    .select('*')
-                    .eq('cliente_codigo', clientCode)
-                    .order('fecha', { ascending: false });
-
-                const container = document.getElementById('clientHistorialList');
-                if (!data || data.length === 0) {
-                    container.innerHTML = '<p style="color: #999;">Sin entrenamientos registrados</p>';
-                    return;
-                }
-
-                container.innerHTML = data.map(w => `
-                    <div class="workout-item">
-                        <h4>${w.titulo}</h4>
-                        <p><strong>Fecha:</strong> ${w.fecha}</p>
-                        <p><strong>Descripción:</strong> ${w.descripcion || '-'}</p>
-                        ${w.ejercicios ? `<p><strong>Ejercicios:</strong> ${w.ejercicios}</p>` : ''}
-                    </div>
-                `).join('');
-            } catch (error) {
-                console.error('Error:', error);
+        function handleExcelUpload() {
+            const file = document.getElementById('excelFileInput').files[0];
+            if (!file) {
+                showAlert('Por favor selecciona un archivo', 'danger', 'excelAlert');
+                return;
             }
-        }
-
-        // HANDLE EXCEL UPLOAD
-        function handleClientExcelUpload() {
-            const file = document.getElementById('clientExcelFile').files[0];
-            if (!file) return;
 
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onerror = function() {
+                console.error('Error al leer el archivo');
+                showAlert('Error al leer el archivo. Asegúrate de que es un Excel válido.', 'danger', 'excelAlert');
+            };
+
+            reader.onload = async function(e) {
                 try {
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
-                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const rows = XLSX.utils.sheet_to_json(sheet);
+                    const ws = workbook.Sheets[workbook.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
 
                     if (rows.length === 0) {
-                        showAlert('El archivo Excel está vacío', 'error');
+                        showAlert('El Excel está vacío', 'danger', 'excelAlert');
                         return;
                     }
 
-                    let preview = '<h4 style="margin-top: 20px;">Entrenamientos a cargar:</h4>';
-                    preview += '<div class="table-responsive"><table>';
-                    preview += '<thead><tr><th>Fecha</th><th>Título</th><th>Descripción</th></tr></thead><tbody>';
-                    
-                    rows.slice(0, 5).forEach(row => {
-                        preview += `<tr>
-                            <td>${row['Fecha'] || row['fecha'] || '?'}</td>
-                            <td>${row['Título'] || row['titulo'] || '?'}</td>
-                            <td>${(row['Descripción'] || row['descripcion'] || '?').substring(0, 40)}...</td>
-                        </tr>`;
-                    });
-                    if (rows.length > 5) preview += `<tr><td colspan="3" style="text-align: center; color: #999;">... y ${rows.length - 5} más</td></tr>`;
-                    preview += '</tbody></table></div>';
-                    preview += `<button class="btn btn-primary" onclick="uploadClientExcelToSupabase(event)">✅ Cargar ${rows.length} Entrenamientos</button>`;
+                    const headers = Object.keys(rows[0]).map(h => h.trim().toLowerCase());
+                    const requiredFields = ['fecha', 'título'];
+                    const hasRequired = requiredFields.every(f => headers.some(h => h === f));
 
-                    document.getElementById('clientExcelPreview').innerHTML = preview;
-                    window.clientExcelData = rows;
-                    showAlert(`Previsualización: ${rows.length} entrenamientos listos para cargar`, 'info');
+                    if (!hasRequired) {
+                        showAlert('Columnas requeridas: Fecha, Título (y opcionalmente Descripción, Ejercicios)', 'danger', 'excelAlert');
+                        return;
+                    }
+
+                    const validRows = rows.filter(row => row.Fecha && row.Título);
+                    if (validRows.length === 0) {
+                        showAlert('Ninguna fila tiene Fecha y Título. Completa estos campos mínimos.', 'danger', 'excelAlert');
+                        return;
+                    }
+
+                    showPreview(validRows);
                 } catch (error) {
-                    showAlert('Error al leer el archivo Excel', 'error');
+                    console.error('Error parsing Excel:', error);
+                    showAlert('Error al procesar el archivo: ' + error.message, 'danger', 'excelAlert');
                 }
             };
+
             reader.readAsArrayBuffer(file);
         }
 
-        // UPLOAD EXCEL
-        async function uploadClientExcelToSupabase(e) {
-            e.target.disabled = true;
-            e.target.textContent = 'Cargando...';
+        function showPreview(rows) {
+            const preview = document.getElementById('excelPreview');
+            preview.innerHTML = '<h4 style="margin-bottom: 12px;">Vista previa:</h4>';
 
-            try {
-                const data = window.clientExcelData.map(row => ({
-                    cliente_codigo: selectedClientCode,
-                    fecha: row['Fecha'] || row['fecha'],
-                    titulo: row['Título'] || row['titulo'],
-                    descripcion: row['Descripción'] || row['descripcion'],
-                    ejercicios: row['Ejercicios'] || row['ejercicios'],
-                    estado: 'activo'
-                }));
+            const table = document.createElement('table');
+            table.style.cssText = 'width: 100%; border-collapse: collapse; margin-bottom: 16px;';
+            
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            headerRow.style.cssText = 'background: #f0f0f0;';
+            ['Fecha', 'Título', 'Descripción', 'Ejercicios'].forEach(h => {
+                const th = document.createElement('th');
+                th.textContent = h;
+                th.style.cssText = 'padding: 8px; text-align: left; font-weight: 600; border-bottom: 1px solid #ddd;';
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
 
-                const { error } = await supabaseClient
-                    .from('entrenamientos')
-                    .insert(data);
+            const tbody = document.createElement('tbody');
+            rows.slice(0, 5).forEach(row => {
+                const tr = document.createElement('tr');
+                tr.style.cssText = 'border-bottom: 1px solid #eee;';
+                ['Fecha', 'Título', 'Descripción', 'Ejercicios'].forEach(field => {
+                    const td = document.createElement('td');
+                    td.textContent = row[field] || '';
+                    td.style.cssText = 'padding: 8px;';
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
 
-                if (error) throw error;
-                showAlert(`✅ ${data.length} entrenamientos cargados correctamente`, 'success');
-                document.getElementById('clientExcelFile').value = '';
-                document.getElementById('clientExcelPreview').innerHTML = '';
-                await loadClientHistorialAsTrainer(selectedClientCode);
-            } catch (error) {
-                showAlert('Error al cargar: ' + error.message, 'error');
-                console.error(error);
-            } finally {
-                e.target.disabled = false;
-                e.target.textContent = '✅ Cargar Entrenamientos';
+            preview.appendChild(table);
+
+            const btnConfirm = document.createElement('button');
+            btnConfirm.type = 'button';
+            btnConfirm.className = 'btn btn-primary';
+            btnConfirm.textContent = '✅ Confirmar carga (' + rows.length + ' entrenamientos)';
+            btnConfirm.onclick = () => saveEntrenos(rows);
+            preview.appendChild(btnConfirm);
+        }
+
+        async function saveEntrenos(rows) {
+            const toInsert = rows.map(row => ({
+                cliente_codigo: selectedClientForFicha.codigo,
+                fecha: row.Fecha,
+                titulo: row.Título,
+                descripcion: row.Descripción || '',
+                ejercicios: row.Ejercicios || '',
+                estado: 'planificado'
+            }));
+
+            const { error } = await supabase
+                .from('entrenamientos')
+                .insert(toInsert);
+
+            if (error) {
+                showAlert('Error al guardar: ' + error.message, 'danger', 'excelAlert');
+            } else {
+                showAlert('✅ ' + toInsert.length + ' entrenamientos cargados', 'success', 'excelAlert');
+                document.getElementById('excelFileInput').value = '';
+                document.getElementById('excelPreview').innerHTML = '';
+                loadHistorial(selectedClientForFicha.codigo);
             }
         }
 
-        // UPDATE CLIENT
-        async function updateClientAsTrainer() {
-            const name = document.getElementById('editClientName').value.trim();
-            const email = document.getElementById('editClientEmail').value.trim();
+        function downloadTemplate() {
+            const ws = XLSX.utils.aoa_to_sheet([
+                ['Fecha', 'Título', 'Descripción', 'Ejercicios'],
+                ['2026-10-06', 'Upper Body A', 'Trabajo de pecho y espalda', 'Bench press, Dominadas, Remo'],
+                ['2026-10-08', 'Lower Body', 'Piernas y glúteos', 'Sentadilla, Peso muerto, Prensa']
+            ]);
+            ws['!cols'] = [{ wch: 14 }, { wch: 18 }, { wch: 25 }, { wch: 30 }];
 
-            if (!name) {
-                showAlert('El nombre es requerido', 'error');
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Entrenamientos');
+            XLSX.write(wb, { bookType: 'xlsx', type: 'binary', filename: 'Plantilla_Entrenamientos.xlsx' });
+        }
+
+        function editarAnamnesis() {
+            loadAnamnesisForm(selectedClientForFicha.anamnesis || {});
+            document.getElementById('anamnesisModal').classList.add('active');
+        }
+
+        async function editarAnamnesisCliente() {
+            const { data } = await supabaseClient
+                .from('clientes')
+                .select('anamnesis')
+                .eq('codigo', currentClientCode)
+                .single();
+            
+            if (data) {
+                loadAnamnesisForm(data.anamnesis || {});
+                document.getElementById('anamnesisModal').classList.add('active');
+            }
+        }
+
+        function loadAnamnesisForm(data) {
+            const form = document.getElementById('anamnesisForm');
+            
+            // Cargar datos en formulario
+            Object.keys(data).forEach(key => {
+                const field = form.elements[key];
+                if (field) {
+                    if (field.type === 'checkbox' || field.type === 'radio') {
+                        field.checked = data[key] === true || data[key] === key;
+                    } else {
+                        field.value = data[key] || '';
+                    }
+                }
+            });
+        }
+
+        function saveAnamnesis() {
+            const form = document.getElementById('anamnesisForm');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+
+            // Convertir checkboxes a boolean
+            Object.keys(data).forEach(key => {
+                if (key.startsWith('objetivo_') || key.startsWith('parq_') || 
+                    key.startsWith('dia_') || key.startsWith('espacio_') ||
+                    key.startsWith('acepta_')) {
+                    data[key] = data[key] === 'on';
+                }
+            });
+
+            return data;
+        }
+
+        function displayAnamnesis(data, containerId) {
+            const container = document.getElementById(containerId);
+            if (!data || Object.keys(data).length === 0) {
+                container.innerHTML = '<p style="color: #999;">Sin anamnesis registrada.</p>';
                 return;
             }
 
-            try {
-                const { error } = await supabaseClient
+            let html = '';
+            
+            // Datos personales
+            if (data.nombre) {
+                html += `<div class="anamnesis-section">
+                    <h4>Datos Personales</h4>
+                    ${data.fecha_nacimiento ? `<p><strong>Fecha de nacimiento:</strong> ${data.fecha_nacimiento}</p>` : ''}
+                    ${data.telefono ? `<p><strong>Teléfono:</strong> ${data.telefono}</p>` : ''}
+                    ${data.email_anamnesis ? `<p><strong>Email:</strong> ${data.email_anamnesis}</p>` : ''}
+                    ${data.profesion ? `<p><strong>Profesión:</strong> ${data.profesion}</p>` : ''}
+                </div>`;
+            }
+
+            // Objetivos
+            const objetivos = [];
+            if (data.objetivo_grasa) objetivos.push('Perder grasa');
+            if (data.objetivo_fuerza) objetivos.push('Ganar fuerza');
+            if (data.objetivo_musculo) objetivos.push('Ganar masa muscular');
+            if (data.objetivo_salud) objetivos.push('Salud general');
+            if (data.objetivo_movilidad) objetivos.push('Movilidad o dolor');
+            if (data.objetivo_rendimiento) objetivos.push('Rendimiento deportivo');
+            if (data.objetivo_energia) objetivos.push('Energía y bienestar');
+
+            if (objetivos.length > 0) {
+                html += `<div class="anamnesis-section">
+                    <h4>Objetivos</h4>
+                    <p>${objetivos.join(', ')}</p>
+                    ${data.motivacion ? `<p><strong>Motivación:</strong> ${data.motivacion}</p>` : ''}
+                </div>`;
+            }
+
+            // Salud
+            if (data.parq_corazon || data.enfermedades) {
+                html += `<div class="anamnesis-section">
+                    <h4>Cribado de Salud</h4>
+                    ${data.enfermedades ? `<p><strong>Enfermedades/Diagnósticos:</strong> ${data.enfermedades}</p>` : ''}
+                    ${data.alergias ? `<p><strong>Alergias:</strong> ${data.alergias}</p>` : ''}
+                </div>`;
+            }
+
+            // Lesiones
+            if (data.lesiones || data.dolor_actual) {
+                html += `<div class="anamnesis-section">
+                    <h4>Lesiones y Dolor</h4>
+                    ${data.lesiones ? `<p><strong>Lesiones:</strong> ${data.lesiones}</p>` : ''}
+                    ${data.dolor_actual ? `<p><strong>Dolor actual:</strong> ${data.dolor_actual}</p>` : ''}
+                    ${data.intensidad_dolor ? `<p><strong>Intensidad (0-10):</strong> ${data.intensidad_dolor}</p>` : ''}
+                </div>`;
+            }
+
+            // Historial deportivo
+            if (data.actividad_actual || data.experiencia_fuerza) {
+                html += `<div class="anamnesis-section">
+                    <h4>Historial Deportivo</h4>
+                    ${data.actividad_actual ? `<p><strong>Actividad actual:</strong> ${data.actividad_actual}</p>` : ''}
+                    ${data.experiencia_fuerza ? `<p><strong>Experiencia fuerza:</strong> ${data.experiencia_fuerza}</p>` : ''}
+                </div>`;
+            }
+
+            // Estilo de vida
+            if (data.tipo_trabajo || data.horas_sueno) {
+                html += `<div class="anamnesis-section">
+                    <h4>Estilo de Vida</h4>
+                    ${data.tipo_trabajo ? `<p><strong>Tipo de trabajo:</strong> ${data.tipo_trabajo}</p>` : ''}
+                    ${data.horas_sueno ? `<p><strong>Horas de sueño:</strong> ${data.horas_sueno}</p>` : ''}
+                    ${data.nivel_estres ? `<p><strong>Estrés (1-10):</strong> ${data.nivel_estres}</p>` : ''}
+                </div>`;
+            }
+
+            // Logística
+            const dias = [];
+            if (data.dia_lunes) dias.push('Lunes');
+            if (data.dia_martes) dias.push('Martes');
+            if (data.dia_miercoles) dias.push('Miércoles');
+            if (data.dia_jueves) dias.push('Jueves');
+            if (data.dia_viernes) dias.push('Viernes');
+            if (data.dia_sabado) dias.push('Sábado');
+            if (data.dia_domingo) dias.push('Domingo');
+
+            if (dias.length > 0 || data.franja_horaria) {
+                html += `<div class="anamnesis-section">
+                    <h4>Disponibilidad</h4>
+                    ${dias.length > 0 ? `<p><strong>Días:</strong> ${dias.join(', ')}</p>` : ''}
+                    ${data.franja_horaria ? `<p><strong>Horario:</strong> ${data.franja_horaria}</p>` : ''}
+                    ${data.sesiones_semana ? `<p><strong>Sesiones/semana:</strong> ${data.sesiones_semana}</p>` : ''}
+                </div>`;
+            }
+
+            container.innerHTML = html || '<p style="color: #999;">Sin datos en la anamnesis.</p>';
+        }
+
+        function closeAnamnesisModal() {
+            document.getElementById('anamnesisModal').classList.remove('active');
+        }
+
+        document.getElementById('anamnesisForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const data = saveAnamnesis();
+
+            if (selectedClientForFicha) {
+                // Entrenador guardando anamnesis de cliente
+                const { error } = await supabase
                     .from('clientes')
-                    .update({ nombre: name, email: email })
-                    .eq('id', selectedClientId);
+                    .update({ anamnesis: data })
+                    .eq('codigo', selectedClientForFicha.codigo);
 
-                if (error) throw error;
-                showAlert('✅ Cliente actualizado', 'success');
-                selectedClientName = name;
-                loadClients();
-            } catch (error) {
-                showAlert('Error: ' + error.message, 'error');
-            }
-        }
-
-        // LOAD CLIENT WORKOUTS (para cliente)
-        async function loadClientWorkouts() {
-            try {
-                const { data } = await supabaseClient
-                    .from('entrenamientos')
-                    .select('*')
-                    .eq('cliente_codigo', currentUser.codigo)
-                    .gte('fecha', new Date().toISOString().split('T')[0])
-                    .order('fecha', { ascending: true });
-
-                const container = document.getElementById('workoutsList');
-                if (!data || data.length === 0) {
-                    container.innerHTML = '<p style="color: #999;">No hay entrenamientos asignados aún</p>';
-                    return;
+                if (error) {
+                    showAlert('Error al guardar: ' + error.message, 'danger');
+                } else {
+                    showAlert('✅ Anamnesis guardada', 'success');
+                    displayAnamnesis(data, 'anamnesisDisplay');
+                    closeAnamnesisModal();
                 }
+            } else if (currentClientCode) {
+                // Cliente guardando su propia anamnesis
+                const { error } = await supabase
+                    .from('clientes')
+                    .update({ anamnesis: data })
+                    .eq('codigo', currentClientCode);
 
-                container.innerHTML = data.map(w => `
-                    <div class="workout-item">
-                        <h4>${w.titulo || 'Entrenamiento'}</h4>
-                        <p><strong>Fecha:</strong> ${w.fecha}</p>
-                        <p><strong>Descripción:</strong> ${w.descripcion || 'Sin descripción'}</p>
-                        ${w.ejercicios ? `<p><strong>Ejercicios:</strong> ${w.ejercicios}</p>` : ''}
-                    </div>
-                `).join('');
-            } catch (error) {
-                console.error('Error:', error);
-            }
-        }
-
-        // SHOW TABS
-        function showClientTab(tabName, event) {
-            if (event) {
-                event.target.parentElement.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                event.target.classList.add('active');
-            }
-            document.querySelectorAll('#clientView .tab-content').forEach(t => t.classList.remove('active'));
-            document.getElementById('tab' + tabName)?.classList.add('active');
-        }
-
-        function showTrainerTab(tabName, event) {
-            if (event) {
-                event.target.parentElement.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                event.target.classList.add('active');
-            }
-            document.querySelectorAll('#trainerListView .tab-content').forEach(t => t.classList.remove('active'));
-            document.getElementById('tab' + tabName)?.classList.add('active');
-        }
-
-        function showSelectedClientTab(tabName, event) {
-            if (event) {
-                event.target.parentElement.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                event.target.classList.add('active');
-            }
-            document.querySelectorAll('#trainerClientView .tab-content').forEach(t => t.classList.remove('active'));
-            document.getElementById('tab' + tabName)?.classList.add('active');
-        }
-
-        // GO BACK
-        function goBackToClients() {
-            selectedClientId = null;
-            selectedClientCode = null;
-            selectedClientName = null;
-            setupTrainerView();
-        }
-
-        // LOGOUT
-        function logout() {
-            currentUser = null;
-            isTrainer = false;
-            selectedClientId = null;
-            selectedClientCode = null;
-            selectedClientName = null;
-            document.getElementById('loginSection').classList.remove('hidden');
-            document.getElementById('appSection').classList.add('hidden');
-            document.getElementById('loginInput').value = '';
-        }
-
-        // SHOW ALERT
-        function showAlert(msg, type) {
-            const container = document.getElementById('appAlerts');
-            const div = document.createElement('div');
-            div.className = 'alert show alert-' + type;
-            div.textContent = msg;
-            container.appendChild(div);
-            setTimeout(() => div.remove(), 5000);
-        }
-
-        // INIT
-        document.addEventListener('DOMContentLoaded', async () => {
-            const initialized = await initSupabase();
-            if (initialized) {
-                document.getElementById('btnLogin').addEventListener('click', loginUser);
-                document.getElementById('loginInput').addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') loginUser();
-                });
-                document.getElementById('logoutBtn').addEventListener('click', logout);
-            } else {
-                showAlert('❌ No se pudo conectar a la base de datos. Recarga la página.', 'error');
+                if (error) {
+                    showAlert('Error al guardar: ' + error.message, 'danger');
+                } else {
+                    showAlert('✅ Anamnesis guardada', 'success');
+                    displayAnamnesis(data, 'clientAnamnesisDisplay');
+                    closeAnamnesisModal();
+                }
             }
         });
+
+        async function createNewClient() {
+            const name = document.getElementById('newClientName').value.trim();
+            if (!name) {
+                showAlert('Por favor ingresa un nombre', 'danger', 'newClientAlert');
+                return;
+            }
+
+            const codigo = generateClientCode();
+            const email = document.getElementById('newClientEmail').value.trim();
+
+            const { error } = await supabase
+                .from('clientes')
+                .insert([{
+                    nombre: name,
+                    codigo: codigo,
+                    email: email,
+                    anamnesis: {}
+                }]);
+
+            if (error) {
+                showAlert('Error al crear: ' + error.message, 'danger', 'newClientAlert');
+            } else {
+                showAlert('✅ Cliente creado: ' + codigo, 'success', 'newClientAlert');
+                document.getElementById('newClientName').value = '';
+                document.getElementById('newClientEmail').value = '';
+                document.getElementById('newClientCode').value = '';
+                loadClientes();
+            }
+        }
+
+        function generateClientCode() {
+            const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            const prefix = letters.substring(0, 3).toUpperCase() + letters.charAt(Math.floor(Math.random() * 26));
+            const num = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
+            return prefix.substring(0, 3) + '-' + num;
+        }
+
+        async function updateClientData() {
+            if (!selectedClientForFicha) return;
+
+            const email = document.getElementById('clientDataEmail').value.trim();
+            const { error } = await supabase
+                .from('clientes')
+                .update({ email: email })
+                .eq('codigo', selectedClientForFicha.codigo);
+
+            if (error) {
+                showAlert('Error al actualizar: ' + error.message, 'danger', 'datosAlert');
+            } else {
+                showAlert('✅ Datos actualizados', 'success', 'datosAlert');
+                selectedClientForFicha.email = email;
+            }
+        }
+
+        async function updateClientProfile() {
+            const email = document.getElementById('clientProfileEmail').value.trim();
+            const { error } = await supabase
+                .from('clientes')
+                .update({ email: email })
+                .eq('codigo', currentClientCode);
+
+            if (error) {
+                showAlert('Error al actualizar: ' + error.message, 'danger', 'profileAlert');
+            } else {
+                showAlert('✅ Perfil actualizado', 'success', 'profileAlert');
+            }
+        }
+
+        function switchTab(tabId, button) {
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(c => c.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+
+            const buttons = button.parentElement.querySelectorAll('.tab-btn');
+            buttons.forEach(b => b.classList.remove('active'));
+            button.classList.add('active');
+        }
+
+        function switchTabInModal(tabId, button) {
+            const modal = document.getElementById('fichaClienteModal');
+            const contents = modal.querySelectorAll('.tab-content');
+            contents.forEach(c => c.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+
+            const buttons = modal.querySelectorAll('.tab-btn');
+            buttons.forEach(b => b.classList.remove('active'));
+            button.classList.add('active');
+        }
+
+        function showAlert(msg, type, elementId = 'loginAlert') {
+            const elem = document.getElementById(elementId);
+            if (elem) {
+                elem.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+            }
+        }
+
+        function logout() {
+            showLoginView();
+            document.getElementById('loginInput').value = '';
+            document.getElementById('loginInput').focus();
+        }
+
+        function goToHome() {
+            logout();
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', initSupabase);
     </script>
 </body>
 </html>
