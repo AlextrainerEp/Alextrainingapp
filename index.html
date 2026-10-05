@@ -162,26 +162,42 @@ async function crearCliente(){
   }
 }
 
-async function registrarClienteNuevo(){
-  const nombre=document.getElementById('nuevo-nombre')?.value||'';
-  const email=document.getElementById('nuevo-email')?.value||'';
-  const codigo=document.getElementById('nuevo-codigo')?.value||'';
+async function registrarClienteNuevo() {
+  const nombre = document.getElementById('nuevo-nombre').value.trim();
   
-  if(!nombre.trim()||!codigo.trim()){
-    toast('Nombre y código son requeridos');
+  if (!nombre) {
+    toast('El nombre es requerido');
     return;
   }
   
-  try{
-    const existente=await supabaseCall('GET',`/clientes?codigo=eq.${codigo}`);
-    if(existente.length){
-      toast('Este código ya existe. Elige otro');
-      return;
-    }
+  try {
+    const codigoAleatorio = 'K' + Math.random().toString(36).substring(2, 7).toUpperCase();
+    const id = 'cli_' + Date.now() + '_' + Math.random().toString(36).slice(-4);
     
-   const codigoAleatorio = 'K' + Math.random().toString(36).substring(2, 7).toUpperCase();
-const id = 'cli_' + Date.now() + '_' + Math.random().toString(36).slice(-4);
-
+    await supabaseCall('POST', '/clientes', {
+      id: id,
+      nombre: nombre,
+      codigo: codigoAleatorio,
+      foto: null
+    });
+    
+    const panel = document.getElementById('panel');
+    panel.innerHTML = `
+      <div style="text-align:center; padding:40px; background:#f8f9fa; border-radius:8px;">
+        <h2>¡Cuenta creada!</h2>
+        <p style="font-size:16px; color:#666;">Tu código de acceso:</p>
+        <div style="background:white; border:2px solid #333; padding:20px; border-radius:6px; margin:20px 0;">
+          <span style="font-size:32px; font-weight:bold; letter-spacing:3px; font-family:monospace;">${codigoAleatorio}</span>
+        </div>
+        <button onclick="navigator.clipboard.writeText('${codigoAleatorio}'); toast('¡Copiado!')" style="padding:10px 20px; background:#007bff; color:white; border:none; border-radius:4px; cursor:pointer; margin:10px 0; font-weight:bold;">📋 Copiar</button>
+        <button onclick="render()" style="padding:12px 30px; background:#333; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; width:100%; margin-top:20px;">Continuar →</button>
+      </div>
+    `;
+  } catch(e) {
+    console.error('Error:', e);
+    toast('Error: ' + e.message);
+  }
+}
 await supabaseCall('POST', '/clientes', {
   id,
   nombre: nombre.trim(),
