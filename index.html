@@ -366,7 +366,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script>
     // ========================================
-    // CONFIGURACIÓN SUPABASE
+    // CONFIGURACIÓN SUPABASE - CREDENCIALES CORRECTAS
     // ========================================
     const SUPABASE_URL = 'https://zxarhydagapzgozrxaee.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_pcdggueDF2w9LVHDhvRpWg_NhLd1jb9';
@@ -380,16 +380,10 @@
         const { createClient } = window.supabase;
         db = createClient(SUPABASE_URL, SUPABASE_KEY);
         console.log('✅ Supabase inicializado correctamente');
-        mostrarDebugInfo('✅ Supabase conectado');
+        console.log('URL:', SUPABASE_URL);
       } catch (error) {
         console.error('❌ Error al inicializar Supabase:', error);
-        mostrarDebugInfo('❌ Error: ' + error.message);
       }
-    }
-
-    // Mostrar información de debug
-    function mostrarDebugInfo(mensaje) {
-      console.log('[DEBUG]', mensaje);
     }
 
     // ========================================
@@ -430,7 +424,7 @@
         const numeroCliente = Date.now() % 10000;
         const codigo = 'K' + Math.random().toString(36).substring(2, 7).toUpperCase();
 
-        mostrarDebugInfo(`Registrando: ${nombre} con código ${codigo}`);
+        console.log('Registrando:', nombre, 'Código:', codigo);
 
         // Insertar en Supabase
         const { data, error } = await db
@@ -448,7 +442,7 @@
           throw new Error(error.message);
         }
 
-        mostrarDebugInfo('✅ Cliente registrado en Supabase');
+        console.log('✅ Cliente registrado en Supabase');
         
         // Mostrar resultado
         document.getElementById('codigoDisplay').textContent = codigo;
@@ -481,7 +475,7 @@
       try {
         errorDiv.innerHTML = '<div class="loading"><div class="spinner"></div>Verificando código...</div>';
 
-        mostrarDebugInfo(`Buscando cliente con código: ${codigo}`);
+        console.log('Buscando cliente con código:', codigo);
 
         // Buscar cliente por código
         const { data, error } = await db
@@ -499,7 +493,7 @@
         }
 
         const cliente = data[0];
-        mostrarDebugInfo(`✅ Cliente encontrado: ${cliente.nombre}`);
+        console.log('✅ Cliente encontrado:', cliente.nombre);
 
         clienteActual = cliente;
         document.getElementById('nombreClienteDisplay').textContent = cliente.nombre;
@@ -568,7 +562,7 @@
           throw new Error(error.message);
         }
 
-        mostrarDebugInfo(`✅ Cliente creado desde admin: ${nombre} (${codigo})`);
+        console.log('✅ Cliente creado desde admin:', nombre, codigo);
         document.getElementById('nombreClienteAdmin').value = '';
         errorDiv.innerHTML = '<div class="success-box">✅ Cliente creado correctamente</div>';
         
