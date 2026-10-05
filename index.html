@@ -93,6 +93,7 @@ const U={
   isAdmin:false,
   adminPass:'admin123',
   tab:'login',
+  loginTab:'inicio',
   clientes:[],
   anamnesisForm:{},
   newClienteForm:{nombre:'',codigo:''}
@@ -161,6 +162,45 @@ async function crearCliente(){
   }
 }
 
+async function registrarClienteNuevo(){
+  const nombre=document.getElementById('nuevo-nombre')?.value||'';
+  const email=document.getElementById('nuevo-email')?.value||'';
+  const codigo=document.getElementById('nuevo-codigo')?.value||'';
+  
+  if(!nombre.trim()||!codigo.trim()){
+    toast('Nombre y código son requeridos');
+    return;
+  }
+  
+  try{
+    const existente=await supabaseCall('GET',`/clientes?codigo=eq.${codigo}`);
+    if(existente.length){
+      toast('Este código ya existe. Elige otro');
+      return;
+    }
+    
+    const id='cli_'+Date.now()+'_'+Math.random().toString(36).slice(-4);
+    await supabaseCall('POST','/clientes',{
+      id,
+      nombre:nombre.trim(),
+      codigo:codigo.trim(),
+      email:email.trim(),
+      anamnesis_completada:false,
+      creado:new Date().toISOString()
+    });
+    
+    U.miId=id;
+    U.rol='cliente';
+    U.tab='anamnesis';
+    U.loginTab='inicio';
+    localStorage.setItem(LS+'codigo',codigo);
+    toast('¡Cuenta creada! Completa tu anamnesis');
+    render();
+  }catch(e){
+    toast('Error: '+e.message);
+  }
+}
+
 async function loginCliente(){
   const codigo=document.getElementById('codigo-input')?.value||'';
   if(!codigo.trim()){
@@ -177,6 +217,7 @@ async function loginCliente(){
     U.miId=cliente.id;
     U.rol='cliente';
     U.tab=cliente.anamnesis_completada?'hoy':'anamnesis';
+    U.loginTab='inicio';
     localStorage.setItem(LS+'codigo',codigo);
     render();
   }catch(e){
@@ -211,11 +252,25 @@ async function guardarAnamnesis(){
   }
 }
 
+
+
+function logout(){
+  U.rol=null;
+  U.miId=null;
+  U.isAdmin=false;
+  U.tab='login';
+  U.loginTab='inicio';
+  U.anamnesisForm={};
+  localStorage.removeItem(LS+'codigo');
+  render();
+}
+
 function loginAdmin(){
   const pass=document.getElementById('admin-pass')?.value||'';
   if(pass===U.adminPass){
     U.isAdmin=true;
     U.rol='admin';
+    U.loginTab='inicio';
     U.tab='admin-clientes';
     render();
   }else{
@@ -223,33 +278,53 @@ function loginAdmin(){
   }
 }
 
-function logout(){
-  U.rol=null;
-  U.miId=null;
-  U.isAdmin=false;
-  U.tab='login';
-  U.anamnesisForm={};
-  localStorage.removeItem(LS+'codigo');
-  render();
-}
-
 function handleAnamnesisChange(field,value){
   U.anamnesisForm[field]=value;
 }
 
 function renderLogin(){
-  let html='<main>';
-  html+='<div class="logo"><h1>Alex Training Lab</h1><p class="hint">Entrenamiento personal a domicilio</p></div>';
-  html+='<div class="panel">';
-  html+='<h2>Acceso cliente</h2>';
-  html+='<label>Tu código único<input type="text" id="codigo-input" placeholder="Ej: CLI-001"></label>';
-  html+='<button class="btn primary full" onclick="loginCliente()">Entrar</button>';
+  let html='<main style="padding-top:60px">';
+  html+='<div class="logo">';
+  html+='<div style="font-size:4rem;margin-bottom:12px">🦁⚙️</div>';
+  html+='<h1>Alex Training Lab</h1>';
+  html+='<p class="hint">Entrenamiento personal</p>';
   html+='</div>';
-  html+='<div class="panel">';
-  html+='<h2>Acceso entrenador</h2>';
-  html+='<label>Contraseña<input type="password" id="admin-pass" placeholder="••••"></label>';
-  html+='<button class="btn primary full" onclick="loginAdmin()">Acceso admin</button>';
-  html+='</div>';
+  
+  if(U.loginTab==='cliente-existente'){
+    html+='<div class="panel">';
+    html+='<button class="back" onclick="U.loginTab=\'inicio\'; render()">← Volver</button>';
+    html+='<h2>Acceso cliente</h2>';
+    html+='<p class="hint">Ingresa el código que te proporcionó tu entrenador</p>';
+    html+='<label>Tu código<input type="text" id="codigo-input" placeholder="Ej: CLI-001" onkeypress="if(event.key===\'Enter\')loginCliente()"></label>';
+    html+='<button class="btn primary full" onclick="loginCliente()">Entrar</button>';
+    html+='</div>';
+  }else if(U.loginTab==='cliente-nuevo'){
+    html+='<div class="panel">';
+    html+='<button class="back" onclick="U.loginTab=\'inicio\'; render()">← Volver</button>';
+    html+='<h2>Regístrate</h2>';
+    html+='<p class="hint">Crea tu cuenta en Alex Training Lab</p>';
+    html+='<label>Nombre y apellidos<input type="text" id="nuevo-nombre" placeholder="Ej: Juan García"></label>';
+    html+='<label>Email<input type="email" id="nuevo-email" placeholder="tu@email.com"></label>';
+    html+='<label>Crea tu código de acceso<input type="text" id="nuevo-codigo" placeholder="Ej: JG-001"></label>';
+    html+='<button class="btn primary full" onclick="registrarClienteNuevo()">Crear mi cuenta</button>';
+    html+='</div>';
+  }else if(U.loginTab==='admin'){
+    html+='<div class="panel">';
+    html+='<button class="back" onclick="U.loginTab=\'inicio\'; render()">← Volver</button>';
+    html+='<h2>Acceso entrenador</h2>';
+    html+='<p class="hint">Solo para Alex</p>';
+    html+='<label>Contraseña<input type="password" id="admin-pass" placeholder="••••" onkeypress="if(event.key===\'Enter\')loginAdmin()"></label>';
+    html+='<button class="btn primary full" onclick="loginAdmin()">Acceso admin</button>';
+    html+='</div>';
+  }else{
+    html+='<div class="panel">';
+    html+='<h2 style="text-align:center;margin-bottom:16px">¿Quién eres?</h2>';
+    html+='<button class="btn full" style="margin-bottom:8px" onclick="U.loginTab=\'cliente-existente\'; render()">📱 Cliente - Ya tengo código</button>';
+    html+='<button class="btn full" style="margin-bottom:8px" onclick="U.loginTab=\'cliente-nuevo\'; render()">✏️ Cliente - Quiero registrarme</button>';
+    html+='<button class="btn full" onclick="U.loginTab=\'admin\'; render()">🔐 Soy el entrenador</button>';
+    html+='</div>';
+  }
+  
   html+='</main>';
   return html;
 }
