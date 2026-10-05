@@ -61,15 +61,21 @@
         }
 
         .logo-icon {
-            width: 50px;
-            height: 50px;
-            background: var(--primary);
-            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: bold;
-            font-size: 28px;
+            overflow: hidden;
+            background: var(--white);
+            padding: 3px;
+        }
+
+        .logo-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
         }
 
         .user-info {
@@ -195,6 +201,18 @@
         .btn-small {
             padding: 8px 12px;
             font-size: 12px;
+        }
+
+        .btn-link {
+            background: none;
+            color: var(--primary);
+            text-decoration: underline;
+            padding: 0;
+            font-size: 14px;
+        }
+
+        .btn-link:hover {
+            color: var(--primary-dark);
         }
 
         /* NAVIGATION */
@@ -342,7 +360,7 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* MODAL FOTO PERFIL */
+        /* MODAL */
         .modal {
             display: none;
             position: fixed;
@@ -352,6 +370,7 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0,0,0,0.5);
+            overflow-y: auto;
         }
 
         .modal.show {
@@ -364,8 +383,10 @@
             background-color: var(--white);
             padding: 30px;
             border-radius: 10px;
-            max-width: 400px;
+            max-width: 500px;
             width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
         .modal-header {
@@ -373,10 +394,12 @@
             font-weight: bold;
             margin-bottom: 20px;
             color: var(--dark);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .close-modal {
-            float: right;
             font-size: 28px;
             font-weight: bold;
             cursor: pointer;
@@ -503,6 +526,16 @@
         .rpe-btn.very-high {
             color: var(--danger);
         }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .action-buttons button {
+            flex: 1;
+        }
     </style>
 </head>
 <body>
@@ -510,7 +543,9 @@
         <!-- HEADER -->
         <div class="header">
             <div class="header-logo-user">
-                <div class="logo-icon">🦁</div>
+                <div class="logo-icon">
+                    <img src="logo_alex_training_lab.jpeg" alt="Alex Training Lab Logo" title="Alex Training Lab">
+                </div>
                 <div class="user-info">
                     <div class="user-name" id="userName">Bienvenido</div>
                     <div class="user-role" id="userRole">Cargando...</div>
@@ -546,7 +581,37 @@
                         <input type="password" id="adminPass" placeholder="••••••">
                     </div>
                     <button class="btn btn-secondary" onclick="loginAdmin()" style="width: 100%; margin-top: 10px;">Entrar como Entrenador</button>
+                    <button class="btn btn-link" onclick="mostrarRecuperacion()" style="width: 100%; margin-top: 10px; text-align: center;">¿Olvidaste tu contraseña?</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- RECUPERACIÓN DE CONTRASEÑA -->
+        <div class="login-section" id="recuperacionSection">
+            <h2 style="margin-bottom: 20px; color: var(--dark);">Recuperar Contraseña</h2>
+            
+            <div class="alert alert-info" id="recuperacionAlert"></div>
+
+            <div class="login-form">
+                <p style="color: var(--dark); margin-bottom: 15px;">Ingresa tu código de recuperación para resetear tu contraseña</p>
+                
+                <div class="form-group">
+                    <label>Código de Recuperación</label>
+                    <input type="text" id="codigoRecuperacion" placeholder="Código enviado a tu email">
+                </div>
+
+                <div class="form-group">
+                    <label>Nueva Contraseña</label>
+                    <input type="password" id="nuevaPass" placeholder="••••••">
+                </div>
+
+                <div class="form-group">
+                    <label>Confirmar Contraseña</label>
+                    <input type="password" id="confirmarPass" placeholder="••••••">
+                </div>
+
+                <button class="btn btn-success" onclick="resetearContrasena()" style="width: 100%; margin-top: 15px;">Resetear Contraseña</button>
+                <button class="btn btn-link" onclick="volverLogin()" style="width: 100%; margin-top: 10px; text-align: center;">Volver a Login</button>
             </div>
         </div>
 
@@ -557,6 +622,7 @@
                 <button class="nav-tab" onclick="switchTab('historial')">📊 Historial</button>
                 <button class="nav-tab" onclick="switchTab('mensajes')">💬 Mensajes</button>
                 <button class="nav-tab admin-only" style="display:none;" onclick="switchTab('crear')">➕ Crear Entreno</button>
+                <button class="nav-tab admin-only" style="display:none;" onclick="switchTab('editar')">✏️ Editar Entrenos</button>
                 <button class="nav-tab admin-only" style="display:none;" onclick="switchTab('excel')">📁 Importar Excel</button>
                 <button class="nav-tab admin-only" style="display:none;" onclick="switchTab('clientes')">👥 Mis Clientes</button>
                 <button class="nav-tab" onclick="logout()" style="margin-left: auto;">🚪 Salir</button>
@@ -619,6 +685,20 @@
                     </form>
                 </div>
 
+                <!-- TAB: EDITAR ENTRENAMIENTOS (ADMIN) -->
+                <div id="editar-tab" class="tab-content">
+                    <h2>Editar Entrenamientos</h2>
+                    <div style="margin-top: 20px;">
+                        <div class="form-group">
+                            <label>Filtrar por Cliente</label>
+                            <select id="clienteFiltroEditar" onchange="cargarEntrenamientosEditar()" style="padding: 10px; border: 2px solid #ddd; border-radius: 5px; width: 100%;">
+                                <option value="">Todos los clientes</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="entrenamientosEditarContainer" style="margin-top: 20px;"></div>
+                </div>
+
                 <!-- TAB: IMPORTAR EXCEL (ADMIN) -->
                 <div id="excel-tab" class="tab-content">
                     <h2>Importar Entrenamientos desde Excel</h2>
@@ -654,6 +734,7 @@
                                 <th>Nombre</th>
                                 <th>Código</th>
                                 <th>ID</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="clientesTable">
@@ -667,14 +748,49 @@
     <!-- MODAL FOTO PERFIL -->
     <div id="photoModal" class="modal">
         <div class="modal-content">
-            <span class="close-modal" onclick="closePhotoModal()">&times;</span>
-            <div class="modal-header">Cambiar Foto de Perfil</div>
+            <div class="modal-header">
+                <span>Cambiar Foto de Perfil</span>
+                <span class="close-modal" onclick="closePhotoModal()">&times;</span>
+            </div>
             <div class="form-group">
                 <label>Selecciona una foto</label>
                 <input type="file" id="photoInput" accept="image/*" onchange="previewPhoto(event)">
             </div>
             <div id="photoPreview" style="margin-top: 15px; text-align: center;"></div>
             <button class="btn btn-success" onclick="guardarFoto()" style="width: 100%; margin-top: 15px;">Guardar Foto</button>
+        </div>
+    </div>
+
+    <!-- MODAL EDITAR ENTRENAMIENTO -->
+    <div id="editarModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>Editar Entrenamiento</span>
+                <span class="close-modal" onclick="closeEditarModal()">&times;</span>
+            </div>
+            <form>
+                <div class="form-group">
+                    <label>Título</label>
+                    <input type="text" id="editTitulo" style="padding: 10px; border: 2px solid #ddd; border-radius: 5px; width: 100%;">
+                </div>
+                <div class="form-group">
+                    <label>Fecha</label>
+                    <input type="date" id="editFecha" style="padding: 10px; border: 2px solid #ddd; border-radius: 5px; width: 100%;">
+                </div>
+                <div class="form-group">
+                    <label>Descripción</label>
+                    <textarea id="editDesc" style="padding: 10px; border: 2px solid #ddd; border-radius: 5px; width: 100%; height: 100px;"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Ejercicios (uno por línea)</label>
+                    <textarea id="editEjercicios" style="padding: 10px; border: 2px solid #ddd; border-radius: 5px; width: 100%; height: 100px;"></textarea>
+                </div>
+                <div class="action-buttons">
+                    <button type="button" class="btn btn-success" onclick="guardarEdicionEntrenamiento()">Guardar Cambios</button>
+                    <button type="button" class="btn btn-danger" onclick="eliminarEntrenamiento()">Eliminar</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeEditarModal()">Cancelar</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -686,6 +802,12 @@
         let currentUser = null;
         let currentRole = null;
         let excelData = [];
+        let entrenamientoEnEdicion = null;
+
+        // CÓDIGOS DE RECUPERACIÓN (en producción irían en BD)
+        const CODIGOS_RECUPERACION = {
+            'RESET2024': 'admin123'
+        };
 
         // ===== INICIALIZAR SUPABASE =====
         async function supabaseRequest(table, method = 'GET', data = null) {
@@ -749,9 +871,50 @@
             }
         }
 
+        // ===== RECUPERACIÓN DE CONTRASEÑA =====
+        function mostrarRecuperacion() {
+            document.getElementById('loginSection').classList.remove('active');
+            document.getElementById('recuperacionSection').classList.add('active');
+        }
+
+        function volverLogin() {
+            document.getElementById('recuperacionSection').classList.remove('active');
+            document.getElementById('loginSection').classList.add('active');
+        }
+
+        function resetearContrasena() {
+            const codigo = document.getElementById('codigoRecuperacion').value.trim();
+            const nuevaPass = document.getElementById('nuevaPass').value;
+            const confirmarPass = document.getElementById('confirmarPass').value;
+
+            if (!codigo || !nuevaPass || !confirmarPass) {
+                showError('Completa todos los campos');
+                return;
+            }
+
+            if (nuevaPass !== confirmarPass) {
+                showError('Las contraseñas no coinciden');
+                return;
+            }
+
+            if (!CODIGOS_RECUPERACION[codigo]) {
+                showError('Código de recuperación inválido');
+                return;
+            }
+
+            // En producción, aquí se actualizaría la contraseña en BD
+            showSuccess('Contraseña reseteada exitosamente. Usa tu nueva contraseña para entrar.');
+            volverLogin();
+            document.getElementById('adminPass').value = nuevaPass;
+            document.getElementById('codigoRecuperacion').value = '';
+            document.getElementById('nuevaPass').value = '';
+            document.getElementById('confirmarPass').value = '';
+        }
+
         // ===== MOSTRAR APP =====
         function showApp() {
             document.getElementById('loginSection').classList.remove('active');
+            document.getElementById('recuperacionSection').classList.remove('active');
             document.getElementById('appSection').style.display = 'block';
             document.getElementById('userName').textContent = currentUser.nombre || 'Bienvenido';
             document.getElementById('userRole').textContent = currentRole === 'admin' ? 'Entrenador' : 'Cliente';
@@ -779,6 +942,7 @@
             if (tabName === 'historial') loadHistorial();
             if (tabName === 'mensajes') loadMensajes();
             if (tabName === 'clientes') loadClientes();
+            if (tabName === 'editar') loadEditarView();
         }
 
         // ===== CARGAR ENTRENAMIENTOS =====
@@ -822,7 +986,6 @@
 
         function registrarRPE(entrenoId, value) {
             showSuccess(`RPE registrado: ${value}`);
-            // Aquí iría guardar en BD (siguiente versión)
         }
 
         // ===== CARGAR HISTORIAL =====
@@ -888,17 +1051,22 @@
             showSuccess('Mensaje enviado');
         }
 
-        // ===== ADMIN: CREAR ENTRENAMIENTO =====
+        // ===== ADMIN: DASHBOARD =====
         async function loadAdminDashboard() {
             const clientes = await supabaseRequest('clientes');
             const select = document.getElementById('clienteSelect');
+            const selectFiltro = document.getElementById('clienteFiltroEditar');
+            
             select.innerHTML = '<option value="">Selecciona cliente...</option>' +
                 clientes?.map(c => `<option value="${c.id}">${c.nombre} (${c.codigo})</option>`).join('') || '';
             
-            // Cargar otros datos
+            selectFiltro.innerHTML = '<option value="">Todos los clientes</option>' +
+                clientes?.map(c => `<option value="${c.id}">${c.nombre} (${c.codigo})</option>`).join('') || '';
+            
             loadClientes();
         }
 
+        // ===== CREAR ENTRENAMIENTO =====
         async function crearEntrenamiento() {
             const clienteId = document.getElementById('clienteSelect').value;
             const fecha = document.getElementById('entrenoFecha').value;
@@ -924,7 +1092,6 @@
 
             await supabaseRequest('entrenamientos', 'POST', nuevoEntrenamiento);
             
-            // Limpiar form
             document.getElementById('clienteSelect').value = '';
             document.getElementById('entrenoFecha').value = '';
             document.getElementById('entrenoTitulo').value = '';
@@ -932,6 +1099,131 @@
             document.getElementById('entrenoEjercicios').value = '';
             
             showSuccess('Entrenamiento creado exitosamente');
+        }
+
+        // ===== EDITAR ENTRENAMIENTOS =====
+        async function loadEditarView() {
+            await loadAdminDashboard();
+            await cargarEntrenamientosEditar();
+        }
+
+        async function cargarEntrenamientosEditar() {
+            const clienteId = document.getElementById('clienteFiltroEditar').value;
+            const entrenamientos = await supabaseRequest('entrenamientos');
+            
+            let filtrados = entrenamientos || [];
+            if (clienteId) {
+                filtrados = filtrados.filter(e => e.cliente_id === clienteId);
+            }
+
+            filtrados = filtrados.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+            const container = document.getElementById('entrenamientosEditarContainer');
+            if (filtrados.length === 0) {
+                container.innerHTML = '<p style="color: var(--gray);">No hay entrenamientos disponibles</p>';
+                return;
+            }
+
+            container.innerHTML = filtrados.map(e => `
+                <div class="workout-card">
+                    <h3>${e.datos?.titulo || 'Entrenamiento'}</h3>
+                    <p style="font-size: 12px; color: #999;">Fecha: ${new Date(e.fecha).toLocaleDateString('es-ES')}</p>
+                    <p>${e.datos?.descripcion || ''}</p>
+                    <ul class="workout-exercises">
+                        ${(e.datos?.ejercicios || []).map(ex => `<li>✓ ${ex}</li>`).join('')}
+                    </ul>
+                    <div class="action-buttons">
+                        <button class="btn btn-primary btn-small" onclick="abrirEditarModal(${JSON.stringify(e).replace(/"/g, '&quot;')})">✏️ Editar</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function abrirEditarModal(entrenamiento) {
+            entrenamientoEnEdicion = entrenamiento;
+            document.getElementById('editTitulo').value = entrenamiento.datos?.titulo || '';
+            document.getElementById('editFecha').value = entrenamiento.fecha || '';
+            document.getElementById('editDesc').value = entrenamiento.datos?.descripcion || '';
+            document.getElementById('editEjercicios').value = (entrenamiento.datos?.ejercicios || []).join('\n');
+            document.getElementById('editarModal').classList.add('show');
+        }
+
+        function closeEditarModal() {
+            document.getElementById('editarModal').classList.remove('show');
+            entrenamientoEnEdicion = null;
+        }
+
+        async function guardarEdicionEntrenamiento() {
+            if (!entrenamientoEnEdicion) return;
+
+            const titulo = document.getElementById('editTitulo').value;
+            const fecha = document.getElementById('editFecha').value;
+            const descripcion = document.getElementById('editDesc').value;
+            const ejercicios = document.getElementById('editEjercicios').value.split('\n').filter(e => e.trim());
+
+            const datosActualizados = {
+                fecha,
+                datos: {
+                    titulo,
+                    descripcion,
+                    ejercicios
+                }
+            };
+
+            // En Supabase, hacer PATCH/PUT
+            const url = `${SUPABASE_URL}/rest/v1/entrenamientos?id=eq.${entrenamientoEnEdicion.id}`;
+            const options = {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                },
+                body: JSON.stringify(datosActualizados)
+            };
+
+            try {
+                const res = await fetch(url, options);
+                if (res.ok) {
+                    showSuccess('Entrenamiento actualizado exitosamente');
+                    closeEditarModal();
+                    cargarEntrenamientosEditar();
+                } else {
+                    showError('Error al actualizar entrenamiento');
+                }
+            } catch (err) {
+                showError('Error: ' + err.message);
+            }
+        }
+
+        async function eliminarEntrenamiento() {
+            if (!entrenamientoEnEdicion) return;
+
+            if (!confirm('¿Eliminar este entrenamiento? Esta acción no se puede deshacer.')) {
+                return;
+            }
+
+            const url = `${SUPABASE_URL}/rest/v1/entrenamientos?id=eq.${entrenamientoEnEdicion.id}`;
+            const options = {
+                method: 'DELETE',
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                }
+            };
+
+            try {
+                const res = await fetch(url, options);
+                if (res.ok) {
+                    showSuccess('Entrenamiento eliminado exitosamente');
+                    closeEditarModal();
+                    cargarEntrenamientosEditar();
+                } else {
+                    showError('Error al eliminar entrenamiento');
+                }
+            } catch (err) {
+                showError('Error: ' + err.message);
+            }
         }
 
         // ===== IMPORTAR EXCEL =====
@@ -950,7 +1242,6 @@
                     const worksheet = workbook.Sheets[sheetName];
                     excelData = XLSX.utils.sheet_to_json(worksheet);
 
-                    // Preview
                     const preview = document.getElementById('excelPreview');
                     preview.innerHTML = `
                         <h3 style="color: var(--dark); margin-bottom: 10px;">Previsualización (${excelData.length} registros)</h3>
@@ -1029,7 +1320,7 @@
             const tbody = document.getElementById('clientesTable');
             
             if (!clientes || clientes.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--gray);">Sin clientes</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--gray);">Sin clientes</td></tr>';
                 return;
             }
 
@@ -1038,6 +1329,9 @@
                     <td><strong>${c.nombre}</strong></td>
                     <td><code style="background: #f8f9fa; padding: 5px 10px; border-radius: 3px;">${c.codigo}</code></td>
                     <td style="font-size: 12px; color: var(--gray);">${c.id}</td>
+                    <td>
+                        <button class="btn btn-danger btn-small" onclick="eliminarCliente('${c.id}', '${c.nombre}')">🗑️ Eliminar</button>
+                    </td>
                 </tr>
             `).join('');
         }
@@ -1066,6 +1360,56 @@
             document.getElementById('nuevoClienteForm').style.display = 'none';
             loadClientes();
             showSuccess(`Cliente creado - Código: ${codigo}`);
+        }
+
+        async function eliminarCliente(clienteId, nombreCliente) {
+            if (!confirm(`¿Eliminar cliente "${nombreCliente}"? Esta acción también eliminará todos sus entrenamientos. No se puede deshacer.`)) {
+                return;
+            }
+
+            try {
+                // Eliminar todos los entrenamientos del cliente
+                const urlEntrenamientos = `${SUPABASE_URL}/rest/v1/entrenamientos?cliente_id=eq.${clienteId}`;
+                const optionsEntrenamientos = {
+                    method: 'DELETE',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    }
+                };
+                await fetch(urlEntrenamientos, optionsEntrenamientos);
+
+                // Eliminar todos los mensajes del cliente
+                const urlMensajes = `${SUPABASE_URL}/rest/v1/mensajes?cliente_id=eq.${clienteId}`;
+                const optionsMensajes = {
+                    method: 'DELETE',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    }
+                };
+                await fetch(urlMensajes, optionsMensajes);
+
+                // Eliminar el cliente
+                const urlCliente = `${SUPABASE_URL}/rest/v1/clientes?id=eq.${clienteId}`;
+                const optionsCliente = {
+                    method: 'DELETE',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    }
+                };
+                const resCliente = await fetch(urlCliente, optionsCliente);
+
+                if (resCliente.ok) {
+                    showSuccess(`Cliente "${nombreCliente}" eliminado exitosamente`);
+                    loadClientes();
+                } else {
+                    showError('Error al eliminar cliente');
+                }
+            } catch (err) {
+                showError('Error: ' + err.message);
+            }
         }
 
         // ===== FOTO PERFIL =====
@@ -1100,8 +1444,6 @@
             const reader = new FileReader();
             reader.onload = async (e) => {
                 const fotoBase64 = e.target.result;
-                // Aquí iría guardar en Supabase Storage (siguiente versión)
-                // Por ahora, guardar en foto del cliente
                 currentUser.foto = fotoBase64;
                 document.getElementById('userProfilePhoto').src = fotoBase64;
                 closePhotoModal();
@@ -1116,6 +1458,7 @@
                 currentUser = null;
                 currentRole = null;
                 document.getElementById('loginSection').classList.add('active');
+                document.getElementById('recuperacionSection').classList.remove('active');
                 document.getElementById('appSection').style.display = 'none';
                 document.getElementById('clientCode').value = '';
                 document.getElementById('adminUser').value = '';
@@ -1145,16 +1488,19 @@
             setTimeout(() => alert.classList.remove('show'), 3000);
         }
 
-        // ===== LOAD CLIENTE DASHBOARD =====
         async function loadClienteDashboard() {
             loadEntrenamientos();
         }
 
-        // ===== CERRAR MODAL AL HACER CLIC AFUERA =====
         window.onclick = function(event) {
-            const modal = document.getElementById('photoModal');
-            if (event.target === modal) {
+            const photoModal = document.getElementById('photoModal');
+            const editarModal = document.getElementById('editarModal');
+            
+            if (event.target === photoModal) {
                 closePhotoModal();
+            }
+            if (event.target === editarModal) {
+                closeEditarModal();
             }
         };
     </script>
