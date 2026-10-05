@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Alex Training Lab</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -102,6 +103,15 @@
             font-weight: 600;
         }
 
+        .badge {
+            background: var(--primary);
+            color: var(--dark);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 700;
+        }
+
         .logout-btn {
             background: rgba(212, 175, 55, 0.15);
             border: 1px solid var(--primary);
@@ -120,9 +130,10 @@
 
         /* HERO LOGIN */
         .hero-section {
-            background: linear-gradient(135deg, var(--dark) 0%, var(--dark-alt) 50%, var(--dark) 100%);
+            background: linear-gradient(135deg, rgba(15, 15, 15, 0.85) 0%, rgba(26, 26, 26, 0.85) 50%, rgba(15, 15, 15, 0.85) 100%), 
+                        url('assets/logo.jpeg') center/cover no-repeat;
+            background-attachment: fixed;
             padding: 80px 20px;
-            text-align: center;
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -130,16 +141,13 @@
         }
 
         .hero-content {
-            max-width: 900px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 40px;
-            flex-wrap: wrap;
+            max-width: 500px;
+            width: 100%;
         }
 
         .hero-logo {
-            flex: 0 1 200px;
+            text-align: center;
+            margin-bottom: 30px;
             animation: float 3s ease-in-out infinite;
         }
 
@@ -149,17 +157,16 @@
         }
 
         .hero-logo img {
-            width: 200px;
-            height: 200px;
+            width: 150px;
+            height: 150px;
             object-fit: contain;
             filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
         }
 
         .hero-text {
-            flex: 1;
-            min-width: 280px;
             color: white;
-            text-align: left;
+            text-align: center;
+            margin-bottom: 30px;
         }
 
         .hero-text h1 {
@@ -172,19 +179,10 @@
         }
 
         .hero-text .tagline {
-            font-size: 1.2em;
+            font-size: 1.1em;
             color: var(--light);
-            font-weight: 300;
             letter-spacing: 2px;
-            margin-bottom: 20px;
             text-transform: uppercase;
-        }
-
-        .hero-text p {
-            font-size: 1em;
-            color: #b0b0b0;
-            line-height: 1.8;
-            margin-bottom: 30px;
         }
 
         /* MAIN */
@@ -330,6 +328,35 @@
             box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
         }
 
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            display: block;
+            padding: 12px;
+            background: rgba(212, 175, 55, 0.1);
+            border: 2px dashed var(--primary);
+            border-radius: 6px;
+            text-align: center;
+            cursor: pointer;
+            color: var(--primary);
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .file-input-label:hover {
+            background: rgba(212, 175, 55, 0.2);
+        }
+
         /* BUTTONS */
         .btn {
             padding: 12px 24px;
@@ -364,6 +391,8 @@
         .btn-danger {
             background: var(--danger);
             color: white;
+            padding: 8px 16px;
+            font-size: 0.9em;
         }
 
         /* ALERTS */
@@ -400,15 +429,58 @@
             display: none;
         }
 
+        .workout-item {
+            background: #f5f5f5;
+            padding: 16px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .workout-item h4 {
+            color: var(--dark);
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .workout-item p {
+            color: #666;
+            margin: 4px 0;
+            font-size: 0.95em;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95em;
+        }
+
+        table th {
+            background: var(--dark);
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        table tr:hover {
+            background: #f9f9f9;
+        }
+
         @media (max-width: 768px) {
             .header-container {
                 flex-direction: column;
                 align-items: flex-start;
-            }
-
-            .hero-content {
-                flex-direction: column;
-                gap: 30px;
             }
 
             .hero-text h1 {
@@ -447,6 +519,7 @@
             </div>
             <div class="header-user" id="headerUser">
                 <span id="userName">Usuario</span>
+                <span class="badge" id="userBadge">Cliente</span>
                 <button class="logout-btn" id="logoutBtn">Cerrar Sesión</button>
             </div>
         </div>
@@ -461,35 +534,22 @@
             <div class="hero-text">
                 <h1>Alex Training Lab</h1>
                 <p class="tagline">Tu Entrenador Personal</p>
-                <p>Accede a tu programa personalizado de entrenamiento. Sigue tu progreso y alcanza tus objetivos.</p>
+            </div>
+
+            <div class="card">
+                <div id="alertContainer"></div>
                 
-                <div class="card" style="margin-top: 20px;">
-                    <div id="alertContainer"></div>
-
-                    <h3 style="font-size: 1.1em;">Cliente</h3>
-                    <div class="form-group">
-                        <label>Código de Acceso</label>
-                        <input type="text" id="loginCode" placeholder="Ej: CLI-001">
-                    </div>
-                    <div class="form-group">
-                        <label>Contraseña</label>
-                        <input type="password" id="loginPassword" placeholder="pass123">
-                    </div>
-                    <button class="btn btn-primary" id="btnLoginCliente" style="width: 100%;">Acceder como Cliente</button>
-
-                    <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
-
-                    <h3 style="font-size: 1.1em; color: var(--dark);">Entrenador</h3>
-                    <div class="form-group">
-                        <label>Usuario</label>
-                        <input type="text" id="adminUser" placeholder="admin">
-                    </div>
-                    <div class="form-group">
-                        <label>Contraseña</label>
-                        <input type="password" id="adminPass" placeholder="admin123">
-                    </div>
-                    <button class="btn btn-secondary" id="btnLoginAdmin" style="width: 100%;">Acceder como Entrenador</button>
+                <div class="form-group">
+                    <label>Tu Código o Contraseña</label>
+                    <input type="text" id="loginInput" placeholder="Ingresa tu código de acceso o contraseña de entrenador" autofocus>
                 </div>
+
+                <button class="btn btn-primary" id="btnLogin" style="width: 100%; margin-top: 20px;">Acceder</button>
+
+                <p style="text-align: center; margin-top: 16px; color: #999; font-size: 0.9em;">
+                    💡 Clientes: ingresa tu código de acceso<br>
+                    🏋️ Entrenador: ingresa "Alex app"
+                </p>
             </div>
         </div>
     </div>
@@ -514,20 +574,23 @@
             <!-- Tabs -->
             <div class="tabs-nav" id="tabsNav"></div>
 
-            <!-- Tab: Entrenamientos -->
+            <!-- Tab: Entrenamientos (Cliente) -->
             <div id="tabEntrenamientos" class="tab-content"></div>
 
-            <!-- Tab: Historial -->
+            <!-- Tab: Historial (Cliente) -->
             <div id="tabHistorial" class="tab-content"></div>
 
-            <!-- Tab: Perfil -->
+            <!-- Tab: Perfil (Cliente) -->
             <div id="tabPerfil" class="tab-content"></div>
+
+            <!-- Tab: Subir Excel (Admin) -->
+            <div id="tabExcel" class="tab-content"></div>
+
+            <!-- Tab: Clientes (Admin) -->
+            <div id="tabClientes" class="tab-content"></div>
 
             <!-- Tab: Mensajes -->
             <div id="tabMensajes" class="tab-content"></div>
-
-            <!-- Tab: Admin -->
-            <div id="tabAdmin" class="tab-content"></div>
         </div>
     </div>
 
@@ -535,6 +598,7 @@
         // CONFIG
         const SUPABASE_URL = 'https://zxarhydagapzgozrxaee.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_pcdggueDF2w9LVHDhvRpWg_NhLd1jb9';
+        const TRAINER_PASSWORD = 'Alex app';
         
         let supabaseClient = null;
         let currentUser = null;
@@ -546,21 +610,30 @@
             supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
         }
 
-        // LOGIN CLIENTE
-        async function loginCliente() {
-            const code = document.getElementById('loginCode').value.trim();
-            const password = document.getElementById('loginPassword').value;
+        // LOGIN ÚNICO
+        async function loginUser() {
+            const input = document.getElementById('loginInput').value.trim();
 
-            if (!code || !password) {
-                showAlert('Completa todos los campos', 'info');
+            if (!input) {
+                showAlert('Ingresa tu código o contraseña', 'info');
                 return;
             }
 
+            // VERIFICAR SI ES ENTRENADOR
+            if (input === TRAINER_PASSWORD) {
+                currentUser = { nombre: 'Administrador', id: 'admin', codigo: 'ADMIN' };
+                isTrainer = true;
+                showApp();
+                setupTrainerTabs();
+                return;
+            }
+
+            // VERIFICAR SI ES CLIENTE
             try {
                 const { data, error } = await supabaseClient
                     .from('clientes')
                     .select('*')
-                    .eq('codigo', code)
+                    .eq('codigo', input)
                     .single();
 
                 if (error || !data) {
@@ -568,33 +641,14 @@
                     return;
                 }
 
-                if (password !== 'pass123') {
-                    showAlert('Contraseña incorrecta', 'error');
-                    return;
-                }
-
                 currentUser = data;
                 isTrainer = false;
                 showApp();
                 setupClientTabs();
+                loadClientWorkouts();
             } catch (error) {
                 console.error('Error:', error);
                 showAlert('Error al conectar', 'error');
-            }
-        }
-
-        // LOGIN ADMIN
-        function loginAdmin() {
-            const user = document.getElementById('adminUser').value;
-            const pass = document.getElementById('adminPass').value;
-
-            if (user === 'admin' && pass === 'admin123') {
-                currentUser = { nombre: 'Administrador', id: 'admin' };
-                isTrainer = true;
-                showApp();
-                setupTrainerTabs();
-            } else {
-                showAlert('Credenciales incorrectas', 'error');
             }
         }
 
@@ -603,6 +657,8 @@
             document.getElementById('loginSection').classList.add('hidden');
             document.getElementById('appSection').classList.remove('hidden');
             document.getElementById('userName').textContent = currentUser.nombre || 'Usuario';
+            document.getElementById('userBadge').textContent = isTrainer ? 'Entrenador' : 'Cliente';
+            document.getElementById('userBadge').style.background = isTrainer ? '#2196f3' : '#4caf50';
         }
 
         // SETUP TABS CLIENTE
@@ -612,13 +668,18 @@
                 <button class="tab-btn active" onclick="showTab('Entrenamientos', event)">📅 Entrenamientos</button>
                 <button class="tab-btn" onclick="showTab('Historial', event)">📊 Historial</button>
                 <button class="tab-btn" onclick="showTab('Perfil', event)">👤 Perfil</button>
-                <button class="tab-btn" onclick="showTab('Mensajes', event)">💬 Mensajes</button>
             `;
 
-            document.getElementById('tabEntrenamientos').innerHTML = '<div class="card"><h3>Entrenamientos de Hoy en Adelante</h3><p>Cargando entrenamientos...</p></div>';
-            document.getElementById('tabHistorial').innerHTML = '<div class="card"><h3>Historial de Entrenamientos</h3><p>Historial vacío</p></div>';
-            document.getElementById('tabPerfil').innerHTML = '<div class="card"><h3>Mi Perfil</h3><p>Nombre: ' + (currentUser.nombre || 'N/A') + '</p><p>Código: ' + (currentUser.codigo || 'N/A') + '</p></div>';
-            document.getElementById('tabMensajes').innerHTML = '<div class="card"><h3>Mensajes</h3><p>Sin mensajes</p></div>';
+            document.getElementById('tabEntrenamientos').innerHTML = '<div class="card"><h3>Mis Entrenamientos</h3><div id="workoutsList"></div></div>';
+            document.getElementById('tabHistorial').innerHTML = '<div class="card"><h3>Historial de Entrenamientos</h3><p style="color: #999;">Historial vacío</p></div>';
+            document.getElementById('tabPerfil').innerHTML = `
+                <div class="card">
+                    <h3>Mi Perfil</h3>
+                    <p><strong>Nombre:</strong> ${currentUser.nombre || 'N/A'}</p>
+                    <p><strong>Código de Acceso:</strong> ${currentUser.codigo || 'N/A'}</p>
+                    <p><strong>Email:</strong> ${currentUser.email || 'No registrado'}</p>
+                </div>
+            `;
 
             showTab('Entrenamientos');
         }
@@ -627,53 +688,255 @@
         function setupTrainerTabs() {
             const tabsNav = document.getElementById('tabsNav');
             tabsNav.innerHTML = `
-                <button class="tab-btn active" onclick="showTab('Admin', event)">⚙️ Panel Admin</button>
+                <button class="tab-btn active" onclick="showTab('Excel', event)">📊 Subir Entrenamientos</button>
+                <button class="tab-btn" onclick="showTab('Clientes', event)">👥 Mis Clientes</button>
                 <button class="tab-btn" onclick="showTab('Mensajes', event)">💬 Mensajes</button>
             `;
 
-            document.getElementById('tabAdmin').innerHTML = `
+            // Tab Excel
+            document.getElementById('tabExcel').innerHTML = `
                 <div class="card">
-                    <h3>Crear Entrenamiento</h3>
+                    <h3>Subir Archivo Excel con Entrenamientos</h3>
+                    <p style="color: #666; margin-bottom: 20px;">
+                        Sube un archivo Excel con los entrenamientos. Columnas esperadas: 
+                        <strong>Código Cliente | Fecha | Título | Descripción | Ejercicios</strong>
+                    </p>
+                    
                     <div class="form-group">
-                        <label>Cliente</label>
-                        <select id="selectClient"><option>Selecciona un cliente</option></select>
+                        <label>Selecciona archivo Excel (.xlsx)</label>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="excelFile" accept=".xlsx,.xls" onchange="handleExcelUpload()">
+                            <label for="excelFile" class="file-input-label">📁 Arrastra tu archivo aquí o haz click</label>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Fecha</label>
-                        <input type="date" id="workoutDate">
-                    </div>
-                    <div class="form-group">
-                        <label>Título</label>
-                        <input type="text" id="workoutTitle" placeholder="Ej: Upper Body A">
-                    </div>
-                    <div class="form-group">
-                        <label>Descripción</label>
-                        <textarea id="workoutDesc" placeholder="Detalles del entrenamiento"></textarea>
-                    </div>
-                    <button class="btn btn-primary" onclick="createWorkout()">Crear</button>
+
+                    <div id="excelPreview"></div>
                 </div>
             `;
 
-            document.getElementById('tabMensajes').innerHTML = '<div class="card"><h3>Mensajes</h3><p>Sin mensajes</p></div>';
+            // Tab Clientes
+            document.getElementById('tabClientes').innerHTML = `
+                <div class="card">
+                    <h3>Crear Nuevo Cliente</h3>
+                    <div class="form-group">
+                        <label>Nombre Completo</label>
+                        <input type="text" id="clientName" placeholder="Nombre del cliente">
+                    </div>
+                    <div class="form-group">
+                        <label>Código de Acceso (único)</label>
+                        <input type="text" id="clientCode" placeholder="Ej: CLI-001" maxlength="20">
+                    </div>
+                    <div class="form-group">
+                        <label>Email (opcional)</label>
+                        <input type="email" id="clientEmail" placeholder="email@ejemplo.com">
+                    </div>
+                    <button class="btn btn-primary" onclick="createClient()">Crear Cliente</button>
+                </div>
 
-            showTab('Admin');
+                <div class="card">
+                    <h3>Mis Clientes Registrados</h3>
+                    <div id="clientsList"></div>
+                </div>
+            `;
+
+            document.getElementById('tabMensajes').innerHTML = '<div class="card"><h3>Mensajes</h3><p style="color: #999;">Sin mensajes todavía</p></div>';
+
+            showTab('Excel');
+            loadClients();
+        }
+
+        // LOAD CLIENT WORKOUTS
+        async function loadClientWorkouts() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('entrenamientos')
+                    .select('*')
+                    .eq('cliente_codigo', currentUser.codigo)
+                    .gte('fecha', new Date().toISOString().split('T')[0])
+                    .order('fecha', { ascending: true });
+
+                if (error) throw error;
+
+                const container = document.getElementById('workoutsList');
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<p style="color: #999;">No hay entrenamientos asignados aún</p>';
+                    return;
+                }
+
+                container.innerHTML = data.map(w => `
+                    <div class="workout-item">
+                        <h4>${w.titulo || 'Entrenamiento'}</h4>
+                        <p><strong>Fecha:</strong> ${w.fecha}</p>
+                        <p><strong>Descripción:</strong> ${w.descripcion || 'Sin descripción'}</p>
+                        ${w.ejercicios ? `<p><strong>Ejercicios:</strong> ${w.ejercicios}</p>` : ''}
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // HANDLE EXCEL UPLOAD
+        function handleExcelUpload() {
+            const file = document.getElementById('excelFile').files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(sheet);
+
+                    if (rows.length === 0) {
+                        showAlert('El archivo Excel está vacío', 'error');
+                        return;
+                    }
+
+                    showAlert(`Se cargarán ${rows.length} entrenamientos`, 'info');
+
+                    // Preview
+                    let preview = '<h4 style="margin-top: 20px;">Entrenamientos a cargar:</h4>';
+                    preview += '<div class="table-responsive"><table>';
+                    preview += '<thead><tr><th>Cliente</th><th>Fecha</th><th>Título</th><th>Descripción</th></tr></thead><tbody>';
+                    
+                    rows.slice(0, 5).forEach(row => {
+                        preview += `<tr>
+                            <td>${row['Código Cliente'] || row['codigo_cliente'] || '?'}</td>
+                            <td>${row['Fecha'] || row['fecha'] || '?'}</td>
+                            <td>${row['Título'] || row['titulo'] || '?'}</td>
+                            <td>${(row['Descripción'] || row['descripcion'] || '?').substring(0, 30)}...</td>
+                        </tr>`;
+                    });
+                    if (rows.length > 5) preview += `<tr><td colspan="4" style="text-align: center; color: #999;">... y ${rows.length - 5} más</td></tr>`;
+                    preview += '</tbody></table></div>';
+                    preview += `<button class="btn btn-primary" onclick="uploadToSupabase(event)">Cargar ${rows.length} Entrenamientos</button>`;
+
+                    document.getElementById('excelPreview').innerHTML = preview;
+                    window.excelData = rows;
+
+                } catch (error) {
+                    showAlert('Error al leer el archivo Excel', 'error');
+                    console.error(error);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // UPLOAD TO SUPABASE
+        async function uploadToSupabase(e) {
+            e.target.disabled = true;
+            e.target.textContent = 'Cargando...';
+
+            try {
+                const data = window.excelData.map(row => ({
+                    cliente_codigo: row['Código Cliente'] || row['codigo_cliente'],
+                    fecha: row['Fecha'] || row['fecha'],
+                    titulo: row['Título'] || row['titulo'],
+                    descripcion: row['Descripción'] || row['descripcion'],
+                    ejercicios: row['Ejercicios'] || row['ejercicios'],
+                    estado: 'activo'
+                }));
+
+                const { error } = await supabaseClient
+                    .from('entrenamientos')
+                    .insert(data);
+
+                if (error) throw error;
+                showAlert(`✅ ${data.length} entrenamientos cargados exitosamente`, 'success');
+                document.getElementById('excelFile').value = '';
+                document.getElementById('excelPreview').innerHTML = '';
+            } catch (error) {
+                showAlert('Error al cargar los entrenamientos', 'error');
+                console.error(error);
+            } finally {
+                e.target.disabled = false;
+                e.target.textContent = 'Cargar Entrenamientos';
+            }
+        }
+
+        // CREATE CLIENT
+        async function createClient() {
+            const name = document.getElementById('clientName').value.trim();
+            const code = document.getElementById('clientCode').value.trim();
+            const email = document.getElementById('clientEmail').value.trim();
+
+            if (!name || !code) {
+                showAlert('Completa los campos requeridos', 'info');
+                return;
+            }
+
+            try {
+                const { error } = await supabaseClient
+                    .from('clientes')
+                    .insert([{ nombre: name, codigo: code, email: email }]);
+
+                if (error) throw error;
+                showAlert(`Cliente "${name}" creado exitosamente`, 'success');
+                document.getElementById('clientName').value = '';
+                document.getElementById('clientCode').value = '';
+                document.getElementById('clientEmail').value = '';
+                loadClients();
+            } catch (error) {
+                showAlert('Error al crear el cliente', 'error');
+                console.error(error);
+            }
+        }
+
+        // LOAD CLIENTS
+        async function loadClients() {
+            try {
+                const { data } = await supabaseClient.from('clientes').select('*').order('nombre');
+                const container = document.getElementById('clientsList');
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<p style="color: #999;">Sin clientes registrados aún</p>';
+                    return;
+                }
+
+                container.innerHTML = '<div class="table-responsive"><table>' +
+                    '<thead><tr><th>Nombre</th><th>Código</th><th>Email</th><th>Acción</th></tr></thead><tbody>' +
+                    data.map(c => `<tr>
+                        <td>${c.nombre}</td>
+                        <td><strong>${c.codigo}</strong></td>
+                        <td>${c.email || '—'}</td>
+                        <td><button class="btn btn-danger" onclick="deleteClient('${c.id}')">Eliminar</button></td>
+                    </tr>`).join('') +
+                    '</tbody></table></div>';
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // DELETE CLIENT
+        async function deleteClient(id) {
+            if (!confirm('¿Eliminar este cliente? Se perderán sus entrenamientos.')) return;
+            try {
+                await supabaseClient.from('clientes').delete().eq('id', id);
+                showAlert('Cliente eliminado', 'success');
+                loadClients();
+            } catch (error) {
+                showAlert('Error al eliminar', 'error');
+            }
         }
 
         // SHOW TAB
         function showTab(tabName, event) {
-            if (event) event.target.parentElement.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            if (event) event.target.classList.add('active');
+            if (event) {
+                event.target.parentElement.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                event.target.classList.add('active');
+            }
 
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.getElementById('tab' + tabName).classList.add('active');
+            document.getElementById('tab' + tabName)?.classList.add('active');
 
-            // Actualizar banner
             const banners = {
                 'Entrenamientos': ['Mis Entrenamientos', 'Tu programa personalizado del día en adelante'],
                 'Historial': ['Historial', 'Revisa tu progreso y cargas'],
                 'Perfil': ['Mi Perfil', 'Gestiona tu información personal'],
-                'Mensajes': ['Mensajes', 'Comunícate con tu entrenador'],
-                'Admin': ['Panel Admin', 'Gestiona clientes y entrenamientos']
+                'Excel': ['Subir Entrenamientos', 'Carga entrenamientos masivamente desde Excel'],
+                'Clientes': ['Mis Clientes', 'Crea y gestiona tus clientes'],
+                'Mensajes': ['Mensajes', 'Comunicación con tus clientes']
             };
             if (banners[tabName]) {
                 document.getElementById('bannerTitle').textContent = banners[tabName][0];
@@ -687,32 +950,29 @@
             isTrainer = false;
             document.getElementById('loginSection').classList.remove('hidden');
             document.getElementById('appSection').classList.add('hidden');
-            document.getElementById('loginCode').value = '';
-            document.getElementById('loginPassword').value = '';
-            document.getElementById('adminUser').value = '';
-            document.getElementById('adminPass').value = '';
+            document.getElementById('loginInput').value = '';
+            document.getElementById('loginInput').focus();
         }
 
         // SHOW ALERT
         function showAlert(msg, type) {
-            const container = document.getElementById('alertContainer') || document.getElementById('appAlerts');
-            const div = document.createElement('div');
-            div.className = 'alert show alert-' + type;
-            div.textContent = msg;
-            container.appendChild(div);
-            setTimeout(() => div.remove(), 4000);
-        }
-
-        // CREATE WORKOUT
-        function createWorkout() {
-            alert('Entrenamiento creado (demo)');
+            const containers = document.querySelectorAll('#alertContainer, #appAlerts');
+            containers.forEach(container => {
+                const div = document.createElement('div');
+                div.className = 'alert show alert-' + type;
+                div.textContent = msg;
+                container.appendChild(div);
+                setTimeout(() => div.remove(), 4000);
+            });
         }
 
         // INIT
         document.addEventListener('DOMContentLoaded', () => {
             initSupabase();
-            document.getElementById('btnLoginCliente').addEventListener('click', loginCliente);
-            document.getElementById('btnLoginAdmin').addEventListener('click', loginAdmin);
+            document.getElementById('btnLogin').addEventListener('click', loginUser);
+            document.getElementById('loginInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') loginUser();
+            });
             document.getElementById('logoutBtn').addEventListener('click', logout);
         });
     </script>
