@@ -179,22 +179,37 @@ async function registrarClienteNuevo(){
       return;
     }
     
-    const id='cli_'+Date.now()+'_'+Math.random().toString(36).slice(-4);
-    await supabaseCall('POST','/clientes',{
-      id,
-      nombre:nombre.trim(),
-      codigo:codigo.trim(),
-      email:email.trim(),
-      anamnesis_completada:false,
-      creado:new Date().toISOString()
-    });
-    
-    U.miId=id;
-    U.rol='cliente';
-    U.tab='anamnesis';
-    U.loginTab='inicio';
-    localStorage.setItem(LS+'codigo',codigo);
-    toast('¡Cuenta creada! Completa tu anamnesis');
+    const codigoAleatorio = 'K' + Math.random().toString(36).substring(2, 7).toUpperCase();
+const id = 'cli_' + Date.now() + '_' + Math.random().toString(36).slice(-4);
+
+await supabaseCall('POST', '/clientes', {
+  id,
+  nombre: nombre.trim(),
+  codigo: codigoAleatorio,
+  email: email.trim(),
+  anamnesis_completada: false,
+  creado: new Date().toISOString()
+});
+
+// Mostrar el código al usuario
+const panel = document.getElementById('panel');
+panel.innerHTML = `
+  <div style="text-align:center; padding:40px; background:#f8f9fa; border-radius:8px;">
+    <h2>¡Cuenta creada exitosamente!</h2>
+    <p style="font-size:16px; color:#666; margin:20px 0;">Tu código de acceso:</p>
+    <div style="background:white; border:2px solid #333; padding:20px; border-radius:6px; margin:20px 0;">
+      <span id="codigo-texto" style="font-size:32px; font-weight:bold; letter-spacing:3px; font-family:monospace;">${codigoAleatorio}</span>
+    </div>
+    <button onclick="copiarCodigo('${codigoAleatorio}')" style="padding:10px 20px; background:#007bff; color:white; border:none; border-radius:4px; cursor:pointer; margin:10px 0; font-weight:bold;">📋 Copiar código</button>
+    <p style="font-size:14px; color:#666; margin:20px 0;">Guarda este código para acceder a tu cuenta</p>
+    <button onclick="render()" style="padding:12px 30px; background:#333; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; width:100%;">Continuar a mi perfil →</button>
+  </div>
+`;
+
+function copiarCodigo(codigo) {
+  navigator.clipboard.writeText(codigo);
+  toast('¡Código copiado al portapapeles!');
+}
     render();
   }catch(e){
     toast('Error: '+e.message);
