@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alex Training Lab - Entrenamiento Personal</title>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <title>Alex Training Lab - App Entrenamiento Personal</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+        /* ===== RESET Y BASE ===== */
         * {
             margin: 0;
             padding: 0;
@@ -13,259 +14,383 @@
         }
 
         :root {
-            --primary: #ff6b35;
-            --primary-dark: #e55a28;
-            --secondary: #004e89;
-            --success: #2ecc71;
-            --danger: #e74c3c;
-            --warning: #f39c12;
-            --light: #ecf0f1;
-            --dark: #2c3e50;
-            --gray: #95a5a6;
-            --white: #ffffff;
+            --primary: #d4af37;
+            --dark: #0f0f0f;
+            --dark-alt: #1a1a1a;
+            --light: #e0e0e0;
+            --gray: #a0a0a0;
+            --success: #4caf50;
+            --danger: #f44336;
+            --warning: #ff9800;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f8f9fa;
+            color: #333;
+        }
+
+        /* ===== APP HEADER STICKY ===== */
+        .app-header {
+            background: linear-gradient(135deg, var(--dark) 0%, var(--dark-alt) 100%);
+            border-bottom: 3px solid var(--primary);
+            padding: 14px 20px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .header-logo {
+            width: 48px;
+            height: 48px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: rgba(212, 175, 55, 0.1);
+            border: 2px solid var(--primary);
+            overflow: hidden;
+        }
+
+        .header-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .header-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-title {
+            font-size: 1.1em;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: var(--primary);
+            line-height: 1.2;
+        }
+
+        .header-subtitle {
+            font-size: 0.7em;
+            color: #999;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+
+        .header-user {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--light);
+            font-size: 0.95em;
+            font-weight: 600;
+        }
+
+        .logout-btn {
+            background: rgba(212, 175, 55, 0.15);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: var(--primary);
+            color: var(--dark);
+        }
+
+        /* ===== HERO SECTION (LOGIN) ===== */
+        .hero-section {
+            background: linear-gradient(135deg, var(--dark) 0%, var(--dark-alt) 50%, var(--dark) 100%);
+            padding: 80px 20px;
+            text-align: center;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+        }
+
+        .hero-content {
+            max-width: 900px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+        }
+
+        .hero-logo {
+            flex: 0 1 200px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .hero-logo img {
+            width: 200px;
+            height: 200px;
+            object-fit: contain;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+        }
+
+        .hero-text {
+            flex: 1;
+            min-width: 280px;
+            color: white;
+            text-align: left;
+        }
+
+        .hero-text h1 {
+            font-size: 2.5em;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            color: var(--primary);
+            line-height: 1.1;
+        }
+
+        .hero-text .tagline {
+            font-size: 1.2em;
+            color: var(--light);
+            font-weight: 300;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .hero-text p {
+            font-size: 1em;
+            color: #b0b0b0;
+            line-height: 1.8;
+            margin-bottom: 30px;
+        }
+
+        /* ===== MAIN CONTAINER ===== */
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
             padding: 20px;
         }
 
-        .container {
-            background: var(--white);
-            border-radius: 10px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-            max-width: 1200px;
-            width: 100%;
-            overflow: hidden;
-        }
-
-        /* HEADER CON LOGO Y USUARIO */
-        .header {
-            background: linear-gradient(135deg, var(--secondary) 0%, #003d6b 100%);
-            color: var(--white);
-            padding: 20px 30px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .header-logo-user {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .logo-icon {
-            width: 60px;
-            height: 60px;
+        /* ===== SECTION BANNER ===== */
+        .section-banner {
+            background: linear-gradient(to right, rgba(15, 15, 15, 0.95) 0%, rgba(26, 26, 26, 0.95) 50%, rgba(15, 15, 15, 0.95) 100%);
+            border-left: 4px solid var(--primary);
+            padding: 24px 20px;
+            margin-bottom: 30px;
             border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .section-logo {
+            flex: 0 0 80px;
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            background: rgba(212, 175, 55, 0.1);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            padding: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
-            background: var(--white);
-            padding: 3px;
         }
 
-        .logo-icon img {
+        .section-logo img {
             width: 100%;
             height: 100%;
             object-fit: contain;
         }
 
-        .user-info {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
+        .section-text {
+            flex: 1;
+            color: white;
         }
 
-        .user-name {
-            font-size: 18px;
-            font-weight: bold;
-        }
-
-        .user-role {
-            font-size: 12px;
-            opacity: 0.9;
-        }
-
-        .user-profile-photo {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            border: 3px solid var(--primary);
-            object-fit: cover;
-            transition: transform 0.3s;
-        }
-
-        /* AREA DE LOGIN */
-        .login-section {
-            display: none;
-            padding: 40px;
-            max-width: 400px;
-            margin: 0 auto;
-        }
-
-        .login-section.active {
-            display: block;
-        }
-
-        .login-form {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .form-group label {
-            font-weight: 600;
-            color: var(--dark);
-            font-size: 14px;
-        }
-
-        .form-group input, .form-group select {
-            padding: 10px 15px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
-            transition: border-color 0.3s;
-        }
-
-        .form-group input:focus, .form-group select:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-
-        .btn {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 5px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            color: var(--white);
-        }
-
-        .btn-primary:hover {
-            background: var(--primary-dark);
-            transform: translateY(-2px);
-        }
-
-        .btn-secondary {
-            background: var(--secondary);
-            color: var(--white);
-        }
-
-        .btn-secondary:hover {
-            background: #003d6b;
-        }
-
-        .btn-danger {
-            background: var(--danger);
-            color: var(--white);
-        }
-
-        .btn-danger:hover {
-            background: #c0392b;
-        }
-
-        .btn-success {
-            background: var(--success);
-            color: var(--white);
-        }
-
-        .btn-success:hover {
-            background: #27ae60;
-        }
-
-        .btn-small {
-            padding: 8px 12px;
-            font-size: 12px;
-        }
-
-        .btn-link {
-            background: none;
+        .section-text h2 {
+            font-size: 1.4em;
+            font-weight: 800;
+            letter-spacing: 1px;
             color: var(--primary);
-            text-decoration: underline;
-            padding: 0;
-            font-size: 14px;
+            margin-bottom: 6px;
         }
 
-        .btn-link:hover {
-            color: var(--primary-dark);
+        .section-text p {
+            font-size: 0.95em;
+            color: #a0a0a0;
+            line-height: 1.5;
         }
 
-        /* NAVIGATION */
-        .nav-tabs {
+        /* ===== NAVIGATION TABS ===== */
+        .tabs-nav {
             display: flex;
-            background: #f8f9fa;
-            border-bottom: 2px solid #e9ecef;
-            overflow-x: auto;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 0;
         }
 
-        .nav-tab {
-            padding: 15px 25px;
+        .tab-btn {
+            background: transparent;
             border: none;
-            background: none;
-            cursor: pointer;
+            padding: 16px 24px;
+            font-size: 1em;
             font-weight: 600;
-            font-size: 14px;
-            color: var(--gray);
-            transition: all 0.3s;
-            white-space: nowrap;
+            color: #999;
+            cursor: pointer;
             position: relative;
+            transition: color 0.3s ease;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
         }
 
-        .nav-tab.active {
+        .tab-btn:hover {
             color: var(--primary);
         }
 
-        .nav-tab.active::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: var(--primary);
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
         }
 
-        /* CONTENIDO */
-        .content {
-            padding: 30px;
-            min-height: 400px;
-        }
-
+        /* ===== TAB CONTENT ===== */
         .tab-content {
             display: none;
+            animation: fadeIn 0.3s ease;
         }
 
         .tab-content.active {
             display: block;
         }
 
-        /* ALERTAS */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* ===== CARDS ===== */
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            margin-bottom: 20px;
+        }
+
+        .card h3 {
+            color: var(--dark);
+            margin-bottom: 16px;
+            font-size: 1.2em;
+        }
+
+        /* ===== FORMULARIOS ===== */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1em;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+        }
+
+        /* ===== BOTONES ===== */
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, #e0c57d 100%);
+            color: var(--dark);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(212, 175, 55, 0.1);
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(212, 175, 55, 0.2);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #d32f2f;
+        }
+
+        /* ===== ALERTAS ===== */
         .alert {
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 15px;
+            padding: 16px;
+            border-radius: 6px;
+            margin-bottom: 20px;
             display: none;
-            animation: slideIn 0.3s ease;
         }
 
         .alert.show {
@@ -273,1247 +398,540 @@
         }
 
         .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-left: 4px solid var(--success);
         }
 
         .alert-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background: #ffebee;
+            color: #c62828;
+            border-left: 4px solid var(--danger);
         }
 
         .alert-info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
+            background: #e3f2fd;
+            color: #1565c0;
+            border-left: 4px solid #2196f3;
         }
 
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .header-container {
+                flex-direction: column;
+                align-items: flex-start;
             }
-            to {
-                opacity: 1;
-                transform: translateY(0);
+
+            .header-brand {
+                width: 100%;
+            }
+
+            .header-user {
+                width: 100%;
+            }
+
+            .hero-content {
+                flex-direction: column;
+                gap: 30px;
+            }
+
+            .hero-text h1 {
+                font-size: 1.8em;
+            }
+
+            .section-banner {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .section-logo {
+                flex: 0 0 70px;
+                width: 70px;
+                height: 70px;
+            }
+
+            .tabs-nav {
+                gap: 0;
+            }
+
+            .tab-btn {
+                padding: 12px 16px;
+                font-size: 0.9em;
+                flex: 1;
             }
         }
 
-        /* LISTA DE ENTRENAMIENTOS */
-        .workout-card {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            border-left: 4px solid var(--primary);
+        @media (max-width: 480px) {
+            .app-header {
+                padding: 10px 12px;
+            }
+
+            .header-logo {
+                width: 40px;
+                height: 40px;
+            }
+
+            .header-title {
+                font-size: 0.95em;
+            }
+
+            .hero-logo img {
+                width: 140px;
+                height: 140px;
+            }
+
+            .hero-text h1 {
+                font-size: 1.4em;
+            }
+
+            .main-container {
+                padding: 12px;
+            }
+
+            .card {
+                padding: 16px;
+            }
+
+            .section-banner {
+                padding: 16px 12px;
+            }
         }
 
-        .workout-card h3 {
-            color: var(--dark);
-            margin-bottom: 10px;
+        .hidden {
+            display: none;
         }
 
-        .workout-card p {
-            color: var(--gray);
-            font-size: 14px;
-            margin-bottom: 10px;
-        }
-
-        .workout-exercises {
-            list-style: none;
-            background: var(--white);
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-
-        .workout-exercises li {
-            padding: 8px 0;
-            border-bottom: 1px solid #eee;
-        }
-
-        .workout-exercises li:last-child {
-            border-bottom: none;
-        }
-
-        /* SPINNER */
         .spinner {
             display: inline-block;
             width: 20px;
             height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid var(--primary);
+            border: 3px solid rgba(212, 175, 55, 0.3);
             border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 10px;
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            to { transform: rotate(360deg); }
         }
 
-        /* MODAL */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            overflow-y: auto;
-        }
-
-        .modal.show {
+        .loading-text {
             display: flex;
             align-items: center;
-            justify-content: center;
-        }
-
-        .modal-content {
-            background-color: var(--white);
-            padding: 30px;
-            border-radius: 10px;
-            max-width: 500px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        .modal-header {
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            color: var(--dark);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .close-modal {
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-            color: #aaa;
-        }
-
-        .close-modal:hover {
-            color: var(--dark);
-        }
-
-        /* TABLA */
-        .table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            background: var(--white);
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .table th {
-            background: var(--secondary);
-            color: var(--white);
-            padding: 12px;
-            text-align: left;
-            font-weight: 600;
-        }
-
-        .table td {
-            padding: 12px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .table tr:hover {
-            background: #f8f9fa;
-        }
-
-        /* FORM EXCEL */
-        .file-input-wrapper {
-            position: relative;
-            overflow: hidden;
-            display: inline-block;
-        }
-
-        .file-input-wrapper input[type=file] {
-            position: absolute;
-            left: -9999px;
-        }
-
-        .file-label {
-            padding: 10px 20px;
-            background: var(--primary);
-            color: var(--white);
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: background 0.3s;
-        }
-
-        .file-label:hover {
-            background: var(--primary-dark);
-        }
-
-        .file-name {
-            margin-left: 10px;
-            color: var(--dark);
-            font-weight: 600;
-        }
-
-        /* RESPONSIVE */
-        @media (max-width: 768px) {
-            .header {
-                flex-direction: column;
-                gap: 15px;
-            }
-
-            .content {
-                padding: 15px;
-            }
-
-            .nav-tabs {
-                overflow-x: auto;
-            }
-
-            .nav-tab {
-                padding: 10px 15px;
-                font-size: 12px;
-            }
-        }
-
-        /* SCALE RPE */
-        .rpe-scale {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
-            gap: 5px;
-            margin: 15px 0;
-        }
-
-        .rpe-btn {
-            padding: 10px;
-            border: 2px solid #ddd;
-            background: var(--white);
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-
-        .rpe-btn:hover {
-            border-color: var(--primary);
-        }
-
-        .rpe-btn.selected {
-            background: var(--primary);
-            color: var(--white);
-            border-color: var(--primary);
-        }
-
-        .rpe-btn.high {
-            color: #f39c12;
-        }
-
-        .rpe-btn.very-high {
-            color: var(--danger);
-        }
-
-        .action-buttons {
-            display: flex;
             gap: 10px;
-            margin-top: 15px;
-        }
-
-        .action-buttons button {
-            flex: 1;
+            color: var(--gray);
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- HEADER -->
-        <div class="header">
-            <div class="header-logo-user">
-                <div class="logo-icon">
-                    <img src="logo_alex_training_lab.jpeg" alt="Alex Training Lab Logo" title="Alex Training Lab">
+    <!-- ===== HEADER ===== -->
+    <div class="app-header" id="appHeader">
+        <div class="header-container">
+            <div class="header-brand" onclick="location.href='#'">
+                <div class="header-logo">
+                    <img src="assets/logo.jpeg" alt="Alex Training Lab" onerror="this.style.display='none'">
                 </div>
-                <div class="user-info">
-                    <div class="user-name" id="userName">Bienvenido</div>
-                    <div class="user-role" id="userRole">Cargando...</div>
+                <div class="header-text">
+                    <div class="header-title">ALEX TRAINING LAB</div>
+                    <div class="header-subtitle">Tu Entrenador Personal</div>
                 </div>
             </div>
-            <img id="userProfilePhoto" class="user-profile-photo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23ddd'/%3E%3Ctext x='50' y='60' font-size='40' text-anchor='middle' fill='%23999'%3E👤%3C/text%3E%3C/svg%3E" alt="Foto perfil">
+            <div class="header-user" id="headerUser">
+                <span id="userName">Usuario</span>
+                <button class="logout-btn" onclick="cerrarSesion()">Cerrar Sesión</button>
+            </div>
         </div>
+    </div>
 
-        <!-- LOGIN SECTION -->
-        <div class="login-section active" id="loginSection">
-            <h2 style="margin-bottom: 20px; color: var(--dark);">Acceder</h2>
-            
-            <div class="alert alert-info" id="loginAlert"></div>
+    <!-- ===== LOGIN SECTION ===== -->
+    <div id="loginSection" class="hero-section">
+        <div class="hero-content">
+            <div class="hero-logo">
+                <img src="assets/logo.jpeg" alt="Alex Training Lab" onerror="this.style.display='none'">
+            </div>
+            <div class="hero-text">
+                <h1>Alex Training Lab</h1>
+                <p class="tagline">Tu Entrenador Personal</p>
+                <p>Accede a tu programa personalizado de entrenamiento. Sigue tu progreso, mejora tu rendimiento y alcanza tus objetivos.</p>
+                
+                <div class="alert alert-info" id="loginAlert"></div>
 
-            <div class="login-form">
-                <div style="margin-bottom: 20px;">
-                    <h3 style="color: var(--dark); margin-bottom: 15px;">Soy Cliente</h3>
+                <div class="card" style="box-shadow: 0 4px 16px rgba(0,0,0,0.2);">
                     <div class="form-group">
                         <label>Código de Acceso</label>
-                        <input type="text" id="clientCode" placeholder="Ej: K7M9P">
-                    </div>
-                    <button class="btn btn-primary" onclick="loginCliente()" style="width: 100%; margin-top: 10px;">Entrar como Cliente</button>
-                </div>
-
-                <div style="border-top: 2px solid #eee; padding-top: 20px;">
-                    <h3 style="color: var(--dark); margin-bottom: 15px;">Soy Entrenador</h3>
-                    <div class="form-group">
-                        <label>Usuario</label>
-                        <input type="text" id="adminUser" placeholder="admin">
+                        <input type="text" id="loginCode" placeholder="Ej: CLI-001 o K7M9P" maxlength="20">
                     </div>
                     <div class="form-group">
-                        <label>Contraseña</label>
-                        <input type="password" id="adminPass" placeholder="••••••">
+                        <label>Contraseña / PIN</label>
+                        <input type="password" id="loginPassword" placeholder="Tu PIN o contraseña">
                     </div>
-                    <button class="btn btn-secondary" onclick="loginAdmin()" style="width: 100%; margin-top: 10px;">Entrar como Entrenador</button>
-                    <button class="btn btn-link" onclick="mostrarRecuperacion()" style="width: 100%; margin-top: 10px; text-align: center;">¿Olvidaste tu contraseña?</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- RECUPERACIÓN DE CONTRASEÑA -->
-        <div class="login-section" id="recuperacionSection">
-            <h2 style="margin-bottom: 20px; color: var(--dark);">Recuperar Contraseña</h2>
-            
-            <div class="alert alert-info" id="recuperacionAlert"></div>
-
-            <div class="login-form">
-                <p style="color: var(--dark); margin-bottom: 15px;">Ingresa tu código de recuperación para resetear tu contraseña</p>
-                
-                <div class="form-group">
-                    <label>Código de Recuperación</label>
-                    <input type="text" id="codigoRecuperacion" placeholder="Código enviado a tu email">
-                </div>
-
-                <div class="form-group">
-                    <label>Nueva Contraseña</label>
-                    <input type="password" id="nuevaPass" placeholder="••••••">
-                </div>
-
-                <div class="form-group">
-                    <label>Confirmar Contraseña</label>
-                    <input type="password" id="confirmarPass" placeholder="••••••">
-                </div>
-
-                <button class="btn btn-success" onclick="resetearContrasena()" style="width: 100%; margin-top: 15px;">Resetear Contraseña</button>
-                <button class="btn btn-link" onclick="volverLogin()" style="width: 100%; margin-top: 10px; text-align: center;">Volver a Login</button>
-            </div>
-        </div>
-
-        <!-- APP SECTION -->
-        <div id="appSection" style="display: none;">
-            <div class="nav-tabs">
-                <button class="nav-tab active" onclick="switchTab('entrenamientos')">📅 Entrenamientos</button>
-                <button class="nav-tab" onclick="switchTab('historial')">📊 Historial</button>
-                <button class="nav-tab" onclick="switchTab('mensajes')">💬 Mensajes</button>
-                <button class="nav-tab cliente-only" style="display:none;" onclick="switchTab('perfil')">👤 Perfil</button>
-                <button class="nav-tab admin-only" style="display:none;" onclick="switchTab('crear')">➕ Crear Entreno</button>
-                <button class="nav-tab admin-only" style="display:none;" onclick="switchTab('editar')">✏️ Editar Entrenos</button>
-                <button class="nav-tab admin-only" style="display:none;" onclick="switchTab('excel')">📁 Importar Excel</button>
-                <button class="nav-tab admin-only" style="display:none;" onclick="switchTab('clientes')">👥 Mis Clientes</button>
-                <button class="nav-tab" onclick="logout()" style="margin-left: auto;">🚪 Salir</button>
-            </div>
-
-            <div class="content">
-                <div class="alert alert-success" id="successAlert"></div>
-                <div class="alert alert-error" id="errorAlert"></div>
-                <div class="alert alert-info" id="infoAlert"></div>
-
-                <!-- TAB: ENTRENAMIENTOS -->
-                <div id="entrenamientos-tab" class="tab-content active">
-                    <h2>Entrenamientos Hoy</h2>
-                    <div id="entrenamientosHoy" style="margin-top: 20px;"></div>
-                </div>
-
-                <!-- TAB: HISTORIAL -->
-                <div id="historial-tab" class="tab-content">
-                    <h2>Historial de Entrenamientos</h2>
-                    <div id="historialContent" style="margin-top: 20px;"></div>
-                </div>
-
-                <!-- TAB: MENSAJES -->
-                <div id="mensajes-tab" class="tab-content">
-                    <h2>Mensajes</h2>
-                    <div id="mensajesContainer" style="background: #f8f9fa; border-radius: 8px; padding: 15px; height: 400px; overflow-y: auto; margin-bottom: 15px;" ></div>
-                    <div style="display: flex; gap: 10px;">
-                        <input type="text" id="mensajeInput" placeholder="Escribe tu mensaje..." style="flex: 1; padding: 10px; border: 2px solid #ddd; border-radius: 5px;">
-                        <button class="btn btn-primary" onclick="enviarMensaje()">Enviar</button>
+                    <button class="btn btn-primary" onclick="loginCliente()" style="width: 100%;">Acceder</button>
+                    <br><br>
+                    <div style="text-align: center; color: #999; font-size: 0.9em;">
+                        <p>¿Eres entrenador?</p>
+                        <input type="text" id="adminUser" placeholder="Usuario" style="margin-top: 8px;">
+                        <input type="password" id="adminPass" placeholder="Contraseña" style="margin-top: 8px;">
+                        <button class="btn btn-secondary" onclick="loginAdmin()" style="width: 100%; margin-top: 8px;">Panel Entrenador</button>
                     </div>
-                </div>
-
-                <!-- TAB: PERFIL (CLIENTE) -->
-                <div id="perfil-tab" class="tab-content">
-                    <h2>Mi Perfil</h2>
-                    <div style="background: #f8f9fa; padding: 30px; border-radius: 8px; margin-top: 20px; text-align: center;">
-                        <img id="perfilFoto" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23ddd'/%3E%3Ctext x='50' y='60' font-size='40' text-anchor='middle' fill='%23999'%3E👤%3C/text%3E%3C/svg%3E" style="width: 120px; height: 120px; border-radius: 50%; margin-bottom: 20px; border: 4px solid var(--primary);">
-                        
-                        <h3 id="perfilNombre" style="color: var(--dark); margin-bottom: 10px;">Nombre Cliente</h3>
-                        <p id="perfilCodigo" style="color: var(--gray); margin-bottom: 20px;">Código: CLI-001</p>
-                        
-                        <div style="margin-top: 30px; max-width: 400px; margin-left: auto; margin-right: auto;">
-                            <h4 style="color: var(--dark); margin-bottom: 15px; text-align: left;">Cambiar Foto de Perfil</h4>
-                            <div class="form-group">
-                                <input type="file" id="fotoPerfil" accept="image/*" onchange="previsualizarFoto(event)" style="padding: 10px; border: 2px solid #ddd; border-radius: 5px; width: 100%;">
-                            </div>
-                            <div id="previewFoto" style="margin: 15px 0; text-align: center;"></div>
-                            <button class="btn btn-primary" onclick="guardarFotoPerfil()" style="width: 100%;">Guardar Foto</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- TAB: CREAR ENTRENAMIENTO (ADMIN) -->
-                <div id="crear-tab" class="tab-content">
-                    <h2>Crear Nuevo Entrenamiento</h2>
-                    <form style="margin-top: 20px; background: #f8f9fa; padding: 20px; border-radius: 8px;">
-                        <div class="form-group">
-                            <label>Cliente</label>
-                            <select id="clienteSelect" style="padding: 10px; border: 2px solid #ddd; border-radius: 5px; width: 100%;">
-                                <option value="">Selecciona cliente...</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Fecha</label>
-                            <input type="date" id="entrenoFecha" style="padding: 10px; border: 2px solid #ddd; border-radius: 5px; width: 100%;">
-                        </div>
-                        <div class="form-group">
-                            <label>Título</label>
-                            <input type="text" id="entrenoTitulo" placeholder="Ej: Entreno de Fuerza" style="padding: 10px; border: 2px solid #ddd; border-radius: 5px; width: 100%;">
-                        </div>
-                        <div class="form-group">
-                            <label>Descripción</label>
-                            <textarea id="entrenoDesc" placeholder="Descripción..." style="padding: 10px; border: 2px solid #ddd; border-radius: 5px; width: 100%; height: 100px;"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label>Ejercicios (uno por línea)</label>
-                            <textarea id="entrenoEjercicios" placeholder="Ejercicio 1&#10;Ejercicio 2&#10;Ejercicio 3" style="padding: 10px; border: 2px solid #ddd; border-radius: 5px; width: 100%; height: 100px;"></textarea>
-                        </div>
-                        <button type="button" class="btn btn-success" onclick="crearEntrenamiento()" style="width: 100%; margin-top: 15px;">Crear Entrenamiento</button>
-                    </form>
-                </div>
-
-                <!-- TAB: EDITAR ENTRENAMIENTOS (ADMIN) -->
-                <div id="editar-tab" class="tab-content">
-                    <h2>Editar Entrenamientos</h2>
-                    <div style="margin-top: 20px;">
-                        <div class="form-group">
-                            <label>Filtrar por Cliente</label>
-                            <select id="clienteFiltroEditar" onchange="cargarEntrenamientosEditar()" style="padding: 10px; border: 2px solid #ddd; border-radius: 5px; width: 100%;">
-                                <option value="">Todos los clientes</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div id="entrenamientosEditarContainer" style="margin-top: 20px;"></div>
-                </div>
-
-                <!-- TAB: IMPORTAR EXCEL (ADMIN) -->
-                <div id="excel-tab" class="tab-content">
-                    <h2>Importar Entrenamientos desde Excel</h2>
-                    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 20px;">
-                        <p style="margin-bottom: 15px; color: var(--dark);">Sube un archivo Excel con los entrenamientos. El formato debe tener columnas: Cliente, Fecha, Título, Descripción, Ejercicios</p>
-                        <div class="file-input-wrapper">
-                            <label class="file-label" for="excelFile">📁 Seleccionar Excel</label>
-                            <input type="file" id="excelFile" accept=".xlsx,.xls" onchange="handleExcelUpload(event)">
-                            <span class="file-name" id="fileName"></span>
-                        </div>
-                        <button class="btn btn-success" onclick="importarExcel()" style="margin-top: 15px;">Importar</button>
-                    </div>
-                    <div id="excelPreview" style="margin-top: 20px;"></div>
-                </div>
-
-                <!-- TAB: MIS CLIENTES (ADMIN) -->
-                <div id="clientes-tab" class="tab-content">
-                    <h2>Mis Clientes</h2>
-                    <button class="btn btn-primary" onclick="mostrarNuevoCliente()" style="margin-top: 15px; margin-bottom: 15px;">➕ Nuevo Cliente</button>
-                    
-                    <div id="nuevoClienteForm" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: none;">
-                        <h3 style="margin-bottom: 15px; color: var(--dark);">Crear Nuevo Cliente</h3>
-                        <div class="form-group">
-                            <label>Nombre</label>
-                            <input type="text" id="nuevoNombre" placeholder="Nombre del cliente" style="padding: 10px; border: 2px solid #ddd; border-radius: 5px; width: 100%;">
-                        </div>
-                        <button class="btn btn-success" onclick="crearNuevoCliente()" style="width: 100%; margin-top: 10px;">Crear Cliente</button>
-                    </div>
-
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Nombre</th>
-                                <th>Código</th>
-                                <th>ID</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="clientesTable">
-                        </tbody>
-                    </table>
                 </div>
             </div>
         </div>
     </div>
 
-
-
-    <!-- MODAL EDITAR ENTRENAMIENTO -->
-    <div id="editarModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <span>Editar Entrenamiento</span>
-                <span class="close-modal" onclick="closeEditarModal()">&times;</span>
+    <!-- ===== APP SECTION ===== -->
+    <div id="appSection" class="hidden">
+        <div class="main-container">
+            <!-- Banner según sección -->
+            <div class="section-banner" id="sectionBanner">
+                <div class="section-logo">
+                    <img src="assets/logo.jpeg" alt="Alex Training Lab" onerror="this.style.display='none'">
+                </div>
+                <div class="section-text">
+                    <h2 id="bannerTitle">Mis Entrenamientos</h2>
+                    <p id="bannerDescription">Aquí encontrarás tu programa personalizado</p>
+                </div>
             </div>
-            <form>
-                <div class="form-group">
-                    <label>Título</label>
-                    <input type="text" id="editTitulo" style="padding: 10px; border: 2px solid #ddd; border-radius: 5px; width: 100%;">
+
+            <!-- Alertas -->
+            <div class="alert alert-success" id="successAlert"></div>
+            <div class="alert alert-error" id="errorAlert"></div>
+
+            <!-- Tabs -->
+            <div class="tabs-nav" id="tabsNav"></div>
+
+            <!-- Tab: Entrenamientos Cliente -->
+            <div id="tabEntrenamientos" class="tab-content">
+                <div class="card">
+                    <h3>Entrenamientos de Hoy en Adelante</h3>
+                    <div id="entrenamientosHoy"></div>
                 </div>
-                <div class="form-group">
-                    <label>Fecha</label>
-                    <input type="date" id="editFecha" style="padding: 10px; border: 2px solid #ddd; border-radius: 5px; width: 100%;">
+            </div>
+
+            <!-- Tab: Historial -->
+            <div id="tabHistorial" class="tab-content">
+                <div class="card">
+                    <h3>Historial de Entrenamientos</h3>
+                    <div id="historialEntrenamientos"></div>
                 </div>
-                <div class="form-group">
-                    <label>Descripción</label>
-                    <textarea id="editDesc" style="padding: 10px; border: 2px solid #ddd; border-radius: 5px; width: 100%; height: 100px;"></textarea>
+            </div>
+
+            <!-- Tab: Perfil -->
+            <div id="tabPerfil" class="tab-content">
+                <div class="card">
+                    <h3>Mi Perfil</h3>
+                    <div id="perfilContent"></div>
                 </div>
-                <div class="form-group">
-                    <label>Ejercicios (uno por línea)</label>
-                    <textarea id="editEjercicios" style="padding: 10px; border: 2px solid #ddd; border-radius: 5px; width: 100%; height: 100px;"></textarea>
+            </div>
+
+            <!-- Tab: Mensajes Cliente -->
+            <div id="tabMensajes" class="tab-content">
+                <div class="card">
+                    <h3>Mensajes con tu Entrenador</h3>
+                    <div id="mensajesCliente"></div>
                 </div>
-                <div class="action-buttons">
-                    <button type="button" class="btn btn-success" onclick="guardarEdicionEntrenamiento()">Guardar Cambios</button>
-                    <button type="button" class="btn btn-danger" onclick="eliminarEntrenamiento()">Eliminar</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeEditarModal()">Cancelar</button>
+            </div>
+
+            <!-- Tab: Panel Admin -->
+            <div id="tabAdmin" class="tab-content hidden">
+                <div class="card">
+                    <h3>Panel de Administración</h3>
+                    <div id="adminPanel"></div>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 
     <script>
-        // SUPABASE CONFIG
+        // ===== CONFIGURACIÓN SUPABASE =====
         const SUPABASE_URL = 'https://zxarhydagapzgozrxaee.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_pcdggueDF2w9LVHDhvRpWg_NhLd1jb9';
+        
+        let supabase;
+        let usuarioActual = null;
+        let esEntrenador = false;
 
-        let currentUser = null;
-        let currentRole = null;
-        let excelData = [];
-        let entrenamientoEnEdicion = null;
-
-        // CÓDIGOS DE RECUPERACIÓN (en producción irían en BD)
-        const CODIGOS_RECUPERACION = {
-            'RESET2024': 'admin123'
-        };
-
-        // ===== INICIALIZAR SUPABASE =====
-        async function supabaseRequest(table, method = 'GET', data = null) {
-            const url = `${SUPABASE_URL}/rest/v1/${table}`;
-            const options = {
-                method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'apikey': SUPABASE_KEY,
-                    'Authorization': `Bearer ${SUPABASE_KEY}`
-                }
-            };
-            if (data) options.body = JSON.stringify(data);
-            
-            try {
-                const res = await fetch(url, options);
-                if (!res.ok) {
-                    const error = await res.json();
-                    throw new Error(error.message);
-                }
-                return await res.json();
-            } catch (err) {
-                console.error('Supabase Error:', err);
-                showError(`Error: ${err.message}`);
-                return null;
-            }
+        // Inicializar Supabase
+        async function inicializarSupabase() {
+            const { createClient } = window.supabase;
+            supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
         }
 
-        // ===== LOGIN =====
+        // ===== LOGIN CLIENTE =====
         async function loginCliente() {
-            const code = document.getElementById('clientCode').value.trim().toUpperCase();
-            if (!code) {
-                showError('Ingresa tu código de acceso');
+            const codigo = document.getElementById('loginCode').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            if (!codigo || !password) {
+                mostrarAlerta('Completa todos los campos', 'info');
                 return;
             }
 
-            const clientes = await supabaseRequest('clientes');
-            const cliente = clientes?.find(c => c.codigo === code);
+            try {
+                const { data, error } = await supabase
+                    .from('clientes')
+                    .select('*')
+                    .eq('codigo', codigo)
+                    .single();
 
-            if (cliente) {
-                currentUser = cliente;
-                currentRole = 'cliente';
-                showApp();
-                loadClienteDashboard();
-            } else {
-                showError('Código inválido');
+                if (error || !data) {
+                    mostrarAlerta('Código de acceso inválido', 'error');
+                    return;
+                }
+
+                // Validación simple de contraseña (mejora esto después)
+                if (password !== 'pass123') {
+                    mostrarAlerta('Contraseña incorrecta', 'error');
+                    return;
+                }
+
+                usuarioActual = data;
+                esEntrenador = false;
+                mostrarApp();
+                cargarEntrenamientosCliente();
+            } catch (error) {
+                console.error('Error:', error);
+                mostrarAlerta('Error al conectar', 'error');
             }
         }
 
-        function loginAdmin() {
+        // ===== LOGIN ADMIN =====
+        async function loginAdmin() {
             const user = document.getElementById('adminUser').value;
             const pass = document.getElementById('adminPass').value;
 
             if (user === 'admin' && pass === 'admin123') {
-                currentUser = { nombre: 'Entrenador' };
-                currentRole = 'admin';
-                showApp();
-                loadAdminDashboard();
+                usuarioActual = { nombre: 'Admin', id: 'admin' };
+                esEntrenador = true;
+                mostrarApp();
+                cargarPanelAdmin();
             } else {
-                showError('Credenciales inválidas');
+                mostrarAlerta('Credenciales incorrectas', 'error');
             }
-        }
-
-        // ===== RECUPERACIÓN DE CONTRASEÑA =====
-        function mostrarRecuperacion() {
-            document.getElementById('loginSection').classList.remove('active');
-            document.getElementById('recuperacionSection').classList.add('active');
-        }
-
-        function volverLogin() {
-            document.getElementById('recuperacionSection').classList.remove('active');
-            document.getElementById('loginSection').classList.add('active');
-        }
-
-        function resetearContrasena() {
-            const codigo = document.getElementById('codigoRecuperacion').value.trim();
-            const nuevaPass = document.getElementById('nuevaPass').value;
-            const confirmarPass = document.getElementById('confirmarPass').value;
-
-            if (!codigo || !nuevaPass || !confirmarPass) {
-                showError('Completa todos los campos');
-                return;
-            }
-
-            if (nuevaPass !== confirmarPass) {
-                showError('Las contraseñas no coinciden');
-                return;
-            }
-
-            if (!CODIGOS_RECUPERACION[codigo]) {
-                showError('Código de recuperación inválido');
-                return;
-            }
-
-            // En producción, aquí se actualizaría la contraseña en BD
-            showSuccess('Contraseña reseteada exitosamente. Usa tu nueva contraseña para entrar.');
-            volverLogin();
-            document.getElementById('adminPass').value = nuevaPass;
-            document.getElementById('codigoRecuperacion').value = '';
-            document.getElementById('nuevaPass').value = '';
-            document.getElementById('confirmarPass').value = '';
         }
 
         // ===== MOSTRAR APP =====
-        function showApp() {
-            document.getElementById('loginSection').classList.remove('active');
-            document.getElementById('recuperacionSection').classList.remove('active');
-            document.getElementById('appSection').style.display = 'block';
-            document.getElementById('userName').textContent = currentUser.nombre || 'Bienvenido';
-            document.getElementById('userRole').textContent = currentRole === 'admin' ? 'Entrenador' : 'Cliente';
-
-            // Mostrar/ocultar tabs de admin
-            document.querySelectorAll('.admin-only').forEach(el => {
-                el.style.display = currentRole === 'admin' ? 'block' : 'none';
-            });
-
-            // Mostrar/ocultar tabs de cliente
-            document.querySelectorAll('.cliente-only').forEach(el => {
-                el.style.display = currentRole === 'cliente' ? 'block' : 'none';
-            });
-
-            // Cargar foto si existe (en header)
-            if (currentUser.foto) {
-                document.getElementById('userProfilePhoto').src = currentUser.foto;
+        function mostrarApp() {
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('appSection').classList.remove('hidden');
+            document.getElementById('userName').textContent = usuarioActual.nombre || 'Usuario';
+            
+            if (esEntrenador) {
+                crearTabsAdmin();
+            } else {
+                crearTabsCliente();
             }
         }
 
-        // ===== TAB SWITCHING =====
-        function switchTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
-            
-            document.getElementById(tabName + '-tab').classList.add('active');
+        // ===== CREAR TABS CLIENTE =====
+        function crearTabsCliente() {
+            const tabsNav = document.getElementById('tabsNav');
+            tabsNav.innerHTML = `
+                <button class="tab-btn active" onclick="mostrarTab('Entrenamientos')">📅 Entrenamientos</button>
+                <button class="tab-btn" onclick="mostrarTab('Historial')">📊 Historial</button>
+                <button class="tab-btn" onclick="mostrarTab('Perfil')">👤 Perfil</button>
+                <button class="tab-btn" onclick="mostrarTab('Mensajes')">💬 Mensajes</button>
+            `;
+            mostrarTab('Entrenamientos');
+        }
+
+        // ===== CREAR TABS ADMIN =====
+        function crearTabsAdmin() {
+            const tabsNav = document.getElementById('tabsNav');
+            tabsNav.innerHTML = `
+                <button class="tab-btn active" onclick="mostrarTab('Admin')">⚙️ Panel Admin</button>
+                <button class="tab-btn" onclick="mostrarTab('Mensajes')">💬 Mensajes</button>
+            `;
+            mostrarTab('Admin');
+        }
+
+        // ===== MOSTRAR TAB =====
+        function mostrarTab(tabName) {
+            // Ocultar todos los tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Ocultar todos los botones activos
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Mostrar tab seleccionado
+            const tabId = 'tab' + tabName.charAt(0).toUpperCase() + tabName.slice(1);
+            document.getElementById(tabId)?.classList.add('active');
+
+            // Activar botón
             event.target.classList.add('active');
 
-            if (tabName === 'entrenamientos') loadEntrenamientos();
-            if (tabName === 'historial') loadHistorial();
-            if (tabName === 'mensajes') loadMensajes();
-            if (tabName === 'perfil') cargarPerfil();
-            if (tabName === 'clientes') loadClientes();
-            if (tabName === 'editar') loadEditarView();
+            // Actualizar banner
+            actualizarBanner(tabName);
         }
 
-        // ===== CARGAR ENTRENAMIENTOS =====
-        async function loadEntrenamientos() {
-            if (currentRole !== 'cliente') return;
-            
-            const entrenamientos = await supabaseRequest('entrenamientos');
-            const hoy = new Date().toISOString().split('T')[0];
-            const hoyEntrenamiento = entrenamientos?.filter(e => {
-                const fecha = new Date(e.fecha).toISOString().split('T')[0];
-                return e.cliente_id === currentUser.id && fecha === hoy;
-            });
-
-            const container = document.getElementById('entrenamientosHoy');
-            if (!hoyEntrenamiento || hoyEntrenamiento.length === 0) {
-                container.innerHTML = '<p style="color: var(--gray);">No hay entrenamientos para hoy</p>';
-                return;
-            }
-
-            container.innerHTML = hoyEntrenamiento.map(e => `
-                <div class="workout-card">
-                    <h3>${e.datos?.titulo || 'Entrenamiento'}</h3>
-                    <p>${e.datos?.descripcion || ''}</p>
-                    <p style="font-size: 12px; color: #999;">Fecha: ${new Date(e.fecha).toLocaleDateString('es-ES')}</p>
-                    <h4 style="margin-top: 10px; margin-bottom: 10px; color: var(--dark);">Ejercicios:</h4>
-                    <ul class="workout-exercises">
-                        ${(e.datos?.ejercicios || []).map(ex => `<li>✓ ${ex}</li>`).join('')}
-                    </ul>
-                    <div style="margin-top: 15px;">
-                        <label style="display: block; margin-bottom: 10px; font-weight: 600; color: var(--dark);">RPE de sesión (0-10):</label>
-                        <div class="rpe-scale">
-                            ${Array.from({length: 11}, (_, i) => {
-                                const cls = i >= 7 ? (i === 10 ? 'very-high' : 'high') : '';
-                                return `<button type="button" class="rpe-btn ${cls}" onclick="registrarRPE(${e.id}, ${i})">${i}</button>`;
-                            }).join('')}
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function registrarRPE(entrenoId, value) {
-            showSuccess(`RPE registrado: ${value}`);
-        }
-
-        // ===== CARGAR HISTORIAL =====
-        async function loadHistorial() {
-            if (currentRole !== 'cliente') return;
-            
-            const entrenamientos = await supabaseRequest('entrenamientos');
-            const clienteEntrenamientos = entrenamientos?.filter(e => e.cliente_id === currentUser.id)
-                .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-
-            const container = document.getElementById('historialContent');
-            if (!clienteEntrenamientos || clienteEntrenamientos.length === 0) {
-                container.innerHTML = '<p style="color: var(--gray);">No hay historial disponible</p>';
-                return;
-            }
-
-            container.innerHTML = clienteEntrenamientos.map(e => `
-                <div class="workout-card">
-                    <h3>${e.datos?.titulo || 'Entrenamiento'}</h3>
-                    <p style="font-size: 12px; color: #999;">Fecha: ${new Date(e.fecha).toLocaleDateString('es-ES')}</p>
-                    <p>${e.datos?.descripcion || ''}</p>
-                    <ul class="workout-exercises">
-                        ${(e.datos?.ejercicios || []).map(ex => `<li>✓ ${ex}</li>`).join('')}
-                    </ul>
-                </div>
-            `).join('');
-        }
-
-        // ===== MENSAJES =====
-        async function loadMensajes() {
-            const mensajes = await supabaseRequest('mensajes');
-            const misMensajes = mensajes?.filter(m => {
-                if (currentRole === 'cliente') return m.cliente_id === currentUser.id;
-                return true;
-            }) || [];
-
-            const container = document.getElementById('mensajesContainer');
-            container.innerHTML = misMensajes.map(m => `
-                <div style="margin-bottom: 10px; padding: 10px; border-radius: 5px; background: ${m.remitente === 'entrenador' ? '#e3f2fd' : '#f3e5f5'};">
-                    <strong style="color: ${m.remitente === 'entrenador' ? 'var(--secondary)' : 'var(--primary)'};">${m.remitente === 'entrenador' ? 'Entrenador' : 'Tú'}:</strong>
-                    <p style="margin-top: 5px; color: var(--dark);">${m.mensaje}</p>
-                    <small style="color: #999;">${new Date(m.fecha).toLocaleTimeString('es-ES')}</small>
-                </div>
-            `).join('');
-
-            container.scrollTop = container.scrollHeight;
-        }
-
-        async function enviarMensaje() {
-            const texto = document.getElementById('mensajeInput').value.trim();
-            if (!texto) return;
-
-            const nuevoMensaje = {
-                cliente_id: currentUser.id,
-                remitente: currentRole === 'admin' ? 'entrenador' : 'cliente',
-                mensaje: texto,
-                fecha: new Date().toISOString()
+        // ===== ACTUALIZAR BANNER =====
+        function actualizarBanner(tabName) {
+            const bannerTexts = {
+                'Entrenamientos': {
+                    title: 'Mis Entrenamientos',
+                    description: 'Aquí encontrarás tu programa personalizado del día en adelante'
+                },
+                'Historial': {
+                    title: 'Historial de Entrenamientos',
+                    description: 'Revisa tu progreso, cargas y RPE de todas tus sesiones'
+                },
+                'Perfil': {
+                    title: 'Mi Perfil',
+                    description: 'Gestiona tu información personal y foto de perfil'
+                },
+                'Mensajes': {
+                    title: 'Mensajes',
+                    description: 'Comunícate directamente con tu entrenador'
+                },
+                'Admin': {
+                    title: 'Panel de Administración',
+                    description: 'Gestiona clientes, entrenamientos y mensajes'
+                }
             };
 
-            await supabaseRequest('mensajes', 'POST', nuevoMensaje);
-            document.getElementById('mensajeInput').value = '';
-            loadMensajes();
-            showSuccess('Mensaje enviado');
+            const text = bannerTexts[tabName] || bannerTexts['Entrenamientos'];
+            document.getElementById('bannerTitle').textContent = text.title;
+            document.getElementById('bannerDescription').textContent = text.description;
         }
 
-        // ===== ADMIN: DASHBOARD =====
-        async function loadAdminDashboard() {
-            const clientes = await supabaseRequest('clientes');
-            const select = document.getElementById('clienteSelect');
-            const selectFiltro = document.getElementById('clienteFiltroEditar');
-            
-            select.innerHTML = '<option value="">Selecciona cliente...</option>' +
-                clientes?.map(c => `<option value="${c.id}">${c.nombre} (${c.codigo})</option>`).join('') || '';
-            
-            selectFiltro.innerHTML = '<option value="">Todos los clientes</option>' +
-                clientes?.map(c => `<option value="${c.id}">${c.nombre} (${c.codigo})</option>`).join('') || '';
-            
-            loadClientes();
+        // ===== CARGAR ENTRENAMIENTOS CLIENTE =====
+        async function cargarEntrenamientosCliente() {
+            const container = document.getElementById('entrenamientosHoy');
+            container.innerHTML = '<p class="loading-text"><div class="spinner"></div> Cargando entrenamientos...</p>';
+
+            try {
+                const { data, error } = await supabase
+                    .from('entrenamientos')
+                    .select('*')
+                    .eq('cliente_id', usuarioActual.id)
+                    .gte('fecha', new Date().toISOString().split('T')[0])
+                    .order('fecha', { ascending: true });
+
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<p style="color: #999;">No hay entrenamientos asignados</p>';
+                    return;
+                }
+
+                container.innerHTML = data.map(ent => `
+                    <div class="card">
+                        <h4>${ent.titulo || 'Entrenamiento'}</h4>
+                        <p><strong>Fecha:</strong> ${ent.fecha}</p>
+                        <p><strong>Descripción:</strong> ${ent.descripcion || 'Sin descripción'}</p>
+                        ${ent.datos?.ejercicios ? `
+                            <p><strong>Ejercicios:</strong></p>
+                            <ul>${ent.datos.ejercicios.map(ex => `<li>${ex}</li>`).join('')}</ul>
+                        ` : ''}
+                        <div class="form-group">
+                            <label>RPE Percibido (0-10)</label>
+                            <input type="number" min="0" max="10" step="0.5" placeholder="Ingresa RPE">
+                        </div>
+                        <button class="btn btn-primary">Guardar RPE</button>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error:', error);
+                container.innerHTML = '<p style="color: #c62828;">Error al cargar entrenamientos</p>';
+            }
+        }
+
+        // ===== PANEL ADMIN =====
+        async function cargarPanelAdmin() {
+            const panel = document.getElementById('adminPanel');
+            panel.innerHTML = `
+                <div class="card">
+                    <h3>Crear Nuevo Entrenamiento</h3>
+                    <div class="form-group">
+                        <label>Cliente</label>
+                        <select id="selectCliente">
+                            <option value="">Selecciona un cliente</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha</label>
+                        <input type="date" id="entrenamientoFecha">
+                    </div>
+                    <div class="form-group">
+                        <label>Título</label>
+                        <input type="text" id="entrenamientoTitulo" placeholder="Ej: Upper Body A">
+                    </div>
+                    <div class="form-group">
+                        <label>Descripción</label>
+                        <textarea id="entrenamientoDesc" placeholder="Detalles del entrenamiento"></textarea>
+                    </div>
+                    <button class="btn btn-primary" onclick="crearEntrenamiento()">Crear Entrenamiento</button>
+                </div>
+            `;
+
+            // Cargar clientes
+            try {
+                const { data } = await supabase.from('clientes').select('*');
+                const select = document.getElementById('selectCliente');
+                select.innerHTML = '<option value="">Selecciona un cliente</option>' + 
+                    data.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+            } catch (error) {
+                console.error('Error:', error);
+            }
         }
 
         // ===== CREAR ENTRENAMIENTO =====
         async function crearEntrenamiento() {
-            const clienteId = document.getElementById('clienteSelect').value;
-            const fecha = document.getElementById('entrenoFecha').value;
-            const titulo = document.getElementById('entrenoTitulo').value;
-            const descripcion = document.getElementById('entrenoDesc').value;
-            const ejercicios = document.getElementById('entrenoEjercicios').value.split('\n').filter(e => e.trim());
+            const clienteId = document.getElementById('selectCliente').value;
+            const fecha = document.getElementById('entrenamientoFecha').value;
+            const titulo = document.getElementById('entrenamientoTitulo').value;
+            const descripcion = document.getElementById('entrenamientoDesc').value;
 
             if (!clienteId || !fecha || !titulo) {
-                showError('Completa todos los campos requeridos');
+                mostrarAlerta('Completa los campos requeridos', 'info');
                 return;
             }
 
-            const nuevoEntrenamiento = {
-                cliente_id: clienteId,
-                fecha: fecha,
-                datos: {
+            try {
+                const { error } = await supabase.from('entrenamientos').insert([{
+                    cliente_id: clienteId,
+                    fecha,
                     titulo,
                     descripcion,
-                    ejercicios
-                },
-                estado: 'pendiente'
-            };
+                    datos: { ejercicios: [] },
+                    estado: 'pendiente'
+                }]);
 
-            await supabaseRequest('entrenamientos', 'POST', nuevoEntrenamiento);
-            
-            document.getElementById('clienteSelect').value = '';
-            document.getElementById('entrenoFecha').value = '';
-            document.getElementById('entrenoTitulo').value = '';
-            document.getElementById('entrenoDesc').value = '';
-            document.getElementById('entrenoEjercicios').value = '';
-            
-            showSuccess('Entrenamiento creado exitosamente');
-        }
-
-        // ===== EDITAR ENTRENAMIENTOS =====
-        async function loadEditarView() {
-            await loadAdminDashboard();
-            await cargarEntrenamientosEditar();
-        }
-
-        async function cargarEntrenamientosEditar() {
-            const clienteId = document.getElementById('clienteFiltroEditar').value;
-            const entrenamientos = await supabaseRequest('entrenamientos');
-            
-            let filtrados = entrenamientos || [];
-            if (clienteId) {
-                filtrados = filtrados.filter(e => e.cliente_id === clienteId);
-            }
-
-            filtrados = filtrados.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-
-            const container = document.getElementById('entrenamientosEditarContainer');
-            if (filtrados.length === 0) {
-                container.innerHTML = '<p style="color: var(--gray);">No hay entrenamientos disponibles</p>';
-                return;
-            }
-
-            container.innerHTML = filtrados.map(e => `
-                <div class="workout-card">
-                    <h3>${e.datos?.titulo || 'Entrenamiento'}</h3>
-                    <p style="font-size: 12px; color: #999;">Fecha: ${new Date(e.fecha).toLocaleDateString('es-ES')}</p>
-                    <p>${e.datos?.descripcion || ''}</p>
-                    <ul class="workout-exercises">
-                        ${(e.datos?.ejercicios || []).map(ex => `<li>✓ ${ex}</li>`).join('')}
-                    </ul>
-                    <div class="action-buttons">
-                        <button class="btn btn-primary btn-small" onclick="abrirEditarModal(${JSON.stringify(e).replace(/"/g, '&quot;')})">✏️ Editar</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function abrirEditarModal(entrenamiento) {
-            entrenamientoEnEdicion = entrenamiento;
-            document.getElementById('editTitulo').value = entrenamiento.datos?.titulo || '';
-            document.getElementById('editFecha').value = entrenamiento.fecha || '';
-            document.getElementById('editDesc').value = entrenamiento.datos?.descripcion || '';
-            document.getElementById('editEjercicios').value = (entrenamiento.datos?.ejercicios || []).join('\n');
-            document.getElementById('editarModal').classList.add('show');
-        }
-
-        function closeEditarModal() {
-            document.getElementById('editarModal').classList.remove('show');
-            entrenamientoEnEdicion = null;
-        }
-
-        async function guardarEdicionEntrenamiento() {
-            if (!entrenamientoEnEdicion) return;
-
-            const titulo = document.getElementById('editTitulo').value;
-            const fecha = document.getElementById('editFecha').value;
-            const descripcion = document.getElementById('editDesc').value;
-            const ejercicios = document.getElementById('editEjercicios').value.split('\n').filter(e => e.trim());
-
-            const datosActualizados = {
-                fecha,
-                datos: {
-                    titulo,
-                    descripcion,
-                    ejercicios
-                }
-            };
-
-            // En Supabase, hacer PATCH/PUT
-            const url = `${SUPABASE_URL}/rest/v1/entrenamientos?id=eq.${entrenamientoEnEdicion.id}`;
-            const options = {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'apikey': SUPABASE_KEY,
-                    'Authorization': `Bearer ${SUPABASE_KEY}`
-                },
-                body: JSON.stringify(datosActualizados)
-            };
-
-            try {
-                const res = await fetch(url, options);
-                if (res.ok) {
-                    showSuccess('Entrenamiento actualizado exitosamente');
-                    closeEditarModal();
-                    cargarEntrenamientosEditar();
-                } else {
-                    showError('Error al actualizar entrenamiento');
-                }
-            } catch (err) {
-                showError('Error: ' + err.message);
+                if (error) throw error;
+                mostrarAlerta('Entrenamiento creado exitosamente', 'success');
+                document.getElementById('entrenamientoTitulo').value = '';
+                document.getElementById('entrenamientoFecha').value = '';
+                document.getElementById('entrenamientoDesc').value = '';
+            } catch (error) {
+                console.error('Error:', error);
+                mostrarAlerta('Error al crear entrenamiento', 'error');
             }
         }
 
-        async function eliminarEntrenamiento() {
-            if (!entrenamientoEnEdicion) return;
-
-            if (!confirm('¿Eliminar este entrenamiento? Esta acción no se puede deshacer.')) {
-                return;
-            }
-
-            const url = `${SUPABASE_URL}/rest/v1/entrenamientos?id=eq.${entrenamientoEnEdicion.id}`;
-            const options = {
-                method: 'DELETE',
-                headers: {
-                    'apikey': SUPABASE_KEY,
-                    'Authorization': `Bearer ${SUPABASE_KEY}`
-                }
-            };
-
-            try {
-                const res = await fetch(url, options);
-                if (res.ok) {
-                    showSuccess('Entrenamiento eliminado exitosamente');
-                    closeEditarModal();
-                    cargarEntrenamientosEditar();
-                } else {
-                    showError('Error al eliminar entrenamiento');
-                }
-            } catch (err) {
-                showError('Error: ' + err.message);
-            }
+        // ===== CERRAR SESIÓN =====
+        function cerrarSesion() {
+            usuarioActual = null;
+            esEntrenador = false;
+            document.getElementById('loginSection').classList.remove('hidden');
+            document.getElementById('appSection').classList.add('hidden');
+            document.getElementById('loginCode').value = '';
+            document.getElementById('loginPassword').value = '';
         }
 
-        // ===== IMPORTAR EXCEL =====
-        function handleExcelUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            document.getElementById('fileName').textContent = file.name;
-            const reader = new FileReader();
-
-            reader.onload = (e) => {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, {type: 'array'});
-                    const sheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[sheetName];
-                    excelData = XLSX.utils.sheet_to_json(worksheet);
-
-                    const preview = document.getElementById('excelPreview');
-                    preview.innerHTML = `
-                        <h3 style="color: var(--dark); margin-bottom: 10px;">Previsualización (${excelData.length} registros)</h3>
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    ${Object.keys(excelData[0] || {}).map(k => `<th>${k}</th>`).join('')}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${excelData.slice(0, 5).map(row => `
-                                    <tr>
-                                        ${Object.values(row).map(v => `<td>${v}</td>`).join('')}
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                        ${excelData.length > 5 ? `<p style="color: var(--gray); margin-top: 10px;">... y ${excelData.length - 5} más</p>` : ''}
-                    `;
-                    showSuccess('Archivo cargado correctamente');
-                } catch (err) {
-                    showError('Error al leer Excel: ' + err.message);
-                }
-            };
-
-            reader.readAsArrayBuffer(file);
-        }
-
-        async function importarExcel() {
-            if (excelData.length === 0) {
-                showError('Carga un archivo Excel primero');
-                return;
-            }
-
-            const clientes = await supabaseRequest('clientes');
-            let created = 0;
-            let errors = 0;
-
-            for (const row of excelData) {
-                try {
-                    const cliente = clientes?.find(c => c.nombre.toLowerCase() === row.Cliente?.toLowerCase());
-                    if (!cliente) {
-                        errors++;
-                        continue;
-                    }
-
-                    const entrenamientos = row.Entrenamientos?.split('|') || [];
-                    const nuevoEntrenamiento = {
-                        cliente_id: cliente.id,
-                        fecha: row.Fecha || new Date().toISOString().split('T')[0],
-                        datos: {
-                            titulo: row.Título || 'Entrenamiento',
-                            descripcion: row.Descripción || '',
-                            ejercicios: entrenamientos.map(e => e.trim())
-                        },
-                        estado: 'pendiente'
-                    };
-
-                    await supabaseRequest('entrenamientos', 'POST', nuevoEntrenamiento);
-                    created++;
-                } catch (err) {
-                    errors++;
-                }
-            }
-
-            showSuccess(`Importación completada: ${created} créados, ${errors} errores`);
-            excelData = [];
-            document.getElementById('excelFile').value = '';
-            document.getElementById('fileName').textContent = '';
-            document.getElementById('excelPreview').innerHTML = '';
-        }
-
-        // ===== CLIENTES =====
-        async function loadClientes() {
-            const clientes = await supabaseRequest('clientes');
-            const tbody = document.getElementById('clientesTable');
-            
-            if (!clientes || clientes.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--gray);">Sin clientes</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = clientes.map(c => `
-                <tr>
-                    <td><strong>${c.nombre}</strong></td>
-                    <td><code style="background: #f8f9fa; padding: 5px 10px; border-radius: 3px;">${c.codigo}</code></td>
-                    <td style="font-size: 12px; color: var(--gray);">${c.id}</td>
-                    <td>
-                        <button class="btn btn-danger btn-small" onclick="eliminarCliente('${c.id}', '${c.nombre}')">🗑️ Eliminar</button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        function mostrarNuevoCliente() {
-            const form = document.getElementById('nuevoClienteForm');
-            form.style.display = form.style.display === 'none' ? 'block' : 'none';
-        }
-
-        async function crearNuevoCliente() {
-            const nombre = document.getElementById('nuevoNombre').value.trim();
-            if (!nombre) {
-                showError('Ingresa nombre del cliente');
-                return;
-            }
-
-            const codigo = 'CLI-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-            const nuevoCliente = {
-                nombre,
-                codigo,
-                foto: null
-            };
-
-            await supabaseRequest('clientes', 'POST', nuevoCliente);
-            document.getElementById('nuevoNombre').value = '';
-            document.getElementById('nuevoClienteForm').style.display = 'none';
-            loadClientes();
-            showSuccess(`Cliente creado - Código: ${codigo}`);
-        }
-
-        async function eliminarCliente(clienteId, nombreCliente) {
-            if (!confirm(`¿Eliminar cliente "${nombreCliente}"? Esta acción también eliminará todos sus entrenamientos. No se puede deshacer.`)) {
-                return;
-            }
-
-            try {
-                // Eliminar todos los entrenamientos del cliente
-                const urlEntrenamientos = `${SUPABASE_URL}/rest/v1/entrenamientos?cliente_id=eq.${clienteId}`;
-                const optionsEntrenamientos = {
-                    method: 'DELETE',
-                    headers: {
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`
-                    }
-                };
-                await fetch(urlEntrenamientos, optionsEntrenamientos);
-
-                // Eliminar todos los mensajes del cliente
-                const urlMensajes = `${SUPABASE_URL}/rest/v1/mensajes?cliente_id=eq.${clienteId}`;
-                const optionsMensajes = {
-                    method: 'DELETE',
-                    headers: {
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`
-                    }
-                };
-                await fetch(urlMensajes, optionsMensajes);
-
-                // Eliminar el cliente
-                const urlCliente = `${SUPABASE_URL}/rest/v1/clientes?id=eq.${clienteId}`;
-                const optionsCliente = {
-                    method: 'DELETE',
-                    headers: {
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`
-                    }
-                };
-                const resCliente = await fetch(urlCliente, optionsCliente);
-
-                if (resCliente.ok) {
-                    showSuccess(`Cliente "${nombreCliente}" eliminado exitosamente`);
-                    loadClientes();
-                } else {
-                    showError('Error al eliminar cliente');
-                }
-            } catch (err) {
-                showError('Error: ' + err.message);
-            }
-        }
-
-        // ===== PERFIL CLIENTE - Cambiar Foto =====
-        function cargarPerfil() {
-            if (currentRole !== 'cliente') return;
-            
-            document.getElementById('perfilNombre').textContent = currentUser.nombre || 'Cliente';
-            document.getElementById('perfilCodigo').textContent = `Código: ${currentUser.codigo}`;
-            
-            if (currentUser.foto) {
-                document.getElementById('perfilFoto').src = currentUser.foto;
-            }
-        }
-
-        function previsualizarFoto(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    document.getElementById('previewFoto').innerHTML = `<img src="${e.target.result}" style="max-width: 150px; border-radius: 8px;">`;
-                };
-                reader.readAsDataURL(file);
-            }
-        }
-
-        async function guardarFotoPerfil() {
-            const file = document.getElementById('fotoPerfil').files[0];
-            if (!file) {
-                showError('Selecciona una foto primero');
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                const fotoBase64 = e.target.result;
-                currentUser.foto = fotoBase64;
-                document.getElementById('perfilFoto').src = fotoBase64;
-                document.getElementById('userProfilePhoto').src = fotoBase64;
-                document.getElementById('fotoPerfil').value = '';
-                document.getElementById('previewFoto').innerHTML = '';
-                showSuccess('Foto de perfil guardada exitosamente');
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function closePhotoModal() {
-            document.getElementById('photoModal').classList.remove('show');
-        }
-
-        // ===== LOGOUT =====
-        function logout() {
-            if (confirm('¿Cerrar sesión?')) {
-                currentUser = null;
-                currentRole = null;
-                document.getElementById('loginSection').classList.add('active');
-                document.getElementById('recuperacionSection').classList.remove('active');
-                document.getElementById('appSection').style.display = 'none';
-                document.getElementById('clientCode').value = '';
-                document.getElementById('adminUser').value = '';
-                document.getElementById('adminPass').value = '';
-            }
-        }
-
-        // ===== ALERTAS =====
-        function showSuccess(msg) {
-            const alert = document.getElementById('successAlert');
-            alert.textContent = msg;
+        // ===== MOSTRAR ALERTAS =====
+        function mostrarAlerta(mensaje, tipo) {
+            const alertId = tipo === 'error' ? 'errorAlert' : tipo === 'success' ? 'successAlert' : 'loginAlert';
+            const alert = document.getElementById(alertId);
+            alert.textContent = mensaje;
             alert.classList.add('show');
-            setTimeout(() => alert.classList.remove('show'), 3000);
+            setTimeout(() => alert.classList.remove('show'), 4000);
         }
 
-        function showError(msg) {
-            const alert = document.getElementById('errorAlert');
-            alert.textContent = msg;
-            alert.classList.add('show');
-            setTimeout(() => alert.classList.remove('show'), 3000);
-        }
-
-        function showInfo(msg) {
-            const alert = document.getElementById('infoAlert');
-            alert.textContent = msg;
-            alert.classList.add('show');
-            setTimeout(() => alert.classList.remove('show'), 3000);
-        }
-
-        async function loadClienteDashboard() {
-            loadEntrenamientos();
-        }
-
-        window.onclick = function(event) {
-            const editarModal = document.getElementById('editarModal');
-            
-            if (event.target === editarModal) {
-                closeEditarModal();
-            }
-        };
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', inicializarSupabase);
     </script>
 </body>
 </html>
