@@ -3,16 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alex Training Lab - Entrenamiento Personal</title>
+    <title>Alex Training Lab</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
@@ -30,136 +26,40 @@
             padding: 40px;
         }
         
-        .logo-section {
+        .logo-section { text-align: center; margin-bottom: 30px; }
+        .logo-section img { width: 120px; margin-bottom: 15px; }
+        .logo-section h1 { font-size: 28px; color: #333; margin-bottom: 5px; }
+        .logo-section p { font-size: 14px; color: #999; }
+        
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; color: #333; font-weight: 500; }
+        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
+        
+        button { width: 100%; padding: 12px; background: #333; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
+        button:hover { background: #555; }
+        button.blue { background: #667eea; }
+        button.blue:hover { background: #5568d3; }
+        
+        .menu-buttons { display: flex; flex-direction: column; gap: 15px; }
+        .menu-buttons button { margin: 0; }
+        
+        .hidden { display: none; }
+        
+        .back-btn { background: #999; margin-bottom: 20px; }
+        .back-btn:hover { background: #bbb; }
+        
+        .code-display { 
+            font-size: 32px; 
+            font-weight: bold; 
+            letter-spacing: 3px; 
+            font-family: 'Courier New', monospace; 
+            background: #f0f0f0; 
+            border: 2px solid #333; 
+            padding: 20px; 
+            border-radius: 6px; 
+            margin: 20px 0; 
             text-align: center;
-            margin-bottom: 30px;
-        }
-        
-        .logo-section img {
-            width: 120px;
-            height: auto;
-            margin-bottom: 15px;
-        }
-        
-        .logo-section h1 {
-            font-size: 28px;
-            color: #333;
-            margin-bottom: 5px;
-        }
-        
-        .logo-section p {
-            font-size: 14px;
-            color: #999;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: #333;
-            font-weight: 500;
-            font-size: 14px;
-        }
-        
-        input, select {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-            font-family: inherit;
-        }
-        
-        input:focus, select:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-        
-        button {
-            width: 100%;
-            padding: 12px;
-            background: #333;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background 0.3s;
-        }
-        
-        button:hover {
-            background: #555;
-        }
-        
-        button.secondary {
-            background: #667eea;
-        }
-        
-        button.secondary:hover {
-            background: #5568d3;
-        }
-        
-        .back-button {
-            background: #999;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        
-        .back-button:hover {
-            background: #bbb;
-        }
-        
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
-        }
-        
-        .tab-button {
-            flex: 1;
-            padding: 10px;
-            background: #f0f0f0;
-            border: 2px solid transparent;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.3s;
-        }
-        
-        .tab-button.active {
-            background: #667eea;
-            color: white;
-            border-color: #667eea;
-        }
-        
-        .success-message {
-            background: #f0f9ff;
-            border: 2px solid #333;
-            border-radius: 8px;
-            padding: 20px;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        
-        .code-display {
-            font-size: 32px;
-            font-weight: bold;
-            letter-spacing: 3px;
-            font-family: 'Courier New', monospace;
-            background: white;
-            border: 2px solid #333;
-            padding: 20px;
-            border-radius: 6px;
-            margin: 20px 0;
-            word-break: break-all;
         }
         
         .toast {
@@ -175,86 +75,48 @@
         }
         
         @keyframes slideIn {
-            from {
-                transform: translateX(400px);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        
-        .hidden {
-            display: none;
-        }
-        
-        .menu-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        
-        .menu-buttons button {
-            padding: 15px;
-            font-size: 16px;
-        }
-        
-        .welcome-section {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        
-        .welcome-section h2 {
-            font-size: 24px;
-            color: #333;
-            margin-bottom: 10px;
-        }
-        
-        .welcome-section p {
-            color: #666;
+            from { transform: translateX(400px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
     </style>
 </head>
 <body>
-    <div class="container" id="app">
-        <!-- PANTALLA DE INICIO -->
+    <div class="container">
+        <!-- INICIO -->
         <div id="inicio">
             <div class="logo-section">
-                <img src="assets/logo.png" alt="Alex Training Lab">
+                <img src="assets/logo.png" alt="Alex Training Lab" onerror="this.src='https://via.placeholder.com/120'">
                 <h1>Alex Training Lab</h1>
                 <p>Entrenamiento personal</p>
             </div>
             
-            <div class="welcome-section">
-                <h2>¿Quién eres?</h2>
-            </div>
+            <h2 style="text-align: center; margin-bottom: 20px; font-size: 20px;">¿Quién eres?</h2>
             
             <div class="menu-buttons">
-                <button onclick="mostrarLogin()">🔑 Cliente - Ya tengo código</button>
-                <button onclick="mostrarRegistro()" class="secondary">📝 Cliente - Quiero registrarme</button>
-                <button onclick="mostrarLoginAdmin()">👨‍💼 Soy el entrenador</button>
+                <button onclick="showPage('login-cliente')">🔑 Cliente - Ya tengo código</button>
+                <button onclick="showPage('registro-cliente')" class="blue">📝 Cliente - Quiero registrarme</button>
+                <button onclick="showPage('login-admin')">👨‍💼 Soy el entrenador</button>
             </div>
         </div>
         
         <!-- LOGIN CLIENTE -->
-        <div id="loginCliente" class="hidden">
-            <button class="back-button" onclick="volverAlInicio()">← Volver</button>
+        <div id="login-cliente" class="hidden">
+            <button class="back-btn" onclick="showPage('inicio')">← Volver</button>
             <div class="logo-section">
                 <h2>Accede con tu código</h2>
             </div>
             
             <div class="form-group">
                 <label>Tu código de acceso</label>
-                <input type="text" id="codigoLogin" placeholder="Ej: K7M9P" maxlength="10">
+                <input type="text" id="codigo-login" placeholder="Ej: K7M9P" maxlength="10">
             </div>
             
             <button onclick="loginCliente()">Acceder</button>
         </div>
         
         <!-- REGISTRO CLIENTE -->
-        <div id="registroCliente" class="hidden">
-            <button class="back-button" onclick="volverAlInicio()">← Volver</button>
+        <div id="registro-cliente" class="hidden">
+            <button class="back-btn" onclick="showPage('inicio')">← Volver</button>
             <div class="logo-section">
                 <h2>Crea tu cuenta</h2>
                 <p>Rellena tus datos para comenzar</p>
@@ -262,280 +124,195 @@
             
             <div class="form-group">
                 <label>Nombre y apellidos</label>
-                <input type="text" id="regNombre" placeholder="Ej: Juan García">
+                <input type="text" id="reg-nombre" placeholder="Ej: Juan García">
             </div>
             
             <button onclick="registrarCliente()">Crear mi cuenta</button>
         </div>
         
         <!-- RESULTADO REGISTRO -->
-        <div id="resultadoRegistro" class="hidden">
+        <div id="resultado-registro" class="hidden">
             <div class="logo-section">
                 <h2>¡Cuenta creada!</h2>
             </div>
             
             <p style="text-align: center; color: #666; margin-bottom: 15px;">Tu código de acceso es:</p>
             
-            <div class="code-display" id="codigoMostrado">K7M9P</div>
+            <div class="code-display" id="codigo-mostrado">K7M9P</div>
             
-            <button onclick="copiarCodigo()" class="secondary">📋 Copiar código</button>
-            <button onclick="continuarAAnamnesis()" style="margin-top: 10px;">Continuar →</button>
+            <button onclick="copiarCodigo()" class="blue">📋 Copiar código</button>
+            <button onclick="irAlLogin()">Continuar →</button>
         </div>
         
         <!-- LOGIN ADMIN -->
-        <div id="loginAdmin" class="hidden">
-            <button class="back-button" onclick="volverAlInicio()">← Volver</button>
+        <div id="login-admin" class="hidden">
+            <button class="back-btn" onclick="showPage('inicio')">← Volver</button>
             <div class="logo-section">
                 <h2>Panel del entrenador</h2>
             </div>
             
             <div class="form-group">
                 <label>Usuario</label>
-                <input type="text" id="adminUser" placeholder="usuario">
+                <input type="text" id="admin-user" placeholder="usuario">
             </div>
             
             <div class="form-group">
                 <label>Contraseña</label>
-                <input type="password" id="adminPass" placeholder="contraseña">
+                <input type="password" id="admin-pass" placeholder="contraseña">
             </div>
             
             <button onclick="loginAdmin()">Acceder</button>
         </div>
         
         <!-- PANEL ADMIN -->
-        <div id="panelAdmin" class="hidden">
+        <div id="panel-admin" class="hidden">
             <div class="logo-section">
                 <h2>Panel del entrenador</h2>
             </div>
             
-            <div style="margin-bottom: 20px;">
-                <button onclick="logout()" class="back-button">← Cerrar sesión</button>
-            </div>
+            <button class="back-btn" onclick="logout()">← Cerrar sesión</button>
             
-            <div class="tabs">
-                <button class="tab-button active" onclick="switchTab('adminClientes')">Clientes</button>
-                <button class="tab-button" onclick="switchTab('adminPrograms')">Programas</button>
+            <h3 style="margin-bottom: 15px;">Crear nuevo cliente</h3>
+            <div class="form-group">
+                <label>Nombre del cliente</label>
+                <input type="text" id="admin-nuevo-cliente" placeholder="Nombre">
             </div>
-            
-            <div id="adminClientes">
-                <h3 style="margin-bottom: 15px;">Gestión de clientes</h3>
-                <div class="form-group">
-                    <label>Nombre del cliente</label>
-                    <input type="text" id="adminNuevoCliente" placeholder="Nombre">
-                </div>
-                <button onclick="crearClienteAdmin()">+ Crear cliente</button>
-            </div>
-            
-            <div id="adminPrograms" class="hidden">
-                <h3>Gestión de programas</h3>
-                <p style="color: #999; padding: 20px; text-align: center;">Próximamente</p>
-            </div>
+            <button onclick="crearClienteAdmin()">+ Crear cliente</button>
         </div>
         
         <!-- PANEL CLIENTE -->
-        <div id="panelCliente" class="hidden">
+        <div id="panel-cliente" class="hidden">
             <div class="logo-section">
                 <h2>Mi entrenamiento</h2>
-                <p id="nombreCliente"></p>
+                <p id="nombre-cliente"></p>
             </div>
             
-            <div style="margin-bottom: 20px;">
-                <button onclick="logout()" class="back-button">← Cerrar sesión</button>
-            </div>
+            <button class="back-btn" onclick="logout()">← Cerrar sesión</button>
             
-            <div class="tabs">
-                <button class="tab-button active" onclick="switchTab('entrenamientos')">Hoy</button>
-                <button class="tab-button" onclick="switchTab('perfil')">Perfil</button>
-            </div>
-            
-            <div id="entrenamientos">
-                <p style="color: #999; padding: 20px; text-align: center;">No hay entrenamiento asignado hoy</p>
-            </div>
-            
-            <div id="perfil" class="hidden">
-                <p style="color: #999; padding: 20px; text-align: center;">Perfil del cliente - Próximamente</p>
-            </div>
+            <p style="color: #999; padding: 20px; text-align: center;">No hay entrenamiento asignado hoy</p>
         </div>
     </div>
-    
-    <!-- Supabase -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.2/dist/module/index.js" type="module"></script>
-    <script type="module">
-        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.2/dist/module/index.js';
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script>
+        const { createClient } = window.supabase;
         
         const SUPABASE_URL = 'https://czarihydagapgqzqzasee.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6YXJpaHlkYWdhcGdxenF6YXNlZSIsInJvbGUiOiJhbm9uIiwiYWF0IjoxNzI3ODM2MzM2LCJleHAiOjIwNDM0MTIzMzZ9.c5fdk644a-3c_UfB90-ab544317b3c';
         
-        window.supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-        window.clienteActual = null;
-        window.codigoActual = null;
+        const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+        let clienteActual = null;
+        let codigoActual = null;
         
-        // FUNCIONES DE NAVEGACIÓN
-        window.volverAlInicio = () => {
-            document.querySelectorAll('[id^="inicio"], [id^="login"], [id^="registro"], [id^="panel"], [id^="resultado"]').forEach(el => el.classList.add('hidden'));
-            document.getElementById('inicio').classList.remove('hidden');
-        };
+        function showPage(pageName) {
+            document.querySelectorAll('[id$="-cliente"], [id$="-admin"], [id$="-registro"], [id^="login"], [id^="panel"], [id^="resultado"], [id^="inicio"]').forEach(el => {
+                el.classList.add('hidden');
+            });
+            document.getElementById(pageName).classList.remove('hidden');
+        }
         
-        window.mostrarLogin = () => {
-            document.querySelectorAll('[id^="inicio"], [id^="login"], [id^="registro"], [id^="panel"], [id^="resultado"]').forEach(el => el.classList.add('hidden'));
-            document.getElementById('loginCliente').classList.remove('hidden');
-        };
-        
-        window.mostrarRegistro = () => {
-            document.querySelectorAll('[id^="inicio"], [id^="login"], [id^="registro"], [id^="panel"], [id^="resultado"]').forEach(el => el.classList.add('hidden'));
-            document.getElementById('registroCliente').classList.remove('hidden');
-        };
-        
-        window.mostrarLoginAdmin = () => {
-            document.querySelectorAll('[id^="inicio"], [id^="login"], [id^="registro"], [id^="panel"], [id^="resultado"]').forEach(el => el.classList.add('hidden'));
-            document.getElementById('loginAdmin').classList.remove('hidden');
-        };
-        
-        window.switchTab = (tab) => {
-            document.querySelectorAll('[id^="entrenamientos"], [id^="perfil"], [id^="adminClientes"], [id^="adminPrograms"]').forEach(el => el.classList.add('hidden'));
-            document.getElementById(tab).classList.remove('hidden');
-            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
-        };
-        
-        window.logout = () => {
-            window.clienteActual = null;
-            window.codigoActual = null;
-            volverAlInicio();
-        };
-        
-        window.toast = (mensaje) => {
+        function toast(msg) {
             const div = document.createElement('div');
             div.className = 'toast';
-            div.textContent = mensaje;
+            div.textContent = msg;
             document.body.appendChild(div);
             setTimeout(() => div.remove(), 3000);
-        };
+        }
         
-        // LOGIN CLIENTE
-        window.loginCliente = async () => {
-            const codigo = document.getElementById('codigoLogin').value.trim().toUpperCase();
-            
-            if (!codigo) {
-                toast('Ingresa tu código');
-                return;
-            }
+        async function loginCliente() {
+            const codigo = document.getElementById('codigo-login').value.trim().toUpperCase();
+            if (!codigo) { toast('Ingresa tu código'); return; }
             
             try {
-                const { data, error } = await window.supabase
-                    .from('clientes')
-                    .select('*')
-                    .eq('codigo', codigo)
-                    .single();
+                const { data, error } = await db.from('clientes').select('*').eq('codigo', codigo).single();
+                if (error || !data) { toast('Código no válido'); return; }
                 
-                if (error || !data) {
-                    toast('Código no válido');
-                    return;
-                }
-                
-                window.clienteActual = data;
-                window.codigoActual = codigo;
-                
-                document.querySelectorAll('[id^="inicio"], [id^="login"], [id^="registro"], [id^="panel"], [id^="resultado"]').forEach(el => el.classList.add('hidden'));
-                document.getElementById('panelCliente').classList.remove('hidden');
-                document.getElementById('nombreCliente').textContent = data.nombre;
-                
-            } catch (error) {
-                toast('Error: ' + error.message);
+                clienteActual = data;
+                codigoActual = codigo;
+                document.getElementById('nombre-cliente').textContent = data.nombre;
+                showPage('panel-cliente');
+            } catch (e) {
+                toast('Error: ' + e.message);
             }
-        };
+        }
         
-        // REGISTRO CLIENTE
-        window.registrarCliente = async () => {
-            const nombre = document.getElementById('regNombre').value.trim();
-            
-            if (!nombre) {
-                toast('Ingresa tu nombre');
-                return;
-            }
+        async function registrarCliente() {
+            const nombre = document.getElementById('reg-nombre').value.trim();
+            if (!nombre) { toast('Ingresa tu nombre'); return; }
             
             try {
                 const codigoAleatorio = 'K' + Math.random().toString(36).substring(2, 7).toUpperCase();
                 const id = 'cli_' + Date.now() + '_' + Math.random().toString(36).slice(-4);
                 
-                const { error } = await window.supabase
-                    .from('clientes')
-                    .insert([{
-                        id: id,
-                        nombre: nombre,
-                        codigo: codigoAleatorio,
-                        foto: null
-                    }]);
+                const { error } = await db.from('clientes').insert([{
+                    id: id,
+                    nombre: nombre,
+                    codigo: codigoAleatorio,
+                    foto: null
+                }]);
                 
-                if (error) {
-                    toast('Error: ' + error.message);
-                    return;
-                }
+                if (error) { toast('Error: ' + error.message); return; }
                 
-                window.codigoActual = codigoAleatorio;
-                document.getElementById('codigoMostrado').textContent = codigoAleatorio;
-                
-                document.querySelectorAll('[id^="inicio"], [id^="login"], [id^="registro"], [id^="panel"], [id^="resultado"]').forEach(el => el.classList.add('hidden'));
-                document.getElementById('resultadoRegistro').classList.remove('hidden');
-                
-            } catch (error) {
-                toast('Error: ' + error.message);
+                codigoActual = codigoAleatorio;
+                document.getElementById('codigo-mostrado').textContent = codigoAleatorio;
+                showPage('resultado-registro');
+            } catch (e) {
+                toast('Error: ' + e.message);
             }
-        };
+        }
         
-        window.copiarCodigo = () => {
-            const codigo = document.getElementById('codigoMostrado').textContent;
-            navigator.clipboard.writeText(codigo);
+        function copiarCodigo() {
+            navigator.clipboard.writeText(document.getElementById('codigo-mostrado').textContent);
             toast('¡Código copiado!');
-        };
+        }
         
-        window.continuarAAnamnesis = () => {
-            loginCliente();
-        };
+        function irAlLogin() {
+            document.getElementById('codigo-login').value = codigoActual;
+            showPage('login-cliente');
+        }
         
-        // LOGIN ADMIN
-        window.loginAdmin = () => {
-            const user = document.getElementById('adminUser').value;
-            const pass = document.getElementById('adminPass').value;
-            
+        function loginAdmin() {
+            const user = document.getElementById('admin-user').value;
+            const pass = document.getElementById('admin-pass').value;
             if (user === 'admin' && pass === 'admin123') {
-                document.querySelectorAll('[id^="inicio"], [id^="login"], [id^="registro"], [id^="panel"], [id^="resultado"]').forEach(el => el.classList.add('hidden'));
-                document.getElementById('panelAdmin').classList.remove('hidden');
+                showPage('panel-admin');
             } else {
                 toast('Usuario o contraseña incorrectos');
             }
-        };
+        }
         
-        window.crearClienteAdmin = async () => {
-            const nombre = document.getElementById('adminNuevoCliente').value.trim();
-            
-            if (!nombre) {
-                toast('Ingresa el nombre del cliente');
-                return;
-            }
+        async function crearClienteAdmin() {
+            const nombre = document.getElementById('admin-nuevo-cliente').value.trim();
+            if (!nombre) { toast('Ingresa el nombre'); return; }
             
             try {
                 const codigoAleatorio = 'K' + Math.random().toString(36).substring(2, 7).toUpperCase();
                 const id = 'cli_' + Date.now() + '_' + Math.random().toString(36).slice(-4);
                 
-                const { error } = await window.supabase
-                    .from('clientes')
-                    .insert([{
-                        id: id,
-                        nombre: nombre,
-                        codigo: codigoAleatorio,
-                        foto: null
-                    }]);
+                const { error } = await db.from('clientes').insert([{
+                    id: id,
+                    nombre: nombre,
+                    codigo: codigoAleatorio,
+                    foto: null
+                }]);
                 
                 if (error) throw error;
-                
                 toast(`Cliente "${nombre}" creado con código ${codigoAleatorio}`);
-                document.getElementById('adminNuevoCliente').value = '';
-                
-            } catch (error) {
-                toast('Error: ' + error.message);
+                document.getElementById('admin-nuevo-cliente').value = '';
+            } catch (e) {
+                toast('Error: ' + e.message);
             }
-        };
+        }
+        
+        function logout() {
+            clienteActual = null;
+            codigoActual = null;
+            showPage('inicio');
+            document.getElementById('codigo-login').value = '';
+            document.getElementById('reg-nombre').value = '';
+            document.getElementById('admin-user').value = '';
+            document.getElementById('admin-pass').value = '';
+        }
     </script>
 </body>
 </html>
