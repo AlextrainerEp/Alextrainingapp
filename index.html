@@ -25,9 +25,11 @@
       background: white;
       border-radius: 15px;
       padding: 40px;
-      max-width: 500px;
+      max-width: 600px;
       width: 100%;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-height: 90vh;
+      overflow-y: auto;
     }
 
     .header {
@@ -36,9 +38,9 @@
     }
 
     .logo {
-      width: 80px;
-      height: 80px;
-      margin: 0 auto 20px;
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 15px;
     }
 
     .logo img {
@@ -48,14 +50,13 @@
 
     h1 {
       color: #333;
-      font-size: 28px;
-      margin-bottom: 10px;
+      font-size: 24px;
+      margin-bottom: 8px;
     }
 
     .subtitle {
       color: #666;
-      font-size: 14px;
-      margin-bottom: 20px;
+      font-size: 13px;
     }
 
     .page {
@@ -76,7 +77,7 @@
       padding: 12px 20px;
       border: none;
       border-radius: 8px;
-      font-size: 16px;
+      font-size: 15px;
       cursor: pointer;
       transition: all 0.3s ease;
       font-weight: 600;
@@ -92,15 +93,6 @@
       box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
     }
 
-    .btn-secondary {
-      background: #f0f0f0;
-      color: #333;
-    }
-
-    .btn-secondary:hover {
-      background: #e0e0e0;
-    }
-
     .back-btn {
       background: #f5f5f5;
       color: #333;
@@ -110,7 +102,7 @@
       padding-left: 15px;
     }
 
-    input, textarea {
+    input, textarea, select {
       width: 100%;
       padding: 12px;
       margin: 8px 0;
@@ -120,7 +112,7 @@
       font-family: inherit;
     }
 
-    input:focus, textarea:focus {
+    input:focus, textarea:focus, select:focus {
       outline: none;
       border-color: #667eea;
       box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
@@ -138,72 +130,112 @@
       font-size: 14px;
     }
 
-    .result-box {
-      background: #f0f0f0;
-      padding: 20px;
-      border-radius: 8px;
-      margin: 20px 0;
-      text-align: center;
-    }
-
-    .code-display {
-      background: white;
-      border: 2px solid #667eea;
+    .card {
+      background: #f9f9f9;
       padding: 15px;
       border-radius: 8px;
-      font-size: 24px;
+      margin: 12px 0;
+      border-left: 4px solid #667eea;
+    }
+
+    .card-title {
       font-weight: bold;
-      color: #667eea;
-      margin: 15px 0;
-      letter-spacing: 3px;
-      font-family: 'Courier New', monospace;
+      color: #333;
+      margin-bottom: 8px;
     }
 
-    .copy-btn {
-      background: #667eea;
-      color: white;
-      padding: 10px 20px;
-      border-radius: 6px;
-      border: none;
-      cursor: pointer;
-      font-size: 14px;
-      margin-top: 10px;
-    }
-
-    .copy-btn:hover {
-      background: #764ba2;
+    .card-text {
+      color: #666;
+      font-size: 13px;
+      line-height: 1.5;
     }
 
     .error-box {
       background: #fee;
       border-left: 4px solid #f00;
-      padding: 15px;
+      padding: 12px;
       border-radius: 6px;
-      margin: 15px 0;
+      margin: 12px 0;
       color: #c00;
-      font-family: monospace;
-      font-size: 12px;
-      white-space: pre-wrap;
-      word-break: break-all;
+      font-size: 13px;
     }
 
     .success-box {
       background: #efe;
       border-left: 4px solid #0a0;
-      padding: 15px;
+      padding: 12px;
       border-radius: 6px;
-      margin: 15px 0;
+      margin: 12px 0;
       color: #060;
+      font-size: 13px;
     }
 
     .info-box {
       background: #eef;
       border-left: 4px solid #00a;
-      padding: 15px;
+      padding: 12px;
       border-radius: 6px;
-      margin: 15px 0;
+      margin: 12px 0;
       color: #006;
       font-size: 13px;
+    }
+
+    .chat-box {
+      background: #f5f5f5;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 15px;
+      margin: 15px 0;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .chat-message {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+
+    .chat-message.entrenador {
+      background: #e3f2fd;
+      text-align: left;
+      border-left: 3px solid #2196F3;
+    }
+
+    .chat-message.cliente {
+      background: #f3e5f5;
+      text-align: right;
+      border-right: 3px solid #9c27b0;
+    }
+
+    .chat-message-time {
+      font-size: 11px;
+      color: #999;
+      margin-top: 5px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #eee;
+    }
+
+    .tab {
+      padding: 10px 15px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #999;
+      font-weight: 600;
+      border-bottom: 3px solid transparent;
+      transition: all 0.3s;
+    }
+
+    .tab.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
     }
 
     .loading {
@@ -217,8 +249,8 @@
       border: 3px solid #f3f3f3;
       border-top: 3px solid #667eea;
       border-radius: 50%;
-      width: 30px;
-      height: 30px;
+      width: 25px;
+      height: 25px;
       animation: spin 1s linear infinite;
       margin: 10px auto;
     }
@@ -228,14 +260,52 @@
       100% { transform: rotate(360deg); }
     }
 
-    .text-center {
-      text-align: center;
+    .rpe-selector {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      margin: 10px 0;
     }
 
-    .small {
-      font-size: 12px;
+    .rpe-btn {
+      padding: 8px 12px;
+      border: 2px solid #ddd;
+      background: white;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .rpe-btn:hover {
+      border-color: #667eea;
+    }
+
+    .rpe-btn.selected {
+      background: #667eea;
+      color: white;
+      border-color: #667eea;
+    }
+
+    .workout-item {
+      background: white;
+      border: 1px solid #eee;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 12px 0;
+    }
+
+    .workout-header {
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .workout-date {
       color: #999;
-      margin-top: 10px;
+      font-size: 12px;
     }
   </style>
 </head>
@@ -243,7 +313,7 @@
   <div class="container">
     <div class="header">
       <div class="logo">
-        <img src="https://raw.githubusercontent.com/AlextrainerEP/Alextrainingapp/main/assets/logo.png" alt="Alex Training Lab" onerror="console.log('Logo no cargó')">
+        <img src="https://raw.githubusercontent.com/AlextrainerEP/Alextrainingapp/main/assets/logo.png" alt="Logo">
       </div>
       <h1>Alex Training Lab</h1>
       <p class="subtitle">Tu entrenador personal online</p>
@@ -269,7 +339,6 @@
       </div>
 
       <button class="btn-primary" onclick="loginCliente()" style="width: 100%;">Entrar</button>
-      
       <div id="loginClienteError"></div>
     </div>
 
@@ -285,22 +354,7 @@
       </div>
 
       <button class="btn-primary" onclick="registrarCliente()" style="width: 100%;">Crear mi cuenta</button>
-      
       <div id="registroClienteError"></div>
-    </div>
-
-    <!-- PÁGINA RESULTADO REGISTRO -->
-    <div id="resultado-registro" class="page">
-      <button class="back-btn" onclick="showPage('inicio')">← Volver</button>
-      <div class="result-box">
-        <h2 style="color: #667eea; margin-bottom: 15px;">¡Cuenta creada!</h2>
-        <p style="color: #666; margin-bottom: 15px;">Tu código de acceso es:</p>
-        <div class="code-display" id="codigoDisplay"></div>
-        <p style="color: #666; font-size: 12px; margin-top: 15px;">
-          Guarda este código. Lo necesitarás para entrar a tu panel.
-        </p>
-        <button class="copy-btn" onclick="copiarCodigo()">Copiar código</button>
-      </div>
     </div>
 
     <!-- PÁGINA LOGIN ADMIN -->
@@ -319,8 +373,38 @@
       </div>
 
       <button class="btn-primary" onclick="loginAdmin()" style="width: 100%;">Entrar</button>
-      
       <div id="loginAdminError"></div>
+    </div>
+
+    <!-- PÁGINA PANEL CLIENTE -->
+    <div id="panel-cliente" class="page">
+      <button class="back-btn" onclick="logout()">← Salir</button>
+      <h2 id="nombreClienteDisplay" style="color: #667eea; margin-bottom: 20px;"></h2>
+
+      <div class="tabs">
+        <button class="tab active" onclick="switchClienteTab('entrenamientos')">Entrenamientos</button>
+        <button class="tab" onclick="switchClienteTab('historial')">Historial</button>
+        <button class="tab" onclick="switchClienteTab('chat')">Mensajes</button>
+      </div>
+
+      <!-- TAB: Entrenamientos -->
+      <div id="tab-entrenamientos" class="tab-content">
+        <div id="entrenamientosHoy"></div>
+      </div>
+
+      <!-- TAB: Historial -->
+      <div id="tab-historial" class="tab-content" style="display: none;">
+        <div id="historialCliente"></div>
+      </div>
+
+      <!-- TAB: Chat -->
+      <div id="tab-chat" class="tab-content" style="display: none;">
+        <div class="chat-box" id="chatCliente"></div>
+        <div class="form-group">
+          <textarea id="mensajeCliente" placeholder="Escribe tu mensaje..." rows="3"></textarea>
+          <button class="btn-primary" onclick="enviarMensajeCliente()" style="width: 100%;">Enviar</button>
+        </div>
+      </div>
     </div>
 
     <!-- PÁGINA PANEL ADMIN -->
@@ -328,36 +412,66 @@
       <button class="back-btn" onclick="logout()">← Salir</button>
       <h2 style="color: #333; margin-bottom: 20px;">Panel del entrenador</h2>
 
-      <div class="form-group">
-        <label>Nombre del cliente:</label>
-        <input type="text" id="nombreClienteAdmin" placeholder="Nombre">
+      <div class="tabs">
+        <button class="tab active" onclick="switchAdminTab('crear')">Crear Entrenamiento</button>
+        <button class="tab" onclick="switchAdminTab('clientes')">Mis Clientes</button>
+        <button class="tab" onclick="switchAdminTab('mensajes')">Mensajes</button>
       </div>
 
-      <button class="btn-primary" onclick="crearClienteAdmin()" style="width: 100%;">Crear cliente</button>
-      
-      <div id="panelAdminError"></div>
-      
-      <div id="clientesListAdmin" style="margin-top: 30px;">
-        <h3 style="color: #333; margin-bottom: 15px;">Clientes registrados:</h3>
-        <div id="clientesAdmin"></div>
-      </div>
-    </div>
+      <!-- TAB: Crear Entrenamiento -->
+      <div id="tab-crear" class="tab-content">
+        <div class="form-group">
+          <label>Selecciona cliente:</label>
+          <select id="selectClienteAdmin" onchange="cargarClienteAdmin()">
+            <option value="">-- Selecciona un cliente --</option>
+          </select>
+        </div>
 
-    <!-- PÁGINA PANEL CLIENTE -->
-    <div id="panel-cliente" class="page">
-      <button class="back-btn" onclick="logout()">← Salir</button>
-      <div class="result-box">
-        <h2 id="nombreClienteDisplay" style="color: #667eea;"></h2>
-        <p style="color: #666; margin-top: 10px;">Bienvenido a tu panel</p>
+        <div id="formEntrenamiento" style="display: none;">
+          <div class="form-group">
+            <label>Fecha:</label>
+            <input type="date" id="fechaEntrenamiento">
+          </div>
+
+          <div class="form-group">
+            <label>Título (ej: Día de pierna):</label>
+            <input type="text" id="tituloEntrenamiento" placeholder="Título del entrenamiento">
+          </div>
+
+          <div class="form-group">
+            <label>Descripción:</label>
+            <textarea id="descripcionEntrenamiento" placeholder="Detalles del entrenamiento..." rows="4"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Ejercicios (formato: Nombre - Series x Reps):</label>
+            <textarea id="ejerciciosEntrenamiento" placeholder="Ejemplo:&#10;Sentadilla - 4x8&#10;Prensa - 3x10&#10;Leg curl - 3x12" rows="4"></textarea>
+          </div>
+
+          <button class="btn-primary" onclick="crearEntrenamiento()" style="width: 100%;">Crear Entrenamiento</button>
+          <div id="crearEntrenamientoError"></div>
+        </div>
       </div>
-      
-      <div class="info-box">
-        <p><strong>Próximas funciones:</strong></p>
-        <p style="margin-top: 10px; font-size: 12px;">
-          - Ver tus entrenamientos<br>
-          - Registrar sesiones completadas<br>
-          - Historial de evolución
-        </p>
+
+      <!-- TAB: Mis Clientes -->
+      <div id="tab-clientes" class="tab-content" style="display: none;">
+        <div id="listadoClientes"></div>
+      </div>
+
+      <!-- TAB: Mensajes -->
+      <div id="tab-mensajes" class="tab-content" style="display: none;">
+        <div class="form-group">
+          <label>Selecciona cliente:</label>
+          <select id="selectClienteMensaje" onchange="cargarChatAdmin()">
+            <option value="">-- Selecciona un cliente --</option>
+          </select>
+        </div>
+
+        <div class="chat-box" id="chatAdmin"></div>
+        <div class="form-group">
+          <textarea id="mensajeAdmin" placeholder="Escribe tu respuesta..." rows="3"></textarea>
+          <button class="btn-primary" onclick="enviarMensajeAdmin()" style="width: 100%;">Enviar</button>
+        </div>
       </div>
     </div>
 
@@ -366,41 +480,56 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script>
     // ========================================
-    // CONFIGURACIÓN SUPABASE - CREDENCIALES CORRECTAS
+    // CONFIGURACIÓN SUPABASE
     // ========================================
     const SUPABASE_URL = 'https://zxarhydagapzgozrxaee.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_pcdggueDF2w9LVHDhvRpWg_NhLd1jb9';
 
     let db = null;
     let clienteActual = null;
+    let adminActual = false;
+    let clienteSeleccionadoAdmin = null;
 
-    // Inicializar Supabase
     async function inicializarSupabase() {
       try {
         const { createClient } = window.supabase;
         db = createClient(SUPABASE_URL, SUPABASE_KEY);
-        console.log('✅ Supabase inicializado correctamente');
-        console.log('URL:', SUPABASE_URL);
+        console.log('✅ Supabase inicializado');
       } catch (error) {
-        console.error('❌ Error al inicializar Supabase:', error);
+        console.error('❌ Error Supabase:', error);
       }
     }
 
     // ========================================
-    // NAVEGACIÓN
+    // NAVEGACIÓN Y TABS
     // ========================================
     function showPage(pageId) {
-      document.querySelectorAll('.page').forEach(page => {
-        page.classList.remove('active');
-      });
-      const page = document.getElementById(pageId);
-      if (page) {
-        page.classList.add('active');
-      }
+      document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+      document.getElementById(pageId)?.classList.add('active');
+    }
+
+    function switchClienteTab(tabName) {
+      document.querySelectorAll('#panel-cliente .tab-content').forEach(el => el.style.display = 'none');
+      document.getElementById('tab-' + tabName).style.display = 'block';
+      document.querySelectorAll('#panel-cliente .tab').forEach(el => el.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      if (tabName === 'entrenamientos') cargarEntrenamientosCliente();
+      if (tabName === 'historial') cargarHistorialCliente();
+      if (tabName === 'chat') cargarChatCliente();
+    }
+
+    function switchAdminTab(tabName) {
+      document.querySelectorAll('#panel-admin .tab-content').forEach(el => el.style.display = 'none');
+      document.getElementById('tab-' + tabName).style.display = 'block';
+      document.querySelectorAll('#panel-admin .tab').forEach(el => el.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      if (tabName === 'clientes') cargarClientesAdmin();
     }
 
     // ========================================
-    // REGISTRO CLIENTE
+    // REGISTRO Y LOGIN
     // ========================================
     async function registrarCliente() {
       const nombre = document.getElementById('nombreRegistro').value.trim();
@@ -408,107 +537,65 @@
       errorDiv.innerHTML = '';
 
       if (!nombre) {
-        mostrarError(errorDiv, 'Por favor, ingresa tu nombre');
-        return;
-      }
-
-      if (!db) {
-        mostrarError(errorDiv, 'Error: Supabase no está inicializado. Recarga la página.');
+        errorDiv.innerHTML = '<div class="error-box">Por favor, ingresa tu nombre</div>';
         return;
       }
 
       try {
         errorDiv.innerHTML = '<div class="loading"><div class="spinner"></div>Creando cuenta...</div>';
 
-        // Generar código único
         const numeroCliente = Date.now() % 10000;
         const codigo = 'K' + Math.random().toString(36).substring(2, 7).toUpperCase();
 
-        console.log('Registrando:', nombre, 'Código:', codigo);
+        const { error } = await db.from('clientes').insert([{
+          id: 'Usuario-' + numeroCliente,
+          nombre: nombre,
+          codigo: codigo,
+          foto: null
+        }]);
 
-        // Insertar en Supabase
-        const { data, error } = await db
-          .from('clientes')
-          .insert([
-            {
-              id: 'Usuario-' + numeroCliente,
-              nombre: nombre,
-              codigo: codigo,
-              foto: null
-            }
-          ]);
+        if (error) throw error;
 
-        if (error) {
-          throw new Error(error.message);
-        }
-
-        console.log('✅ Cliente registrado en Supabase');
-        
-        // Mostrar resultado
-        document.getElementById('codigoDisplay').textContent = codigo;
-        showPage('resultado-registro');
+        errorDiv.innerHTML = `<div class="success-box">✅ Cuenta creada. Tu código es: <strong>${codigo}</strong><br>Cópialo para acceder.</div>`;
+        document.getElementById('nombreRegistro').value = '';
 
       } catch (error) {
-        console.error('❌ Error en registro:', error);
-        mostrarError(errorDiv, 'Error: ' + error.message);
+        errorDiv.innerHTML = `<div class="error-box">Error: ${error.message}</div>`;
       }
     }
 
-    // ========================================
-    // LOGIN CLIENTE
-    // ========================================
     async function loginCliente() {
       const codigo = document.getElementById('codigoLogin').value.trim().toUpperCase();
       const errorDiv = document.getElementById('loginClienteError');
       errorDiv.innerHTML = '';
 
       if (!codigo) {
-        mostrarError(errorDiv, 'Por favor, ingresa tu código');
-        return;
-      }
-
-      if (!db) {
-        mostrarError(errorDiv, 'Error: Supabase no está inicializado. Recarga la página.');
+        errorDiv.innerHTML = '<div class="error-box">Por favor, ingresa tu código</div>';
         return;
       }
 
       try {
-        errorDiv.innerHTML = '<div class="loading"><div class="spinner"></div>Verificando código...</div>';
+        errorDiv.innerHTML = '<div class="loading"><div class="spinner"></div>Verificando...</div>';
 
-        console.log('Buscando cliente con código:', codigo);
+        const { data, error } = await db.from('clientes').select('*').eq('codigo', codigo);
 
-        // Buscar cliente por código
-        const { data, error } = await db
-          .from('clientes')
-          .select('*')
-          .eq('codigo', codigo);
-
-        if (error) {
-          throw new Error(error.message);
-        }
-
+        if (error) throw error;
         if (!data || data.length === 0) {
-          mostrarError(errorDiv, 'Código no válido. Verifica que está correcto.');
+          errorDiv.innerHTML = '<div class="error-box">Código no válido</div>';
           return;
         }
 
-        const cliente = data[0];
-        console.log('✅ Cliente encontrado:', cliente.nombre);
-
-        clienteActual = cliente;
-        document.getElementById('nombreClienteDisplay').textContent = cliente.nombre;
+        clienteActual = data[0];
+        adminActual = false;
+        document.getElementById('nombreClienteDisplay').textContent = clienteActual.nombre;
         showPage('panel-cliente');
-        errorDiv.innerHTML = '';
+        cargarEntrenamientosCliente();
 
       } catch (error) {
-        console.error('❌ Error en login:', error);
-        mostrarError(errorDiv, 'Error: ' + error.message);
+        errorDiv.innerHTML = `<div class="error-box">Error: ${error.message}</div>`;
       }
     }
 
-    // ========================================
-    // LOGIN ADMIN
-    // ========================================
     function loginAdmin() {
       const user = document.getElementById('adminUser').value;
       const pass = document.getElementById('adminPass').value;
@@ -516,129 +603,329 @@
       errorDiv.innerHTML = '';
 
       if (user === 'admin' && pass === 'admin123') {
+        adminActual = true;
         showPage('panel-admin');
-        cargarClientes();
+        cargarClientesParaAdmin();
       } else {
-        mostrarError(errorDiv, 'Usuario o contraseña incorrectos');
+        errorDiv.innerHTML = '<div class="error-box">Usuario o contraseña incorrectos</div>';
       }
     }
 
     // ========================================
-    // PANEL ADMIN - CREAR CLIENTE
+    // PANEL CLIENTE - ENTRENAMIENTOS
     // ========================================
-    async function crearClienteAdmin() {
-      const nombre = document.getElementById('nombreClienteAdmin').value.trim();
-      const errorDiv = document.getElementById('panelAdminError');
-      errorDiv.innerHTML = '';
-
-      if (!nombre) {
-        mostrarError(errorDiv, 'Por favor, ingresa un nombre');
-        return;
-      }
-
-      if (!db) {
-        mostrarError(errorDiv, 'Error: Supabase no está inicializado.');
-        return;
-      }
+    async function cargarEntrenamientosCliente() {
+      if (!clienteActual) return;
 
       try {
-        errorDiv.innerHTML = '<div class="loading"><div class="spinner"></div>Creando cliente...</div>';
-
-        const numeroCliente = Date.now() % 10000;
-        const codigo = 'K' + Math.random().toString(36).substring(2, 7).toUpperCase();
-
-        const { data, error } = await db
-          .from('clientes')
-          .insert([
-            {
-              id: 'Usuario-' + numeroCliente,
-              nombre: nombre,
-              codigo: codigo,
-              foto: null
-            }
-          ]);
-
-        if (error) {
-          throw new Error(error.message);
-        }
-
-        console.log('✅ Cliente creado desde admin:', nombre, codigo);
-        document.getElementById('nombreClienteAdmin').value = '';
-        errorDiv.innerHTML = '<div class="success-box">✅ Cliente creado correctamente</div>';
-        
-        // Recargar lista
-        setTimeout(() => {
-          errorDiv.innerHTML = '';
-          cargarClientes();
-        }, 2000);
-
-      } catch (error) {
-        console.error('❌ Error:', error);
-        mostrarError(errorDiv, 'Error: ' + error.message);
-      }
-    }
-
-    // ========================================
-    // CARGAR CLIENTES (ADMIN)
-    // ========================================
-    async function cargarClientes() {
-      if (!db) return;
-
-      try {
-        const { data, error } = await db
-          .from('clientes')
-          .select('*');
+        const hoy = new Date().toISOString().split('T')[0];
+        const { data, error } = await db.from('entrenamientos')
+          .select('*')
+          .eq('cliente_id', clienteActual.id)
+          .gte('fecha', hoy)
+          .limit(10);
 
         if (error) throw error;
 
-        const clientesDiv = document.getElementById('clientesAdmin');
+        const div = document.getElementById('entrenamientosHoy');
         if (!data || data.length === 0) {
-          clientesDiv.innerHTML = '<p style="color: #999;">Sin clientes aún</p>';
+          div.innerHTML = '<div class="info-box">No tienes entrenamientos asignados aún</div>';
           return;
         }
 
-        clientesDiv.innerHTML = data.map(c => `
-          <div style="background: #f9f9f9; padding: 12px; margin: 8px 0; border-radius: 6px;">
-            <strong>${c.nombre}</strong><br>
-            <span style="color: #667eea; font-family: monospace;">Código: ${c.codigo}</span><br>
-            <span style="color: #999; font-size: 12px;">ID: ${c.id}</span>
+        div.innerHTML = data.map(e => `
+          <div class="workout-item">
+            <div class="workout-header">
+              <span>${e.datos?.titulo || 'Entrenamiento'}</span>
+              <span class="workout-date">${e.fecha}</span>
+            </div>
+            <div class="card-text">${e.datos?.descripcion || ''}</div>
+            ${e.datos?.ejercicios ? '<div style="margin-top: 10px; color: #667eea; font-weight: 600;">Ejercicios:<br>' + e.datos.ejercicios.split('\n').join('<br>') + '</div>' : ''}
+            <div style="margin-top: 12px;">
+              <label>Mi RPE:</label>
+              <div class="rpe-selector" id="rpe-${e.id}">
+                <button class="rpe-btn" onclick="registrarRPE('${e.id}', 0)">0</button>
+                <button class="rpe-btn" onclick="registrarRPE('${e.id}', 1)">1</button>
+                <button class="rpe-btn" onclick="registrarRPE('${e.id}', 2)">2</button>
+                <button class="rpe-btn" onclick="registrarRPE('${e.id}', 3)">3</button>
+                <button class="rpe-btn" onclick="registrarRPE('${e.id}', 4)">4</button>
+                <button class="rpe-btn" onclick="registrarRPE('${e.id}', 5)">5</button>
+                <button class="rpe-btn" onclick="registrarRPE('${e.id}', 6)">6</button>
+                <button class="rpe-btn" onclick="registrarRPE('${e.id}', 7)">7</button>
+                <button class="rpe-btn" onclick="registrarRPE('${e.id}', 8)">8</button>
+                <button class="rpe-btn" onclick="registrarRPE('${e.id}', 9)">9</button>
+                <button class="rpe-btn" onclick="registrarRPE('${e.id}', 10)">10</button>
+              </div>
+            </div>
           </div>
         `).join('');
 
       } catch (error) {
-        console.error('❌ Error al cargar clientes:', error);
+        document.getElementById('entrenamientosHoy').innerHTML = `<div class="error-box">Error: ${error.message}</div>`;
+      }
+    }
+
+    function registrarRPE(entrenamientoId, rpe) {
+      alert(`RPE registrado: ${rpe}\n(Esta funcionalidad se guardará en la siguiente versión)`);
+      document.querySelectorAll(`#rpe-${entrenamientoId} .rpe-btn`).forEach(btn => btn.classList.remove('selected'));
+      event.target.classList.add('selected');
+    }
+
+    async function cargarHistorialCliente() {
+      if (!clienteActual) return;
+
+      try {
+        const { data, error } = await db.from('entrenamientos')
+          .select('*')
+          .eq('cliente_id', clienteActual.id)
+          .order('fecha', { ascending: false });
+
+        if (error) throw error;
+
+        const div = document.getElementById('historialCliente');
+        if (!data || data.length === 0) {
+          div.innerHTML = '<div class="info-box">No hay historial aún</div>';
+          return;
+        }
+
+        div.innerHTML = data.map(e => `
+          <div class="card">
+            <div class="card-title">${e.datos?.titulo || 'Entrenamiento'}</div>
+            <div class="card-text">
+              Fecha: ${e.fecha}<br>
+              ${e.datos?.descripcion || ''}<br>
+              <em style="color: #999;">Estado: ${e.estado || 'pendiente'}</em>
+            </div>
+          </div>
+        `).join('');
+
+      } catch (error) {
+        document.getElementById('historialCliente').innerHTML = `<div class="error-box">Error: ${error.message}</div>`;
+      }
+    }
+
+    async function cargarChatCliente() {
+      if (!clienteActual) return;
+
+      try {
+        const { data, error } = await db.from('mensajes')
+          .select('*')
+          .eq('cliente_id', clienteActual.id)
+          .order('fecha', { ascending: true });
+
+        if (error) throw error;
+
+        const div = document.getElementById('chatCliente');
+        if (!data || data.length === 0) {
+          div.innerHTML = '<div class="info-box">Sin mensajes aún</div>';
+          return;
+        }
+
+        div.innerHTML = data.map(m => `
+          <div class="chat-message ${m.remitente}">
+            <strong>${m.remitente === 'entrenador' ? 'Alex' : 'Tú'}:</strong><br>
+            ${m.mensaje}
+            <div class="chat-message-time">${new Date(m.fecha).toLocaleString('es-ES')}</div>
+          </div>
+        `).join('');
+
+        div.scrollTop = div.scrollHeight;
+
+      } catch (error) {
+        document.getElementById('chatCliente').innerHTML = `<div class="error-box">Error: ${error.message}</div>`;
+      }
+    }
+
+    async function enviarMensajeCliente() {
+      const mensaje = document.getElementById('mensajeCliente').value.trim();
+      if (!mensaje || !clienteActual) return;
+
+      try {
+        const { error } = await db.from('mensajes').insert([{
+          cliente_id: clienteActual.id,
+          remitente: 'cliente',
+          mensaje: mensaje,
+          fecha: new Date().toISOString()
+        }]);
+
+        if (error) throw error;
+
+        document.getElementById('mensajeCliente').value = '';
+        cargarChatCliente();
+
+      } catch (error) {
+        alert('Error al enviar: ' + error.message);
       }
     }
 
     // ========================================
-    // FUNCIONES AUXILIARES
+    // PANEL ADMIN - ENTRENAMIENTOS
     // ========================================
-    function mostrarError(divError, mensaje) {
-      divError.innerHTML = `<div class="error-box">${mensaje}</div>`;
+    async function cargarClientesParaAdmin() {
+      try {
+        const { data, error } = await db.from('clientes').select('id, nombre');
+        if (error) throw error;
+
+        const select = document.getElementById('selectClienteAdmin');
+        const selectMensaje = document.getElementById('selectClienteMensaje');
+        
+        [select, selectMensaje].forEach(s => {
+          s.innerHTML = '<option value="">-- Selecciona un cliente --</option>';
+          data?.forEach(c => {
+            s.innerHTML += `<option value="${c.id}">${c.nombre}</option>`;
+          });
+        });
+      } catch (error) {
+        console.error('Error:', error);
+      }
     }
 
-    function copiarCodigo() {
-      const codigo = document.getElementById('codigoDisplay').textContent;
-      navigator.clipboard.writeText(codigo).then(() => {
-        alert('✅ Código copiado');
-      });
+    function cargarClienteAdmin() {
+      const id = document.getElementById('selectClienteAdmin').value;
+      clienteSeleccionadoAdmin = id;
+      document.getElementById('formEntrenamiento').style.display = id ? 'block' : 'none';
     }
 
+    async function crearEntrenamiento() {
+      if (!clienteSeleccionadoAdmin) {
+        alert('Selecciona un cliente');
+        return;
+      }
+
+      const fecha = document.getElementById('fechaEntrenamiento').value;
+      const titulo = document.getElementById('tituloEntrenamiento').value;
+      const descripcion = document.getElementById('descripcionEntrenamiento').value;
+      const ejercicios = document.getElementById('ejerciciosEntrenamiento').value;
+      const errorDiv = document.getElementById('crearEntrenamientoError');
+
+      if (!fecha || !titulo) {
+        errorDiv.innerHTML = '<div class="error-box">Completa los campos requeridos</div>';
+        return;
+      }
+
+      try {
+        errorDiv.innerHTML = '<div class="loading"><div class="spinner"></div>Creando...</div>';
+
+        const { error } = await db.from('entrenamientos').insert([{
+          cliente_id: clienteSeleccionadoAdmin,
+          fecha: fecha,
+          datos: {
+            titulo: titulo,
+            descripcion: descripcion,
+            ejercicios: ejercicios
+          },
+          estado: 'pendiente'
+        }]);
+
+        if (error) throw error;
+
+        errorDiv.innerHTML = '<div class="success-box">✅ Entrenamiento creado</div>';
+        document.getElementById('fechaEntrenamiento').value = '';
+        document.getElementById('tituloEntrenamiento').value = '';
+        document.getElementById('descripcionEntrenamiento').value = '';
+        document.getElementById('ejerciciosEntrenamiento').value = '';
+
+      } catch (error) {
+        errorDiv.innerHTML = `<div class="error-box">Error: ${error.message}</div>`;
+      }
+    }
+
+    async function cargarClientesAdmin() {
+      try {
+        const { data, error } = await db.from('clientes').select('*');
+        if (error) throw error;
+
+        const div = document.getElementById('listadoClientes');
+        if (!data || data.length === 0) {
+          div.innerHTML = '<div class="info-box">Sin clientes</div>';
+          return;
+        }
+
+        div.innerHTML = data.map(c => `
+          <div class="card">
+            <div class="card-title">${c.nombre}</div>
+            <div class="card-text">
+              Código: <strong>${c.codigo}</strong><br>
+              ID: ${c.id}
+            </div>
+          </div>
+        `).join('');
+
+      } catch (error) {
+        document.getElementById('listadoClientes').innerHTML = `<div class="error-box">Error: ${error.message}</div>`;
+      }
+    }
+
+    async function cargarChatAdmin() {
+      const clienteId = document.getElementById('selectClienteMensaje').value;
+      if (!clienteId) return;
+
+      try {
+        const { data, error } = await db.from('mensajes')
+          .select('*')
+          .eq('cliente_id', clienteId)
+          .order('fecha', { ascending: true });
+
+        if (error) throw error;
+
+        const div = document.getElementById('chatAdmin');
+        if (!data || data.length === 0) {
+          div.innerHTML = '<div class="info-box">Sin mensajes</div>';
+          return;
+        }
+
+        div.innerHTML = data.map(m => `
+          <div class="chat-message ${m.remitente}">
+            <strong>${m.remitente === 'entrenador' ? 'Tú' : 'Cliente'}:</strong><br>
+            ${m.mensaje}
+            <div class="chat-message-time">${new Date(m.fecha).toLocaleString('es-ES')}</div>
+          </div>
+        `).join('');
+
+        div.scrollTop = div.scrollHeight;
+
+      } catch (error) {
+        document.getElementById('chatAdmin').innerHTML = `<div class="error-box">Error: ${error.message}</div>`;
+      }
+    }
+
+    async function enviarMensajeAdmin() {
+      const clienteId = document.getElementById('selectClienteMensaje').value;
+      const mensaje = document.getElementById('mensajeAdmin').value.trim();
+      
+      if (!clienteId || !mensaje) return;
+
+      try {
+        const { error } = await db.from('mensajes').insert([{
+          cliente_id: clienteId,
+          remitente: 'entrenador',
+          mensaje: mensaje,
+          fecha: new Date().toISOString()
+        }]);
+
+        if (error) throw error;
+
+        document.getElementById('mensajeAdmin').value = '';
+        cargarChatAdmin();
+
+      } catch (error) {
+        alert('Error: ' + error.message);
+      }
+    }
+
+    // ========================================
+    // LOGOUT
+    // ========================================
     function logout() {
       clienteActual = null;
-      document.getElementById('nombreRegistro').value = '';
-      document.getElementById('codigoLogin').value = '';
-      document.getElementById('nombreClienteAdmin').value = '';
-      document.getElementById('adminUser').value = '';
-      document.getElementById('adminPass').value = '';
+      adminActual = false;
       showPage('inicio');
     }
 
     // ========================================
-    // INICIALIZAR AL CARGAR
+    // INICIALIZAR
     // ========================================
     window.addEventListener('load', () => {
-      console.log('Página cargada. Inicializando...');
       inicializarSupabase();
     });
   </script>
