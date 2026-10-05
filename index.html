@@ -179,19 +179,26 @@ async function registrarClienteNuevo(){
       return;
     }
     
-    const codigoAleatorio = 'K' + Math.random().toString(36).substring(2, 7).toUpperCase();
+   const codigoAleatorio = 'K' + Math.random().toString(36).substring(2, 7).toUpperCase();
 const id = 'cli_' + Date.now() + '_' + Math.random().toString(36).slice(-4);
 
 await supabaseCall('POST', '/clientes', {
   id,
   nombre: nombre.trim(),
   codigo: codigoAleatorio,
-  email: email.trim(),
-  anamnesis_completada: false,
-  creado: new Date().toISOString()
+  foto: null
 });
 
 // Mostrar el código al usuario
+const panel = document.getElementById('panel');
+panel.innerHTML = `
+  <div style="text-align:center; padding:40px; background:#f8f9fa; border-radius:8px;">
+    <h2>¡Cuenta creada!</h2>
+    <p style="font-size:16px; color:#666;">Tu código: <strong>${codigoAleatorio}</strong></p>
+    <button onclick="navigator.clipboard.writeText('${codigoAleatorio}'); alert('¡Copiado!')" style="padding:10px 20px; background:#007bff; color:white; border:none; border-radius:4px; cursor:pointer; margin:10px 0; font-weight:bold;">📋 Copiar</button>
+    <button onclick="render()" style="padding:12px 30px; background:#333; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; width:100%; margin-top:20px;">Continuar →</button>
+  </div>
+`;// Mostrar el código al usuario
 const panel = document.getElementById('panel');
 panel.innerHTML = `
   <div style="text-align:center; padding:40px; background:#f8f9fa; border-radius:8px;">
