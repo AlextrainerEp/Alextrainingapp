@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alex Training Lab</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
+    <title>Alex Training Lab - App Funcional</title>
     <style>
         * {
             margin: 0;
@@ -18,52 +16,18 @@
             --dark: #0f0f0f;
             --dark-alt: #1a1a1a;
             --light: #e0e0e0;
-            --gray: #999;
-            --success: #4caf50;
-            --danger: #f44336;
-        }
-
-        html {
-            scroll-padding-top: 70px;
         }
 
         body {
-            font-family: 'Segoe UI', sans-serif;
-            background: #1a1a1a;
-            color: #333;
-            position: relative;
+            font-family: 'Segoe UI', Tahoma, Geneva, sans-serif;
+            background: #f5f5f5;
         }
 
-        #loginView {
-            background: linear-gradient(135deg, rgba(15, 15, 15, 0.95) 0%, rgba(26, 26, 26, 0.95) 100%);
-            min-height: 100vh;
-            position: relative;
-            overflow: hidden;
-        }
-
-        #loginView::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 800px;
-            height: 800px;
-            background-image: url('fondo-leon.jpeg');
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-            opacity: 0.15;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        /* HEADER */
+        /* ===== HEADER ===== */
         .app-header {
-            background: linear-gradient(135deg, var(--dark) 0%, var(--dark-alt) 100%);
+            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
             border-bottom: 3px solid var(--primary);
-            padding: 14px 20px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+            padding: 12px 20px;
             position: sticky;
             top: 0;
             z-index: 1000;
@@ -75,1684 +39,423 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 20px;
         }
 
         .header-brand {
             display: flex;
             align-items: center;
             gap: 12px;
-            cursor: pointer;
-            flex: 1;
         }
 
         .header-logo {
-            width: 56px;
-            height: 56px;
+            width: 45px;
+            height: 45px;
+            background: #d4af37;
+            border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 6px;
-            background: rgba(212, 175, 55, 0.05);
-            border: 2px solid var(--primary);
-            overflow: hidden;
+            font-weight: 900;
+            color: #000;
+            font-size: 1.2em;
         }
 
-        .header-logo img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            padding: 2px;
-        }
-
-        .header-text {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .header-title {
-            font-size: 1.1em;
-            font-weight: 800;
-            letter-spacing: 1px;
+        .header-text h1 {
+            font-size: 0.95em;
             color: var(--primary);
+            margin: 0;
+            letter-spacing: 1px;
         }
 
-        .header-subtitle {
-            font-size: 0.7em;
-            color: #999;
-            letter-spacing: 0.5px;
-            margin-top: 2px;
+        .header-text p {
+            font-size: 0.65em;
+            color: #888;
+            margin: 0;
         }
 
         .header-user {
             display: flex;
             align-items: center;
             gap: 12px;
+            display: none;
+        }
+
+        .user-badge {
+            background: var(--primary);
+            color: #000;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
         }
 
         .btn-logout {
-            background: var(--danger);
+            background: #f44336;
             color: white;
             border: none;
             padding: 8px 16px;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 0.9em;
-            font-weight: bold;
+            font-weight: 600;
         }
 
         .btn-logout:hover {
             background: #d32f2f;
         }
 
-        .user-badge {
-            background: var(--primary);
-            color: #000;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-weight: 600;
-            font-size: 0.85em;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .user-badge:hover {
-            background: #e5c158;
-            transform: scale(1.05);
-        }
-
-        /* MAIN CONTAINER */
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-            min-height: calc(100vh - 100px);
-        }
-
-        /* TABS */
-        .tabs {
+        /* ===== LOGIN ===== */
+        .login-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+            background-image: url('fondo-banner.jpeg');
+            background-size: cover;
+            background-position: center;
+            background-blend-mode: darken;
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            border-bottom: 2px solid #ddd;
-        }
-
-        .tab-btn {
-            background: #f0f0f0;
-            border: none;
-            padding: 10px 16px;
-            cursor: pointer;
-            font-size: 0.95em;
-            border-radius: 5px 5px 0 0;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            color: #333;
-        }
-
-        .tab-btn.active {
-            background: white;
-            color: var(--primary);
-            border-bottom: 3px solid var(--primary);
-        }
-
-        .tab-content {
-            display: none;
+            align-items: center;
+            justify-content: center;
             padding: 20px;
+        }
+
+        .login-box {
             background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        /* FORMS */
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 6px;
-            font-weight: 500;
-            color: #333;
-            font-size: 0.95em;
-        }
-
-        input[type="text"],
-        input[type="email"],
-        input[type="tel"],
-        input[type="date"],
-        input[type="number"],
-        textarea,
-        select {
+            padding: 50px;
+            border-radius: 10px;
+            max-width: 500px;
             width: 100%;
-            padding: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        .login-logo-box {
+            margin-bottom: 30px;
+            font-size: 3em;
+            font-weight: 900;
+            color: var(--primary);
+        }
+
+        .login-title {
+            color: var(--primary);
+            font-size: 2em;
+            margin: 20px 0 5px 0;
+            letter-spacing: 2px;
+            font-weight: 800;
+        }
+
+        .login-subtitle {
+            color: #666;
+            font-size: 0.95em;
+            margin: 0 0 30px 0;
+            letter-spacing: 1px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
             border: 1px solid #ddd;
             border-radius: 5px;
             font-size: 0.95em;
-            font-family: inherit;
         }
 
-        textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
-
-        input:focus,
-        textarea:focus,
-        select:focus {
+        .form-group input:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.1);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
         }
 
-        .row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-        }
-
-        /* BUTTONS */
-        .btn {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 0.95em;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary {
+        .btn-login {
+            width: 100%;
+            padding: 14px;
             background: var(--primary);
             color: #000;
-        }
-
-        .btn-primary:hover {
-            background: #e5c158;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
-        }
-
-        .btn-secondary {
-            background: #555;
-            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            font-weight: 700;
+            cursor: pointer;
             margin-top: 10px;
         }
 
-        .btn-secondary:hover {
-            background: #333;
+        .btn-login:hover {
+            background: #e5c158;
+            transform: translateY(-2px);
         }
 
-        .btn-small {
-            padding: 6px 12px;
-            font-size: 0.85em;
-        }
-
-        .btn-danger {
-            background: var(--danger);
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background: #d32f2f;
-        }
-
-        /* ALERT */
-        .alert {
-            padding: 12px 16px;
+        .demo-info {
+            background: #f0f0f0;
+            padding: 12px;
             border-radius: 5px;
-            margin-bottom: 16px;
-            font-weight: 500;
-        }
-
-        .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border-left: 4px solid #28a745;
-        }
-
-        .alert-danger {
-            background: #f8d7da;
-            color: #721c24;
-            border-left: 4px solid #f44336;
-        }
-
-        .alert-info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border-left: 4px solid #17a2b8;
-        }
-
-        /* CLIENTE CARD */
-        .cliente-card {
-            background: white;
-            padding: 16px;
-            border-radius: 8px;
-            margin-bottom: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border-left: 4px solid var(--primary);
-        }
-
-        .cliente-card:hover {
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-            transform: translateX(4px);
-        }
-
-        .cliente-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-
-        .cliente-name {
-            font-size: 1.1em;
-            font-weight: 700;
-            color: var(--primary);
-        }
-
-        .cliente-codigo {
+            margin-top: 20px;
             font-size: 0.85em;
-            color: #999;
-            font-weight: 500;
+            color: #666;
         }
 
-        /* ANAMNESIS SECTIONS */
-        .anamnesis-section {
-            background: #f9f9f9;
-            padding: 20px;
-            margin-bottom: 20px;
-            border-radius: 6px;
-            border-left: 4px solid var(--primary);
-        }
-
-        .anamnesis-section h3 {
-            color: var(--primary);
-            margin-bottom: 12px;
-            font-size: 1.05em;
-        }
-
-        .checkbox-group,
-        .radio-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin-bottom: 12px;
-        }
-
-        .checkbox-group label,
-        .radio-group label {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            cursor: pointer;
-            font-weight: normal;
-            width: auto;
-        }
-
-        .checkbox-group input[type="checkbox"],
-        .radio-group input[type="radio"] {
-            width: auto;
-            margin: 0;
-        }
-
-        .scale-input {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .scale-input label {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 36px;
-            height: 36px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 500;
-            background: white;
-            width: auto;
-            padding: 4px 8px;
-        }
-
-        .scale-input input[type="radio"] {
-            width: auto;
-            margin-right: 4px;
-        }
-
-        /* MODAL */
-        .modal {
+        /* ===== DASHBOARD ===== */
+        .dashboard {
             display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 2000;
-            overflow-y: auto;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
         }
 
-        .modal.active {
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .dashboard.active {
+            display: block;
         }
 
-        .modal-content {
-            background: white;
-            border-radius: 8px;
-            padding: 30px;
-            max-width: 900px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 12px;
-            border-bottom: 2px solid #ddd;
-        }
-
-        .modal-title {
-            font-size: 1.3em;
-            font-weight: 700;
+        .dashboard-title {
             color: var(--primary);
+            font-size: 1.8em;
+            margin-bottom: 30px;
+            font-weight: 700;
         }
 
-        .modal-close {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: #999;
-        }
-
-        .modal-close:hover {
-            color: #333;
-        }
-
-        /* LISTA CLIENTES */
-        .clientes-list {
+        .cards-grid {
             display: grid;
-            gap: 12px;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
         }
 
-        .cliente-item {
+        .card {
             background: white;
-            padding: 16px;
+            padding: 25px;
             border-radius: 8px;
-            border-left: 4px solid var(--primary);
+            border-left: 5px solid var(--primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             cursor: pointer;
             transition: all 0.3s ease;
         }
 
-        .cliente-item:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            transform: translateX(4px);
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
         }
 
-        .cliente-item-name {
+        .card-title {
+            font-size: 1.2em;
             font-weight: 700;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .card-code {
+            font-size: 0.8em;
             color: var(--primary);
-            margin-bottom: 4px;
+            font-weight: 600;
+            margin-bottom: 12px;
         }
 
-        .cliente-item-info {
-            font-size: 0.85em;
-            color: #999;
+        .card-info {
+            font-size: 0.9em;
+            color: #666;
+            line-height: 1.6;
         }
 
-        /* MOBILE */
+        .hero {
+            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+            color: white;
+            padding: 50px;
+            border-radius: 10px;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .hero-title {
+            font-size: 2em;
+            color: var(--primary);
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+
+        .hero-subtitle {
+            font-size: 1.1em;
+            color: #e0e0e0;
+            margin-bottom: 20px;
+        }
+
+        .hero-text {
+            color: #bbb;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
         @media (max-width: 768px) {
-            .container {
-                padding: 12px;
+            .login-box {
+                padding: 30px 20px;
             }
 
-            .row {
+            .login-title {
+                font-size: 1.5em;
+            }
+
+            .cards-grid {
                 grid-template-columns: 1fr;
-            }
-
-            .tabs {
-                gap: 6px;
-            }
-
-            .tab-btn {
-                font-size: 0.85em;
-                padding: 8px 12px;
-            }
-
-            .modal-content {
-                width: 95%;
-                padding: 20px;
             }
         }
     </style>
 </head>
 <body>
+
     <!-- HEADER -->
     <header class="app-header">
         <div class="header-container">
-            <div class="header-brand" onclick="goToHome()">
-                <div class="header-logo">
-                    <img src="logo.jpeg" alt="Logo" style="border-radius: 4px;">
-                </div>
+            <div class="header-brand">
+                <div class="header-logo"><img src="logo-header.png" alt="Logo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;"></div>
                 <div class="header-text">
-                    <div class="header-title">ALEX TRAINING LAB</div>
-                    <div class="header-subtitle">Entrenamiento Personal</div>
+                    <h1>ALEX TRAINING LAB</h1>
+                    <p>Entrenamiento Personal</p>
                 </div>
             </div>
-            <div class="header-user">
-                <span style="color: #999; font-size: 0.9em;">Usuario:</span>
+            <div class="header-user" id="headerUser">
+                <span style="color: #888; font-size: 0.9em;">Usuario:</span>
                 <span class="user-badge" id="userDisplay"></span>
-                <span style="color: #666;">|</span>
-                <span class="user-badge" id="userType" style="background: var(--primary); cursor: default;"></span>
                 <button class="btn-logout" onclick="logout()">Cerrar Sesión</button>
             </div>
         </div>
     </header>
 
-    <!-- MAIN CONTAINER -->
-    <div class="container">
-        <!-- LOGIN VIEW -->
-        <div id="loginView" style="display: none; position: relative; z-index: 2;">
-            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: calc(100vh - 70px); padding: 40px 20px; text-align: center;">
-                
-                <!-- LOGO GRANDE -->
-                <div style="margin-bottom: 30px;">
-                    <img src="logo.jpeg" alt="Alex Training Lab" style="max-height: 120px; border-radius: 8px; filter: drop-shadow(0 4px 12px rgba(212, 175, 55, 0.3));">
-                </div>
-
-                <!-- TÍTULO -->
-                <h1 style="color: var(--primary); font-size: 3em; font-weight: 800; margin: 20px 0 10px 0; letter-spacing: 3px; text-shadow: 0 2px 8px rgba(0,0,0,0.5);">ALEX TRAINING LAB</h1>
-                <p style="color: #fff; font-size: 1.3em; margin: 0 0 40px 0; letter-spacing: 2px; font-weight: 300;">TU ENTRENADOR PERSONAL</p>
-
-                <!-- FORMULARIO -->
-                <div style="background: rgba(255, 255, 255, 0.95); padding: 40px; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); max-width: 450px; width: 100%;">
-                    <h2 style="text-align: left; margin-bottom: 24px; color: #333; font-size: 1.1em;">Tu Código o Contraseña</h2>
-                    <div class="form-group">
-                        <input type="text" id="loginInput" autocomplete="off" placeholder="Ingresa tu código de acceso o contraseña de entrenador" style="width: 100%; padding: 14px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.95em;">
-                    </div>
-                    <button class="btn btn-primary" onclick="handleLogin()" style="width: 100%; padding: 14px; margin-top: 16px;">Acceder</button>
-                    <div id="loginAlert" style="margin-top: 16px;"></div>
-                </div>
-
-                <!-- ESLOGAN ABAJO -->
-                <p style="color: #999; font-size: 0.95em; margin-top: 30px; max-width: 600px;">Esta es tu app de entrenamiento personal, donde puedes cumplir todos tus retos</p>
+    <!-- LOGIN -->
+    <div id="loginView" class="login-container">
+        <div class="login-box">
+            <div style="margin-bottom: 30px; text-align: center;">
+                <img src="logo-completo.png" alt="Alex Training Lab" style="max-height: 150px; border-radius: 8px; filter: drop-shadow(0 4px 12px rgba(212, 175, 55, 0.3));">
             </div>
-        </div>
-
-        <!-- ENTRENADOR VIEW -->
-        <div id="trainerView" style="display: none;">
-            <div class="tabs">
-                <button class="tab-btn active" onclick="switchTab('tab-clientes', this)">👥 Mis Clientes</button>
-                <button class="tab-btn" onclick="switchTab('tab-nuevo-cliente', this)">➕ Nuevo Cliente</button>
-            </div>
-
-            <!-- TAB: CLIENTES -->
-            <div id="tab-clientes" class="tab-content active">
-                <h2 style="margin-bottom: 20px; color: var(--primary);">Lista de Clientes</h2>
-                <div id="clientesList" class="clientes-list"></div>
-            </div>
-
-            <!-- TAB: NUEVO CLIENTE -->
-            <div id="tab-nuevo-cliente" class="tab-content">
-                <h2 style="margin-bottom: 20px; color: var(--primary);">Registrar Nuevo Cliente</h2>
+            <h1 class="login-title">ALEX TRAINING LAB</h1>
+            <p class="login-subtitle">TU ENTRENADOR PERSONAL</p>
+            
+            <form onsubmit="handleLogin(event)">
                 <div class="form-group">
-                    <label>Nombre Completo *</label>
-                    <input type="text" id="newClientName" placeholder="Nombre y apellidos">
+                    <label>Código de Acceso o Contraseña</label>
+                    <input type="text" id="loginInput" placeholder="Ej: CLI-001 o Alex app" required autocomplete="off">
                 </div>
-                <div class="row">
-                    <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" id="newClientEmail" placeholder="cliente@ejemplo.com">
-                    </div>
-                    <div class="form-group">
-                        <label>Código (generado automáticamente)</label>
-                        <input type="text" id="newClientCode" readonly style="background: #f0f0f0;">
-                    </div>
-                </div>
-                <p style="color: #666; margin-bottom: 16px; font-size: 0.9em;">El cliente completará su anamnesis en la plataforma.</p>
-                <button class="btn btn-primary" onclick="createNewClient()">✅ Crear Cliente</button>
-                <div id="newClientAlert" style="margin-top: 12px;"></div>
-            </div>
+                <button type="submit" class="btn-login">✓ Acceder</button>
+            </form>
 
-            <!-- FICHA CLIENTE MODAL -->
-            <div id="fichaClienteModal" class="modal">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <div>
-                            <h2 class="modal-title" id="fichaClienteNombre"></h2>
-                            <p style="color: #999; font-size: 0.9em; margin-top: 4px;" id="fichaClienteCodigo"></p>
-                        </div>
-                        <button class="modal-close" onclick="closeFichaCliente()">✕</button>
-                    </div>
 
-                    <div class="tabs">
-                        <button class="tab-btn active" onclick="switchTabInModal('modal-entrenamientos', this)">📊 Entrenamientos</button>
-                        <button class="tab-btn" onclick="switchTabInModal('modal-historial', this)">📅 Historial</button>
-                        <button class="tab-btn" onclick="switchTabInModal('modal-anamnesis', this)">📝 Anamnesis</button>
-                        <button class="tab-btn" onclick="switchTabInModal('modal-datos', this)">👤 Datos</button>
-                    </div>
-
-                    <!-- TAB: ENTRENAMIENTOS -->
-                    <div id="modal-entrenamientos" class="tab-content active">
-                        <h3>Subir Entrenamientos</h3>
-                        <p style="margin: 16px 0; color: #666;">Sube un archivo Excel con los entrenamientos. Columnas requeridas: Fecha, Título, Descripción, Ejercicios.</p>
-                        <div class="form-group">
-                            <label>Archivo Excel</label>
-                            <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv">
-                        </div>
-                        <button class="btn btn-primary" onclick="handleExcelUpload()">📤 Cargar Excel</button>
-                        <div id="excelAlert" style="margin-top: 12px;"></div>
-                        <div id="excelPreview" style="margin-top: 20px;"></div>
-                        <button class="btn btn-secondary" onclick="downloadTemplate()">📥 Descargar Plantilla</button>
-                    </div>
-
-                    <!-- TAB: HISTORIAL -->
-                    <div id="modal-historial" class="tab-content">
-                        <h3>Historial de Entrenamientos</h3>
-                        <div id="historialList" style="margin-top: 16px;"></div>
-                    </div>
-
-                    <!-- TAB: ANAMNESIS -->
-                    <div id="modal-anamnesis" class="tab-content">
-                        <h3>Anamnesis del Cliente</h3>
-                        <button class="btn btn-primary" onclick="editarAnamnesis()">✏️ Editar Anamnesis</button>
-                        <div id="anamnesisDisplay" style="margin-top: 20px;"></div>
-                    </div>
-
-                    <!-- TAB: DATOS -->
-                    <div id="modal-datos" class="tab-content">
-                        <h3>Datos del Cliente</h3>
-                        <div class="form-group">
-                            <label>Nombre</label>
-                            <input type="text" id="clientDataName" readonly style="background: #f0f0f0;">
-                        </div>
-                        <div class="row">
-                            <div class="form-group">
-                                <label>Email</label>
-                                <input type="email" id="clientDataEmail">
-                            </div>
-                            <div class="form-group">
-                                <label>Código</label>
-                                <input type="text" id="clientDataCode" readonly style="background: #f0f0f0;">
-                            </div>
-                        </div>
-                        <button class="btn btn-primary" onclick="updateClientData()">💾 Guardar Cambios</button>
-                        <div id="datosAlert" style="margin-top: 12px;"></div>
-                    </div>
-
-                    <div style="margin-top: 20px;">
-                        <button class="btn btn-secondary" onclick="closeFichaCliente()">← Volver</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- CLIENTE VIEW -->
-        <div id="clientView" style="display: none;">
-            <div class="tabs">
-                <button class="tab-btn active" onclick="switchTab('tab-client-entrenamientos', this)">📋 Entrenamientos</button>
-                <button class="tab-btn" onclick="switchTab('tab-client-historial', this)">📅 Historial</button>
-                <button class="tab-btn" onclick="switchTab('tab-client-perfil', this)">👤 Perfil</button>
-                <button class="tab-btn" onclick="switchTab('tab-client-anamnesis', this)">📝 Anamnesis</button>
-            </div>
-
-            <!-- TAB: ENTRENAMIENTOS -->
-            <div id="tab-client-entrenamientos" class="tab-content active">
-                <h2 style="margin-bottom: 20px; color: var(--primary);">Mis Entrenamientos</h2>
-                <div id="clientEntrenamientosList"></div>
-            </div>
-
-            <!-- TAB: HISTORIAL -->
-            <div id="tab-client-historial" class="tab-content">
-                <h2 style="margin-bottom: 20px; color: var(--primary);">Historial</h2>
-                <div id="clientHistorialList"></div>
-            </div>
-
-            <!-- TAB: PERFIL -->
-            <div id="tab-client-perfil" class="tab-content">
-                <h2 style="margin-bottom: 20px; color: var(--primary);">Mi Perfil</h2>
-                <div class="form-group">
-                    <label>Nombre</label>
-                    <input type="text" id="clientProfileName" readonly style="background: #f0f0f0;">
-                </div>
-                <div class="row">
-                    <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" id="clientProfileEmail">
-                    </div>
-                    <div class="form-group">
-                        <label>Código</label>
-                        <input type="text" id="clientProfileCode" readonly style="background: #f0f0f0;">
-                    </div>
-                </div>
-                <button class="btn btn-primary" onclick="updateClientProfile()">💾 Guardar Cambios</button>
-                <div id="profileAlert" style="margin-top: 12px;"></div>
-            </div>
-
-            <!-- TAB: ANAMNESIS -->
-            <div id="tab-client-anamnesis" class="tab-content">
-                <h2 style="margin-bottom: 20px; color: var(--primary);">Mi Anamnesis</h2>
-                <button class="btn btn-primary" onclick="editarAnamnesisCliente()">✏️ Editar Anamnesis</button>
-                <div id="clientAnamnesisDisplay" style="margin-top: 20px;"></div>
-            </div>
         </div>
     </div>
 
-    <!-- MODAL ANAMNESIS -->
-    <div id="anamnesisModal" class="modal">
-        <div class="modal-content" style="max-width: 1000px;">
-            <div class="modal-header">
-                <div>
-                    <h2 class="modal-title">Anamnesis Inicial</h2>
-                    <p style="color: #999; font-size: 0.9em; margin-top: 4px;">Completa tu información personal y de salud</p>
+    <!-- DASHBOARD -->
+    <div id="dashboardView" class="dashboard">
+        <div class="hero" style="position: relative; overflow: hidden; background-image: url('banner-hero.png'); background-size: cover; background-position: center; background-blend-mode: darken;">
+            <div style="position: absolute; top: 20px; right: 20px; width: 100px; height: 100px; opacity: 0.2;">
+                <img src="logo-leon.png" alt="Logo" style="width: 100%; height: 100%; object-fit: cover;">
+            </div>
+            <div class="hero-title" style="position: relative; z-index: 2;">ALEX TRAINING LAB</div>
+            <div class="hero-subtitle">Tu Entrenador Personal</div>
+            <div class="hero-text">Gestiona entrenamientos, anamnesis y progreso de todos tus clientes en un solo lugar</div>
+        </div>
+
+        <h2 class="dashboard-title" id="dashTitle">👥 Mis Clientes</h2>
+
+        <div class="cards-grid" id="clientsGrid">
+            <div class="card">
+                <div class="card-title">Juan Carlos López</div>
+                <div class="card-code">CLI-001</div>
+                <div class="card-info">
+                    📅 Entrenamientos: 5/semana<br>
+                    🎯 Objetivo: Pérdida de grasa<br>
+                    📊 RPE: 8/10
                 </div>
-                <button class="modal-close" onclick="closeAnamnesisModal()">✕</button>
             </div>
 
-            <form id="anamnesisForm">
-                <!-- SECCIÓN 1: DATOS PERSONALES -->
-                <div class="anamnesis-section">
-                    <h3>1. Datos Personales</h3>
-                    <div class="row">
-                        <div class="form-group">
-                            <label>Fecha de la entrevista</label>
-                            <input type="date" name="fecha_entrevista">
-                        </div>
-                        <div class="form-group">
-                            <label>Fecha de nacimiento</label>
-                            <input type="date" name="fecha_nacimiento">
-                        </div>
-                        <div class="form-group">
-                            <label>Sexo</label>
-                            <input type="text" name="sexo" placeholder="Ej: Masculino/Femenino">
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="form-group">
-                            <label>Teléfono</label>
-                            <input type="tel" name="telefono">
-                        </div>
-                        <div class="form-group">
-                            <label>Email (si es diferente)</label>
-                            <input type="email" name="email_anamnesis">
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="form-group">
-                            <label>Dirección de sesiones</label>
-                            <input type="text" name="direccion">
-                        </div>
-                        <div class="form-group">
-                            <label>Profesión</label>
-                            <input type="text" name="profesion">
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="form-group">
-                            <label>Contacto de emergencia (nombre y teléfono)</label>
-                            <input type="text" name="emergencia">
-                        </div>
-                        <div class="form-group">
-                            <label>¿Cómo nos has conocido?</label>
-                            <input type="text" name="referencia">
-                        </div>
-                    </div>
+            <div class="card">
+                <div class="card-title">María Rodríguez</div>
+                <div class="card-code">CLI-002</div>
+                <div class="card-info">
+                    📅 Entrenamientos: 3/semana<br>
+                    🎯 Objetivo: Ganancia muscular<br>
+                    📊 RPE: 9/10
                 </div>
+            </div>
 
-                <!-- SECCIÓN 2: OBJETIVOS -->
-                <div class="anamnesis-section">
-                    <h3>2. Objetivos y Motivación</h3>
-                    <label style="display: block; margin-bottom: 12px; font-weight: 500;">Objetivo principal (puedes seleccionar varios)</label>
-                    <div class="checkbox-group">
-                        <label><input type="checkbox" name="objetivo_grasa"> Perder grasa</label>
-                        <label><input type="checkbox" name="objetivo_fuerza"> Ganar fuerza</label>
-                        <label><input type="checkbox" name="objetivo_musculo"> Ganar masa muscular</label>
-                        <label><input type="checkbox" name="objetivo_salud"> Salud general</label>
-                        <label><input type="checkbox" name="objetivo_movilidad"> Movilidad o dolor</label>
-                        <label><input type="checkbox" name="objetivo_rendimiento"> Rendimiento deportivo</label>
-                        <label><input type="checkbox" name="objetivo_energia"> Energía y bienestar</label>
-                        <label><input type="checkbox" name="objetivo_otro"> Otro</label>
-                    </div>
-                    <div class="form-group">
-                        <label>¿Por qué ahora? ¿Qué ha cambiado?</label>
-                        <textarea name="motivacion"></textarea>
-                    </div>
-                    <div class="row">
-                        <div class="form-group">
-                            <label>¿Qué sería éxito en 3 meses?</label>
-                            <textarea name="exito_3m"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label>¿Y en un año?</label>
-                            <textarea name="exito_1a"></textarea>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>¿Qué te ha impedido conseguirlo antes?</label>
-                        <textarea name="obstaculos"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Nivel de compromiso ahora mismo (1-10)</label>
-                        <div class="scale-input">
-                            <label><input type="radio" name="compromiso" value="1"> 1</label>
-                            <label><input type="radio" name="compromiso" value="2"> 2</label>
-                            <label><input type="radio" name="compromiso" value="3"> 3</label>
-                            <label><input type="radio" name="compromiso" value="4"> 4</label>
-                            <label><input type="radio" name="compromiso" value="5"> 5</label>
-                            <label><input type="radio" name="compromiso" value="6"> 6</label>
-                            <label><input type="radio" name="compromiso" value="7"> 7</label>
-                            <label><input type="radio" name="compromiso" value="8"> 8</label>
-                            <label><input type="radio" name="compromiso" value="9"> 9</label>
-                            <label><input type="radio" name="compromiso" value="10"> 10</label>
-                        </div>
-                    </div>
+            <div class="card">
+                <div class="card-title">Pedro Martínez</div>
+                <div class="card-code">CLI-003</div>
+                <div class="card-info">
+                    📅 Entrenamientos: 4/semana<br>
+                    🎯 Objetivo: Salud general<br>
+                    📊 RPE: 7/10
                 </div>
-
-                <!-- SECCIÓN 3: CRIBADO DE SALUD -->
-                <div class="anamnesis-section">
-                    <h3>3. Cribado de Salud (PAR-Q)</h3>
-                    <p style="color: #666; font-size: 0.9em; margin-bottom: 12px;">Si alguna respuesta es "Sí", será necesario informe médico.</p>
-                    <div class="form-group">
-                        <label style="display: flex; align-items: center; gap: 8px;">
-                            <input type="checkbox" name="parq_corazon"> ¿Algún médico te ha dicho que tienes un problema de corazón o tensión arterial alta?
-                        </label>
-                    </div>
-                    <div class="form-group">
-                        <label style="display: flex; align-items: center; gap: 8px;">
-                            <input type="checkbox" name="parq_dolor_pecho"> ¿Sientes dolor en el pecho en reposo o al hacer ejercicio?
-                        </label>
-                    </div>
-                    <div class="form-group">
-                        <label style="display: flex; align-items: center; gap: 8px;">
-                            <input type="checkbox" name="parq_mareo"> ¿Has perdido el equilibrio por mareo o conocimiento en los últimos 12 meses?
-                        </label>
-                    </div>
-                    <div class="form-group">
-                        <label style="display: flex; align-items: center; gap: 8px;">
-                            <input type="checkbox" name="parq_cronica"> ¿Tienes diagnosticada alguna enfermedad crónica?
-                        </label>
-                    </div>
-                    <div class="form-group">
-                        <label style="display: flex; align-items: center; gap: 8px;">
-                            <input type="checkbox" name="parq_medicacion"> ¿Tomas medicación para alguna enfermedad crónica?
-                        </label>
-                    </div>
-                    <div class="form-group">
-                        <label style="display: flex; align-items: center; gap: 8px;">
-                            <input type="checkbox" name="parq_oseo"> ¿Tienes algún problema óseo, articular o de tejidos blandos?
-                        </label>
-                    </div>
-                    <div class="form-group">
-                        <label style="display: flex; align-items: center; gap: 8px;">
-                            <input type="checkbox" name="parq_supervisado"> ¿Solo haces actividad física supervisada por personal sanitario?
-                        </label>
-                    </div>
-                    <div class="row">
-                        <div class="form-group">
-                            <label>Enfermedades, diagnósticos o medicación relevante</label>
-                            <textarea name="enfermedades"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label>Cirugías u hospitalizaciones</label>
-                            <textarea name="cirugias"></textarea>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="form-group">
-                            <label>Embarazo, posparto o suelo pélvico (si aplica)</label>
-                            <input type="text" name="posparto">
-                        </div>
-                        <div class="form-group">
-                            <label>Alergias relevantes</label>
-                            <input type="text" name="alergias">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- SECCIÓN 4: LESIONES Y DOLOR -->
-                <div class="anamnesis-section">
-                    <h3>4. Lesiones y Dolor</h3>
-                    <div class="form-group">
-                        <label>Lesiones actuales o pasadas (zona, cuándo, si se trató y cómo)</label>
-                        <textarea name="lesiones"></textarea>
-                    </div>
-                    <div class="row">
-                        <div class="form-group">
-                            <label>¿Tienes dolor ahora? ¿Dónde?</label>
-                            <input type="text" name="dolor_actual">
-                        </div>
-                        <div class="form-group">
-                            <label>Movimientos o posturas que molestan</label>
-                            <input type="text" name="movimientos_molesto">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Intensidad del dolor habitual (0-10)</label>
-                        <div class="scale-input">
-                            <label><input type="radio" name="intensidad_dolor" value="0"> 0</label>
-                            <label><input type="radio" name="intensidad_dolor" value="1"> 1</label>
-                            <label><input type="radio" name="intensidad_dolor" value="2"> 2</label>
-                            <label><input type="radio" name="intensidad_dolor" value="3"> 3</label>
-                            <label><input type="radio" name="intensidad_dolor" value="4"> 4</label>
-                            <label><input type="radio" name="intensidad_dolor" value="5"> 5</label>
-                            <label><input type="radio" name="intensidad_dolor" value="6"> 6</label>
-                            <label><input type="radio" name="intensidad_dolor" value="7"> 7</label>
-                            <label><input type="radio" name="intensidad_dolor" value="8"> 8</label>
-                            <label><input type="radio" name="intensidad_dolor" value="9"> 9</label>
-                            <label><input type="radio" name="intensidad_dolor" value="10"> 10</label>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>¿Te trata algún fisioterapeuta u otro profesional?</label>
-                        <input type="text" name="profesional">
-                    </div>
-                </div>
-
-                <!-- SECCIÓN 5: HISTORIAL DEPORTIVO -->
-                <div class="anamnesis-section">
-                    <h3>5. Historial Deportivo</h3>
-                    <div class="row">
-                        <div class="form-group">
-                            <label>Actividad física actual (qué, cuántos días, cuánto tiempo)</label>
-                            <textarea name="actividad_actual"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label>Deportes practicados antes</label>
-                            <textarea name="deportes_antes"></textarea>
-                        </div>
-                    </div>
-                    <label style="display: block; margin-bottom: 12px; font-weight: 500;">Experiencia con entrenamiento de fuerza</label>
-                    <div class="radio-group">
-                        <label><input type="radio" name="experiencia_fuerza" value="ninguna"> Ninguna</label>
-                        <label><input type="radio" name="experiencia_fuerza" value="menos_6m"> Menos de 6 meses</label>
-                        <label><input type="radio" name="experiencia_fuerza" value="6m_2a"> 6 meses a 2 años</label>
-                        <label><input type="radio" name="experiencia_fuerza" value="mas_2a"> Más de 2 años</label>
-                    </div>
-                    <div class="form-group">
-                        <label style="margin-top: 16px;">¿Has tenido entrenador antes? ¿Qué funcionó y qué no?</label>
-                        <textarea name="entrenador_antes"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Ejercicios que te gustan y que odias</label>
-                        <textarea name="ejercicios_preferen"></textarea>
-                    </div>
-                </div>
-
-                <!-- SECCIÓN 6: ESTILO DE VIDA -->
-                <div class="anamnesis-section">
-                    <h3>6. Estilo de Vida</h3>
-                    <label style="display: block; margin-bottom: 12px; font-weight: 500;">Tipo de trabajo</label>
-                    <div class="radio-group">
-                        <label><input type="radio" name="tipo_trabajo" value="sedentario"> Sedentario</label>
-                        <label><input type="radio" name="tipo_trabajo" value="pie"> De pie</label>
-                        <label><input type="radio" name="tipo_trabajo" value="exigente"> Físicamente exigente</label>
-                        <label><input type="radio" name="tipo_trabajo" value="turnos"> Turnos o viajes</label>
-                    </div>
-                    <div class="row" style="margin-top: 16px;">
-                        <div class="form-group">
-                            <label>Horas sentado al día</label>
-                            <input type="text" name="horas_sentado">
-                        </div>
-                        <div class="form-group">
-                            <label>Pasos diarios aproximados</label>
-                            <input type="text" name="pasos_diarios">
-                        </div>
-                        <div class="form-group">
-                            <label>¿Usas reloj o pulsera de actividad?</label>
-                            <input type="text" name="reloj_actividad">
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="form-group">
-                            <label>Horas de sueño</label>
-                            <input type="text" name="horas_sueno">
-                        </div>
-                        <div class="form-group">
-                            <label>¿Descansas bien? ¿Te despiertas por la noche?</label>
-                            <input type="text" name="calidad_sueno">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Nivel de estrés habitual (1-10)</label>
-                        <div class="scale-input">
-                            <label><input type="radio" name="nivel_estres" value="1"> 1</label>
-                            <label><input type="radio" name="nivel_estres" value="2"> 2</label>
-                            <label><input type="radio" name="nivel_estres" value="3"> 3</label>
-                            <label><input type="radio" name="nivel_estres" value="4"> 4</label>
-                            <label><input type="radio" name="nivel_estres" value="5"> 5</label>
-                            <label><input type="radio" name="nivel_estres" value="6"> 6</label>
-                            <label><input type="radio" name="nivel_estres" value="7"> 7</label>
-                            <label><input type="radio" name="nivel_estres" value="8"> 8</label>
-                            <label><input type="radio" name="nivel_estres" value="9"> 9</label>
-                            <label><input type="radio" name="nivel_estres" value="10"> 10</label>
-                        </div>
-                    </div>
-                    <div class="row" style="margin-top: 16px;">
-                        <div class="form-group">
-                            <label>Tabaco</label>
-                            <input type="text" name="tabaco">
-                        </div>
-                        <div class="form-group">
-                            <label>Alcohol (frecuencia)</label>
-                            <input type="text" name="alcohol">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- SECCIÓN 7: ALIMENTACIÓN -->
-                <div class="anamnesis-section">
-                    <h3>7. Alimentación e Hidratación</h3>
-                    <div class="row">
-                        <div class="form-group">
-                            <label>Comidas al día y horarios</label>
-                            <input type="text" name="comidas_dia">
-                        </div>
-                        <div class="form-group">
-                            <label>Agua al día</label>
-                            <input type="text" name="agua_dia">
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="form-group">
-                            <label>Preferencias o tipo de dieta (vegetariana, etc.)</label>
-                            <input type="text" name="tipo_dieta">
-                        </div>
-                        <div class="form-group">
-                            <label>¿Te sigue algún nutricionista?</label>
-                            <input type="text" name="nutricionista">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Suplementación</label>
-                        <input type="text" name="suplementacion">
-                    </div>
-                </div>
-
-                <!-- SECCIÓN 8: LOGÍSTICA -->
-                <div class="anamnesis-section">
-                    <h3>8. Logística a Domicilio</h3>
-                    <label style="display: block; margin-bottom: 12px; font-weight: 500;">Días disponibles</label>
-                    <div class="checkbox-group">
-                        <label><input type="checkbox" name="dia_lunes"> Lunes</label>
-                        <label><input type="checkbox" name="dia_martes"> Martes</label>
-                        <label><input type="checkbox" name="dia_miercoles"> Miércoles</label>
-                        <label><input type="checkbox" name="dia_jueves"> Jueves</label>
-                        <label><input type="checkbox" name="dia_viernes"> Viernes</label>
-                        <label><input type="checkbox" name="dia_sabado"> Sábado</label>
-                        <label><input type="checkbox" name="dia_domingo"> Domingo</label>
-                    </div>
-                    <div class="row" style="margin-top: 16px;">
-                        <div class="form-group">
-                            <label>Franja horaria preferida</label>
-                            <input type="text" name="franja_horaria">
-                        </div>
-                        <div class="form-group">
-                            <label>Sesiones por semana deseadas</label>
-                            <input type="text" name="sesiones_semana">
-                        </div>
-                    </div>
-                    <label style="display: block; margin-bottom: 12px; font-weight: 500; margin-top: 16px;">Espacio disponible</label>
-                    <div class="checkbox-group">
-                        <label><input type="checkbox" name="espacio_salon"> Salón</label>
-                        <label><input type="checkbox" name="espacio_garaje"> Garaje</label>
-                        <label><input type="checkbox" name="espacio_jardin"> Jardín o terraza</label>
-                        <label><input type="checkbox" name="espacio_gimnasio"> Gimnasio en casa</label>
-                        <label><input type="checkbox" name="espacio_zona_comun"> Zona común</label>
-                        <label><input type="checkbox" name="espacio_parque"> Parque cercano</label>
-                    </div>
-                    <div class="row" style="margin-top: 16px;">
-                        <div class="form-group">
-                            <label>Metros aproximados y altura de techo</label>
-                            <input type="text" name="metros_techo">
-                        </div>
-                        <div class="form-group">
-                            <label>Material que ya tienen en casa</label>
-                            <input type="text" name="material_casa">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Acceso y aparcamiento</label>
-                        <input type="text" name="acceso_aparcamiento">
-                    </div>
-                </div>
-
-                <!-- SECCIÓN 9: CONSENTIMIENTO -->
-                <div class="anamnesis-section">
-                    <h3>9. Declaración y Consentimiento</h3>
-                    <p style="color: #666; margin-bottom: 12px; font-size: 0.95em;">Declaro que la información facilitada es veraz y que comunicaré cualquier cambio en mi estado de salud. Entiendo que el ejercicio físico conlleva riesgos.</p>
-                    <div class="checkbox-group">
-                        <label><input type="checkbox" name="acepta_datos" required> Acepto el tratamiento de mis datos personales</label>
-                        <label><input type="checkbox" name="acepta_fotos"> Acepto que se tomen fotos o vídeos para mi seguimiento</label>
-                    </div>
-                </div>
-
-                <div style="display: flex; gap: 12px; margin-top: 30px; justify-content: space-between;">
-                    <button type="button" class="btn btn-secondary" onclick="closeAnamnesisModal()">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">💾 Guardar Anamnesis</button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 
     <script>
-        const SUPABASE_URL = 'https://zxarhydagapzgozrxaee.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_pcdggueDF2w9LVHDhvRpWg_NhLd1jb9';
-        
-        let supabaseClient;
-        let currentUser = null;
-        let currentUserType = null;
-        let currentClientCode = null;
-        let selectedClientForFicha = null;
-
-        // Initialize Supabase
-        async function initSupabase() {
-            const { createClient } = window.supabase;
-            supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
-            console.log('Supabase initialized');
-            showLoginView();
-        }
-
-        function showLoginView() {
-            document.getElementById('loginView').style.display = 'block';
-            document.getElementById('trainerView').style.display = 'none';
-            document.getElementById('clientView').style.display = 'none';
-            currentUser = null;
-            currentUserType = null;
-        }
-
-        function handleLogin() {
+        function handleLogin(e) {
+            e.preventDefault();
             const input = document.getElementById('loginInput').value.trim();
+            
             if (!input) {
-                showLoginAlert('Por favor ingresa un usuario o código', 'danger');
+                alert('Ingresa un código o contraseña');
                 return;
             }
 
             if (input === 'Alex app') {
-                currentUser = 'Alex app';
-                currentUserType = 'trainer';
-                loadTrainerView();
-            } else if (input.match(/^[A-Z]{3}-\d{3}$/)) {
-                currentUser = input;
-                currentUserType = 'client';
-                currentClientCode = input;
-                loadClientView();
+                showDashboard('Alex (Entrenador)', 'entrenador');
+            } else if (input.match(/^CLI-\d{3}$/)) {
+                showDashboard(input, 'cliente');
             } else {
-                showLoginAlert('Usuario o código inválido', 'danger');
+                alert('❌ Código inválido.\n\nPrueba:\n- Alex app (entrenador)\n- CLI-001, CLI-002, CLI-003 (cliente)');
             }
         }
 
-        function showLoginAlert(msg, type) {
-            const alert = document.getElementById('loginAlert');
-            alert.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
-        }
-
-        async function loadTrainerView() {
+        function showDashboard(user, type) {
             document.getElementById('loginView').style.display = 'none';
-            document.getElementById('trainerView').style.display = 'block';
-            document.getElementById('clientView').style.display = 'none';
-            document.getElementById('userDisplay').textContent = currentUser;
-            document.getElementById('userType').textContent = 'Entrenador';
-            
-            await loadClientes();
-        }
+            document.getElementById('dashboardView').classList.add('active');
+            document.getElementById('headerUser').style.display = 'flex';
+            document.getElementById('userDisplay').textContent = user;
 
-        async function loadClientView() {
-            document.getElementById('loginView').style.display = 'none';
-            document.getElementById('trainerView').style.display = 'none';
-            document.getElementById('clientView').style.display = 'block';
-            document.getElementById('userDisplay').textContent = currentClientCode;
-            document.getElementById('userType').textContent = 'Cliente';
-            
-            const { data, error } = await supabaseClient
-                .from('clientes')
-                .select('*')
-                .eq('codigo', currentClientCode)
-                .single();
-
-            if (data) {
-                currentUser = data.nombre;
-                document.getElementById('clientProfileName').value = data.nombre;
-                document.getElementById('clientProfileEmail').value = data.email || '';
-                document.getElementById('clientProfileCode').value = data.codigo;
-                
-                if (data.anamnesis) {
-                    displayAnamnesis(data.anamnesis, 'clientAnamnesisDisplay');
-                } else {
-                    document.getElementById('clientAnamnesisDisplay').innerHTML = '<p style="color: #999;">Aún no has completado tu anamnesis.</p>';
-                }
-            }
-        }
-
-        async function loadClientes() {
-            const { data, error } = await supabase
-                .from('clientes')
-                .select('*')
-                .order('nombre');
-
-            if (error) {
-                console.error('Error cargando clientes:', error);
-                return;
-            }
-
-            const lista = document.getElementById('clientesList');
-            lista.innerHTML = '';
-
-            if (data.length === 0) {
-                lista.innerHTML = '<p style="color: #999;">No hay clientes registrados.</p>';
-                return;
-            }
-
-            data.forEach(cliente => {
-                const card = document.createElement('div');
-                card.className = 'cliente-item';
-                card.innerHTML = `
-                    <div class="cliente-item-name">${cliente.nombre}</div>
-                    <div class="cliente-item-info">${cliente.codigo} • ${cliente.email || 'sin email'}</div>
+            if (type === 'cliente') {
+                document.getElementById('dashTitle').textContent = '📋 Mis Entrenamientos';
+                document.getElementById('clientsGrid').innerHTML = `
+                    <div class="card">
+                        <div class="card-title">Entrenamiento de Hoy</div>
+                        <div class="card-code">Lunes, 5 Oct 2026</div>
+                        <div class="card-info">
+                            🏋️ Ejercicios: 5<br>
+                            ⏱️ Duración: 60 min<br>
+                            💪 Estado: Pendiente
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">Última Sesión</div>
+                        <div class="card-code">Sábado, 2 Oct 2026</div>
+                        <div class="card-info">
+                            ✅ Completado<br>
+                            📊 RPE: 8/10<br>
+                            📝 Notas: Gran sesión
+                        </div>
+                    </div>
                 `;
-                card.onclick = () => openFichaCliente(cliente);
-                lista.appendChild(card);
-            });
-        }
-
-        function openFichaCliente(cliente) {
-            selectedClientForFicha = cliente;
-            document.getElementById('fichaClienteNombre').textContent = cliente.nombre;
-            document.getElementById('fichaClienteCodigo').textContent = cliente.codigo;
-            
-            document.getElementById('clientDataName').value = cliente.nombre;
-            document.getElementById('clientDataEmail').value = cliente.email || '';
-            document.getElementById('clientDataCode').value = cliente.codigo;
-            
-            if (cliente.anamnesis) {
-                displayAnamnesis(cliente.anamnesis, 'anamnesisDisplay');
-            } else {
-                document.getElementById('anamnesisDisplay').innerHTML = '<p style="color: #999;">El cliente aún no ha completado su anamnesis.</p>';
-            }
-
-            loadHistorial(cliente.codigo);
-            
-            document.getElementById('fichaClienteModal').classList.add('active');
-            switchTabInModal('modal-entrenamientos', document.querySelector('[onclick*="modal-entrenamientos"]'));
-        }
-
-        function closeFichaCliente() {
-            document.getElementById('fichaClienteModal').classList.remove('active');
-        }
-
-        async function loadHistorial(codigo) {
-            const { data, error } = await supabase
-                .from('entrenamientos')
-                .select('*')
-                .eq('cliente_codigo', codigo)
-                .order('fecha', { ascending: false });
-
-            if (error) {
-                console.error('Error cargando historial:', error);
-                return;
-            }
-
-            const lista = document.getElementById('historialList');
-            lista.innerHTML = '';
-
-            if (data.length === 0) {
-                lista.innerHTML = '<p style="color: #999;">Sin entrenamientos registrados.</p>';
-                return;
-            }
-
-            data.forEach(ent => {
-                const item = document.createElement('div');
-                item.style.cssText = 'background: #f9f9f9; padding: 12px; margin-bottom: 12px; border-radius: 6px;';
-                item.innerHTML = `
-                    <div style="font-weight: 600; color: var(--primary); margin-bottom: 4px;">${ent.titulo}</div>
-                    <div style="font-size: 0.9em; color: #666; margin-bottom: 4px;">${ent.fecha}</div>
-                    <div style="font-size: 0.9em; color: #999;">${ent.descripcion || ''}</div>
-                `;
-                lista.appendChild(item);
-            });
-        }
-
-        function handleExcelUpload() {
-            const file = document.getElementById('excelFileInput').files[0];
-            if (!file) {
-                showAlert('Por favor selecciona un archivo', 'danger', 'excelAlert');
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onerror = function() {
-                console.error('Error al leer el archivo');
-                showAlert('Error al leer el archivo. Asegúrate de que es un Excel válido.', 'danger', 'excelAlert');
-            };
-
-            reader.onload = async function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const ws = workbook.Sheets[workbook.SheetNames[0]];
-                    const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
-
-                    if (rows.length === 0) {
-                        showAlert('El Excel está vacío', 'danger', 'excelAlert');
-                        return;
-                    }
-
-                    const headers = Object.keys(rows[0]).map(h => h.trim().toLowerCase());
-                    const requiredFields = ['fecha', 'título'];
-                    const hasRequired = requiredFields.every(f => headers.some(h => h === f));
-
-                    if (!hasRequired) {
-                        showAlert('Columnas requeridas: Fecha, Título (y opcionalmente Descripción, Ejercicios)', 'danger', 'excelAlert');
-                        return;
-                    }
-
-                    const validRows = rows.filter(row => row.Fecha && row.Título);
-                    if (validRows.length === 0) {
-                        showAlert('Ninguna fila tiene Fecha y Título. Completa estos campos mínimos.', 'danger', 'excelAlert');
-                        return;
-                    }
-
-                    showPreview(validRows);
-                } catch (error) {
-                    console.error('Error parsing Excel:', error);
-                    showAlert('Error al procesar el archivo: ' + error.message, 'danger', 'excelAlert');
-                }
-            };
-
-            reader.readAsArrayBuffer(file);
-        }
-
-        function showPreview(rows) {
-            const preview = document.getElementById('excelPreview');
-            preview.innerHTML = '<h4 style="margin-bottom: 12px;">Vista previa:</h4>';
-
-            const table = document.createElement('table');
-            table.style.cssText = 'width: 100%; border-collapse: collapse; margin-bottom: 16px;';
-            
-            const thead = document.createElement('thead');
-            const headerRow = document.createElement('tr');
-            headerRow.style.cssText = 'background: #f0f0f0;';
-            ['Fecha', 'Título', 'Descripción', 'Ejercicios'].forEach(h => {
-                const th = document.createElement('th');
-                th.textContent = h;
-                th.style.cssText = 'padding: 8px; text-align: left; font-weight: 600; border-bottom: 1px solid #ddd;';
-                headerRow.appendChild(th);
-            });
-            thead.appendChild(headerRow);
-            table.appendChild(thead);
-
-            const tbody = document.createElement('tbody');
-            rows.slice(0, 5).forEach(row => {
-                const tr = document.createElement('tr');
-                tr.style.cssText = 'border-bottom: 1px solid #eee;';
-                ['Fecha', 'Título', 'Descripción', 'Ejercicios'].forEach(field => {
-                    const td = document.createElement('td');
-                    td.textContent = row[field] || '';
-                    td.style.cssText = 'padding: 8px;';
-                    tr.appendChild(td);
-                });
-                tbody.appendChild(tr);
-            });
-            table.appendChild(tbody);
-
-            preview.appendChild(table);
-
-            const btnConfirm = document.createElement('button');
-            btnConfirm.type = 'button';
-            btnConfirm.className = 'btn btn-primary';
-            btnConfirm.textContent = '✅ Confirmar carga (' + rows.length + ' entrenamientos)';
-            btnConfirm.onclick = () => saveEntrenos(rows);
-            preview.appendChild(btnConfirm);
-        }
-
-        async function saveEntrenos(rows) {
-            const toInsert = rows.map(row => ({
-                cliente_codigo: selectedClientForFicha.codigo,
-                fecha: row.Fecha,
-                titulo: row.Título,
-                descripcion: row.Descripción || '',
-                ejercicios: row.Ejercicios || '',
-                estado: 'planificado'
-            }));
-
-            const { error } = await supabase
-                .from('entrenamientos')
-                .insert(toInsert);
-
-            if (error) {
-                showAlert('Error al guardar: ' + error.message, 'danger', 'excelAlert');
-            } else {
-                showAlert('✅ ' + toInsert.length + ' entrenamientos cargados', 'success', 'excelAlert');
-                document.getElementById('excelFileInput').value = '';
-                document.getElementById('excelPreview').innerHTML = '';
-                loadHistorial(selectedClientForFicha.codigo);
-            }
-        }
-
-        function downloadTemplate() {
-            const ws = XLSX.utils.aoa_to_sheet([
-                ['Fecha', 'Título', 'Descripción', 'Ejercicios'],
-                ['2026-10-06', 'Upper Body A', 'Trabajo de pecho y espalda', 'Bench press, Dominadas, Remo'],
-                ['2026-10-08', 'Lower Body', 'Piernas y glúteos', 'Sentadilla, Peso muerto, Prensa']
-            ]);
-            ws['!cols'] = [{ wch: 14 }, { wch: 18 }, { wch: 25 }, { wch: 30 }];
-
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Entrenamientos');
-            XLSX.write(wb, { bookType: 'xlsx', type: 'binary', filename: 'Plantilla_Entrenamientos.xlsx' });
-        }
-
-        function editarAnamnesis() {
-            loadAnamnesisForm(selectedClientForFicha.anamnesis || {});
-            document.getElementById('anamnesisModal').classList.add('active');
-        }
-
-        async function editarAnamnesisCliente() {
-            const { data } = await supabaseClient
-                .from('clientes')
-                .select('anamnesis')
-                .eq('codigo', currentClientCode)
-                .single();
-            
-            if (data) {
-                loadAnamnesisForm(data.anamnesis || {});
-                document.getElementById('anamnesisModal').classList.add('active');
-            }
-        }
-
-        function loadAnamnesisForm(data) {
-            const form = document.getElementById('anamnesisForm');
-            
-            // Cargar datos en formulario
-            Object.keys(data).forEach(key => {
-                const field = form.elements[key];
-                if (field) {
-                    if (field.type === 'checkbox' || field.type === 'radio') {
-                        field.checked = data[key] === true || data[key] === key;
-                    } else {
-                        field.value = data[key] || '';
-                    }
-                }
-            });
-        }
-
-        function saveAnamnesis() {
-            const form = document.getElementById('anamnesisForm');
-            const formData = new FormData(form);
-            const data = Object.fromEntries(formData);
-
-            // Convertir checkboxes a boolean
-            Object.keys(data).forEach(key => {
-                if (key.startsWith('objetivo_') || key.startsWith('parq_') || 
-                    key.startsWith('dia_') || key.startsWith('espacio_') ||
-                    key.startsWith('acepta_')) {
-                    data[key] = data[key] === 'on';
-                }
-            });
-
-            return data;
-        }
-
-        function displayAnamnesis(data, containerId) {
-            const container = document.getElementById(containerId);
-            if (!data || Object.keys(data).length === 0) {
-                container.innerHTML = '<p style="color: #999;">Sin anamnesis registrada.</p>';
-                return;
-            }
-
-            let html = '';
-            
-            // Datos personales
-            if (data.nombre) {
-                html += `<div class="anamnesis-section">
-                    <h4>Datos Personales</h4>
-                    ${data.fecha_nacimiento ? `<p><strong>Fecha de nacimiento:</strong> ${data.fecha_nacimiento}</p>` : ''}
-                    ${data.telefono ? `<p><strong>Teléfono:</strong> ${data.telefono}</p>` : ''}
-                    ${data.email_anamnesis ? `<p><strong>Email:</strong> ${data.email_anamnesis}</p>` : ''}
-                    ${data.profesion ? `<p><strong>Profesión:</strong> ${data.profesion}</p>` : ''}
-                </div>`;
-            }
-
-            // Objetivos
-            const objetivos = [];
-            if (data.objetivo_grasa) objetivos.push('Perder grasa');
-            if (data.objetivo_fuerza) objetivos.push('Ganar fuerza');
-            if (data.objetivo_musculo) objetivos.push('Ganar masa muscular');
-            if (data.objetivo_salud) objetivos.push('Salud general');
-            if (data.objetivo_movilidad) objetivos.push('Movilidad o dolor');
-            if (data.objetivo_rendimiento) objetivos.push('Rendimiento deportivo');
-            if (data.objetivo_energia) objetivos.push('Energía y bienestar');
-
-            if (objetivos.length > 0) {
-                html += `<div class="anamnesis-section">
-                    <h4>Objetivos</h4>
-                    <p>${objetivos.join(', ')}</p>
-                    ${data.motivacion ? `<p><strong>Motivación:</strong> ${data.motivacion}</p>` : ''}
-                </div>`;
-            }
-
-            // Salud
-            if (data.parq_corazon || data.enfermedades) {
-                html += `<div class="anamnesis-section">
-                    <h4>Cribado de Salud</h4>
-                    ${data.enfermedades ? `<p><strong>Enfermedades/Diagnósticos:</strong> ${data.enfermedades}</p>` : ''}
-                    ${data.alergias ? `<p><strong>Alergias:</strong> ${data.alergias}</p>` : ''}
-                </div>`;
-            }
-
-            // Lesiones
-            if (data.lesiones || data.dolor_actual) {
-                html += `<div class="anamnesis-section">
-                    <h4>Lesiones y Dolor</h4>
-                    ${data.lesiones ? `<p><strong>Lesiones:</strong> ${data.lesiones}</p>` : ''}
-                    ${data.dolor_actual ? `<p><strong>Dolor actual:</strong> ${data.dolor_actual}</p>` : ''}
-                    ${data.intensidad_dolor ? `<p><strong>Intensidad (0-10):</strong> ${data.intensidad_dolor}</p>` : ''}
-                </div>`;
-            }
-
-            // Historial deportivo
-            if (data.actividad_actual || data.experiencia_fuerza) {
-                html += `<div class="anamnesis-section">
-                    <h4>Historial Deportivo</h4>
-                    ${data.actividad_actual ? `<p><strong>Actividad actual:</strong> ${data.actividad_actual}</p>` : ''}
-                    ${data.experiencia_fuerza ? `<p><strong>Experiencia fuerza:</strong> ${data.experiencia_fuerza}</p>` : ''}
-                </div>`;
-            }
-
-            // Estilo de vida
-            if (data.tipo_trabajo || data.horas_sueno) {
-                html += `<div class="anamnesis-section">
-                    <h4>Estilo de Vida</h4>
-                    ${data.tipo_trabajo ? `<p><strong>Tipo de trabajo:</strong> ${data.tipo_trabajo}</p>` : ''}
-                    ${data.horas_sueno ? `<p><strong>Horas de sueño:</strong> ${data.horas_sueno}</p>` : ''}
-                    ${data.nivel_estres ? `<p><strong>Estrés (1-10):</strong> ${data.nivel_estres}</p>` : ''}
-                </div>`;
-            }
-
-            // Logística
-            const dias = [];
-            if (data.dia_lunes) dias.push('Lunes');
-            if (data.dia_martes) dias.push('Martes');
-            if (data.dia_miercoles) dias.push('Miércoles');
-            if (data.dia_jueves) dias.push('Jueves');
-            if (data.dia_viernes) dias.push('Viernes');
-            if (data.dia_sabado) dias.push('Sábado');
-            if (data.dia_domingo) dias.push('Domingo');
-
-            if (dias.length > 0 || data.franja_horaria) {
-                html += `<div class="anamnesis-section">
-                    <h4>Disponibilidad</h4>
-                    ${dias.length > 0 ? `<p><strong>Días:</strong> ${dias.join(', ')}</p>` : ''}
-                    ${data.franja_horaria ? `<p><strong>Horario:</strong> ${data.franja_horaria}</p>` : ''}
-                    ${data.sesiones_semana ? `<p><strong>Sesiones/semana:</strong> ${data.sesiones_semana}</p>` : ''}
-                </div>`;
-            }
-
-            container.innerHTML = html || '<p style="color: #999;">Sin datos en la anamnesis.</p>';
-        }
-
-        function closeAnamnesisModal() {
-            document.getElementById('anamnesisModal').classList.remove('active');
-        }
-
-        document.getElementById('anamnesisForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const data = saveAnamnesis();
-
-            if (selectedClientForFicha) {
-                // Entrenador guardando anamnesis de cliente
-                const { error } = await supabase
-                    .from('clientes')
-                    .update({ anamnesis: data })
-                    .eq('codigo', selectedClientForFicha.codigo);
-
-                if (error) {
-                    showAlert('Error al guardar: ' + error.message, 'danger');
-                } else {
-                    showAlert('✅ Anamnesis guardada', 'success');
-                    displayAnamnesis(data, 'anamnesisDisplay');
-                    closeAnamnesisModal();
-                }
-            } else if (currentClientCode) {
-                // Cliente guardando su propia anamnesis
-                const { error } = await supabase
-                    .from('clientes')
-                    .update({ anamnesis: data })
-                    .eq('codigo', currentClientCode);
-
-                if (error) {
-                    showAlert('Error al guardar: ' + error.message, 'danger');
-                } else {
-                    showAlert('✅ Anamnesis guardada', 'success');
-                    displayAnamnesis(data, 'clientAnamnesisDisplay');
-                    closeAnamnesisModal();
-                }
-            }
-        });
-
-        async function createNewClient() {
-            const name = document.getElementById('newClientName').value.trim();
-            if (!name) {
-                showAlert('Por favor ingresa un nombre', 'danger', 'newClientAlert');
-                return;
-            }
-
-            const codigo = generateClientCode();
-            const email = document.getElementById('newClientEmail').value.trim();
-
-            const { error } = await supabase
-                .from('clientes')
-                .insert([{
-                    nombre: name,
-                    codigo: codigo,
-                    email: email,
-                    anamnesis: {}
-                }]);
-
-            if (error) {
-                showAlert('Error al crear: ' + error.message, 'danger', 'newClientAlert');
-            } else {
-                showAlert('✅ Cliente creado: ' + codigo, 'success', 'newClientAlert');
-                document.getElementById('newClientName').value = '';
-                document.getElementById('newClientEmail').value = '';
-                document.getElementById('newClientCode').value = '';
-                loadClientes();
-            }
-        }
-
-        function generateClientCode() {
-            const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-            const prefix = letters.substring(0, 3).toUpperCase() + letters.charAt(Math.floor(Math.random() * 26));
-            const num = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
-            return prefix.substring(0, 3) + '-' + num;
-        }
-
-        async function updateClientData() {
-            if (!selectedClientForFicha) return;
-
-            const email = document.getElementById('clientDataEmail').value.trim();
-            const { error } = await supabase
-                .from('clientes')
-                .update({ email: email })
-                .eq('codigo', selectedClientForFicha.codigo);
-
-            if (error) {
-                showAlert('Error al actualizar: ' + error.message, 'danger', 'datosAlert');
-            } else {
-                showAlert('✅ Datos actualizados', 'success', 'datosAlert');
-                selectedClientForFicha.email = email;
-            }
-        }
-
-        async function updateClientProfile() {
-            const email = document.getElementById('clientProfileEmail').value.trim();
-            const { error } = await supabase
-                .from('clientes')
-                .update({ email: email })
-                .eq('codigo', currentClientCode);
-
-            if (error) {
-                showAlert('Error al actualizar: ' + error.message, 'danger', 'profileAlert');
-            } else {
-                showAlert('✅ Perfil actualizado', 'success', 'profileAlert');
-            }
-        }
-
-        function switchTab(tabId, button) {
-            const contents = document.querySelectorAll('.tab-content');
-            contents.forEach(c => c.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-
-            const buttons = button.parentElement.querySelectorAll('.tab-btn');
-            buttons.forEach(b => b.classList.remove('active'));
-            button.classList.add('active');
-        }
-
-        function switchTabInModal(tabId, button) {
-            const modal = document.getElementById('fichaClienteModal');
-            const contents = modal.querySelectorAll('.tab-content');
-            contents.forEach(c => c.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-
-            const buttons = modal.querySelectorAll('.tab-btn');
-            buttons.forEach(b => b.classList.remove('active'));
-            button.classList.add('active');
-        }
-
-        function showAlert(msg, type, elementId = 'loginAlert') {
-            const elem = document.getElementById(elementId);
-            if (elem) {
-                elem.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
             }
         }
 
         function logout() {
-            showLoginView();
+            document.getElementById('loginView').style.display = 'flex';
+            document.getElementById('dashboardView').classList.remove('active');
+            document.getElementById('headerUser').style.display = 'none';
             document.getElementById('loginInput').value = '';
             document.getElementById('loginInput').focus();
         }
 
-        function goToHome() {
-            logout();
-        }
-
-        // Initialize on load
-        window.addEventListener('DOMContentLoaded', initSupabase);
+        window.addEventListener('load', () => {
+            document.getElementById('loginInput').focus();
+        });
     </script>
+
 </body>
 </html>
