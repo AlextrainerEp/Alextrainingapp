@@ -8,7 +8,7 @@
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#0d0d0d;color:#eee;font-family:"Segoe UI",Arial,sans-serif;min-height:100vh}
-.fondo{position:fixed;inset:0;background:url("fondo-alex.png") center/cover no-repeat;opacity:.22;z-index:-1}
+.fondo{position:fixed;inset:0;background:#b9bcbe url("logo-negro.png") center 24% / min(72vw,760px) auto no-repeat;z-index:-1}
 header{display:flex;justify-content:space-between;align-items:center;padding:12px 24px;border-bottom:2px solid #f2c230;background:#0d0d0d;position:sticky;top:0;z-index:5}
 .brand{display:flex;gap:12px;align-items:center}
 .brand img{width:52px;height:52px;border:2px solid #f2c230;border-radius:8px;object-fit:cover;background:#111}
@@ -17,7 +17,7 @@ header{display:flex;justify-content:space-between;align-items:center;padding:12p
 main{max-width:1050px;margin:0 auto;padding:24px}
 .card{background:rgba(20,20,20,.92);border:1px solid #2a2a2a;border-radius:10px;padding:18px;margin-bottom:16px}
 .login{max-width:380px;margin:60px auto;text-align:center}
-.login .big{width:200px;height:auto}
+.login .big{width:260px;height:auto;max-width:90%}
 .login label{text-align:left}
 h1,h2,h3{color:#f2c230;margin:8px 0}
 h4{color:#fff;margin:14px 0 6px}
@@ -140,7 +140,7 @@ async function start(){
 }
 
 function renderSetup(){
-  app.innerHTML=`<div class="fondo"></div><section class="card login"><img class="big" src="logo-alex.png" onerror="this.remove()"><h1>Primer uso</h1><p class="sub">Crea la cuenta de entrenador</p>
+  app.innerHTML=`<div class="fondo"></div><section class="card login"><img class="big" src="logo-principal.png" onerror="this.remove()"><h1>Primer uso</h1><p class="sub">Crea la cuenta de entrenador</p>
   <label>Nombre</label><input id="sn">
   <label>Contraseña (mín. 8)</label><input id="sp" type="password">
   <label>Código de recuperación (guárdalo)</label><input id="sr">
@@ -155,7 +155,7 @@ async function setup(){
 }
 
 function renderLogin(msg=""){
-  app.innerHTML=`<div class="fondo"></div><section class="card login"><img class="big" src="logo-alex.png" onerror="this.remove()"><h1>ALEX TRAINING LAB</h1><p class="sub">Tu Entrenador Personal</p>
+  app.innerHTML=`<div class="fondo"></div><section class="card login"><img class="big" src="logo-principal.png" onerror="this.remove()"><h1>ALEX TRAINING LAB</h1><p class="sub">Tu Entrenador Personal</p>
   <label>Código de acceso</label><input id="lc" autocomplete="off">
   <label>Contraseña</label><input id="lp" type="password" onkeydown="if(event.key==='Enter')login()">
   <button class="gold" onclick="login()">Entrar</button>
@@ -441,7 +441,7 @@ function sesion(e,editable){
   const dis=editable?"":"disabled";
   return `<div class="card ses" data-id="${e.id}"><h3>${esc(e.titulo)}<small>${esc(e.fecha)}</small></h3>
   ${(e.bloques||[]).map((b,bi)=>`<h4>${esc(b.nombre)}</h4>
-    <table><thead><tr><th>Ejercicio</th><th>Series</th><th>Reps obj.</th><th>Intensidad</th><th>RPE obj.</th><th>Reps</th><th>RPE</th><th>RIR</th><th>Comentario</th></tr></thead><tbody>
+    <table><thead><tr><th>Ejercicio</th><th>Series</th><th>Reps</th><th>Intensidad</th><th>RPE obj.</th><th>Reps hechas</th><th>RPE</th><th>RIR</th><th>Comentario</th></tr></thead><tbody>
     ${b.ejercicios.map((x,xi)=>{
       const r=reg.bloques?.[bi]?.ejercicios?.[xi]||{};
       return `<tr data-b="${bi}" data-x="${xi}">
@@ -484,32 +484,71 @@ async function guardarReg(id,btn){
 /* ============ EDITAR / BORRAR SESIÓN (entrenador) ============ */
 async function editarSesion(id){
   const [s]=await db("GET",E,`?id=eq.${id}&select=*`);
-  const filas=s.bloques.map((b,bi)=>`<tr><th colspan="5" style="color:#f2c230;text-align:left;padding-top:12px">${esc(b.nombre)}</th></tr>`+
-    b.ejercicios.map((x,xi)=>`<tr data-b="${bi}" data-x="${xi}">
-      <td><input class="ed-ej" value="${esc(x.ejercicio)}"></td>
-      <td><input class="ed-ser" value="${esc(x.series)}" style="width:60px"></td>
-      <td><input class="ed-rep" value="${esc(x.reps)}" style="width:80px"></td>
-      <td><input class="ed-int" value="${esc(x.intensidad)}"></td>
-      <td><input class="ed-rpe" value="${esc(x.rpe_objetivo)}" style="width:70px"></td></tr>`).join("")).join("");
+  let bloques=JSON.parse(JSON.stringify(s.bloques||[]));
   const m=document.createElement("div");
   m.className="modal";
   m.innerHTML=`<div class="card wide"><h3>Editar entrenamiento</h3>
     <label>Título</label><input id="ed-tit" value="${esc(s.titulo)}">
     <label>Fecha (AAAA-MM-DD)</label><input id="ed-fec" value="${esc(s.fecha)}">
-    <table><thead><tr><th>Ejercicio</th><th>Series</th><th>Reps</th><th>Intensidad</th><th>RPE obj.</th></tr></thead><tbody>${filas}</tbody></table>
-    <div class="row"><button class="ghost" id="ed-no">Cancelar</button><button class="gold" id="ed-ok" style="width:auto">Guardar cambios</button></div></div>`;
+    <div id="ed-bloques"></div>
+    <div class="row"><button class="ghost" id="ed-addb" style="width:auto">+ Bloque</button><button class="ghost" id="ed-no" style="width:auto">Cancelar</button><button class="gold" id="ed-ok" style="width:auto">Guardar cambios</button></div></div>`;
   document.body.appendChild(m);
+  const fila=(x)=>`<tr data-x="1">
+    <td><input class="ed-cod" value="${esc(x.codigo)}" style="width:55px"></td>
+    <td><input class="ed-ej" value="${esc(x.ejercicio)}"></td>
+    <td><input class="ed-ser" value="${esc(x.series)}" style="width:55px"></td>
+    <td><input class="ed-rep" value="${esc(x.reps)}" style="width:80px"></td>
+    <td><input class="ed-int" value="${esc(x.intensidad)}" style="width:90px"></td>
+    <td><input class="ed-rpe" value="${esc(x.rpe_objetivo)}" style="width:60px"></td>
+    <td><input class="ed-rir" value="${esc(x.rir_objetivo)}" style="width:60px"></td>
+    <td><input class="ed-prog" value="${esc(x.progresion)}" style="width:90px"></td>
+    <td><button class="danger ed-delx" style="width:auto;padding:4px 10px">×</button></td></tr>`;
+  const pintar=()=>{
+    m.querySelector("#ed-bloques").innerHTML=bloques.map((b)=>`<fieldset data-bi="1">
+      <legend><input class="ed-bnom" value="${esc(b.nombre)}" style="width:260px;margin:0"> <button class="danger ed-delb" style="width:auto;padding:4px 10px">Borrar bloque</button></legend>
+      <div style="overflow-x:auto"><table><thead><tr><th>Código</th><th>Ejercicio</th><th>Series</th><th>Reps</th><th>Intensidad (kg)</th><th>RPE obj.</th><th>RIR obj.</th><th>Progresión</th><th></th></tr></thead>
+      <tbody>${b.ejercicios.map(fila).join("")}</tbody></table></div>
+      <button class="ghost ed-adde" style="width:auto;margin-top:8px">+ Ejercicio</button></fieldset>`).join("");
+  };
+  const leer=()=>{
+    bloques=[...m.querySelectorAll("fieldset[data-bi]")].map(fs=>({
+      nombre:fs.querySelector(".ed-bnom").value.trim()||"Bloque",
+      ejercicios:[...fs.querySelectorAll("tr[data-x]")].map(tr=>{
+        const g=c=>tr.querySelector(c).value.trim();
+        return {codigo:g(".ed-cod"),ejercicio:g(".ed-ej"),series:g(".ed-ser"),reps:g(".ed-rep"),intensidad:g(".ed-int"),rpe_objetivo:g(".ed-rpe"),rir_objetivo:g(".ed-rir"),progresion:g(".ed-prog")};
+      })
+    }));
+  };
+  const indiceEn=(el,sel)=>[...m.querySelectorAll(sel)].indexOf(el);
+  pintar();
+  m.addEventListener("click",async e=>{
+    const t=e.target;
+    if(t.id==="ed-addb"){ leer(); bloques.push({nombre:"Nuevo bloque",ejercicios:[]}); pintar(); }
+    else if(t.classList.contains("ed-adde")){
+      leer();
+      const bi=indiceEn(t.closest("fieldset"),"fieldset[data-bi]");
+      bloques[bi].ejercicios.push({codigo:"",ejercicio:"Nuevo ejercicio",series:"",reps:"",intensidad:"",rpe_objetivo:"",rir_objetivo:"",progresion:""});
+      pintar();
+    }
+    else if(t.classList.contains("ed-delb")){
+      if(!(await confirmar("Se borrará este bloque con todos sus ejercicios."))) return;
+      leer();
+      const bi=indiceEn(t.closest("fieldset"),"fieldset[data-bi]");
+      bloques.splice(bi,1);
+      pintar();
+    }
+    else if(t.classList.contains("ed-delx")){
+      leer();
+      const fs=t.closest("fieldset");
+      const bi=indiceEn(fs,"fieldset[data-bi]");
+      const xi=[...fs.querySelectorAll("tr[data-x]")].indexOf(t.closest("tr"));
+      bloques[bi].ejercicios.splice(xi,1);
+      pintar();
+    }
+  });
   m.querySelector("#ed-no").onclick=()=>m.remove();
   m.querySelector("#ed-ok").onclick=async()=>{
-    const bloques=JSON.parse(JSON.stringify(s.bloques));
-    m.querySelectorAll("tr[data-b]").forEach(tr=>{
-      const x=bloques[+tr.dataset.b].ejercicios[+tr.dataset.x];
-      x.ejercicio=tr.querySelector(".ed-ej").value.trim();
-      x.series=tr.querySelector(".ed-ser").value.trim();
-      x.reps=tr.querySelector(".ed-rep").value.trim();
-      x.intensidad=tr.querySelector(".ed-int").value.trim();
-      x.rpe_objetivo=tr.querySelector(".ed-rpe").value.trim();
-    });
+    leer();
     try{
       await db("PATCH",E,`?id=eq.${id}`,{titulo:$("#ed-tit").value.trim(),fecha:$("#ed-fec").value.trim(),bloques});
       m.remove();
