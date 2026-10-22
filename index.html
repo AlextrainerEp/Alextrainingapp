@@ -42,6 +42,7 @@ th,td{border-bottom:1px solid #eee;padding:6px;text-align:left;vertical-align:to
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .bloque{background:#fafafa;border-left:4px solid #f2c230;padding:10px;margin:12px 0;border-radius:6px}
 details summary{cursor:pointer;padding:4px 0}
+.int{width:120px;margin:0;padding:6px;background:#fff}
 .cab{background:#2e3133;color:#f2c230;padding:10px 14px;border-radius:8px;margin:16px 0 8px;font-size:17px;font-weight:700}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);overflow:auto;padding:16px;z-index:50}
 .modal-card{max-width:980px;margin:0 auto;background:#fff;border-radius:12px;padding:18px}
@@ -291,8 +292,8 @@ function sesionHTML(s,editable){
     if(!esSeguimiento(b)){
       return cab+`<ul style="margin:0 0 8px;padding-left:20px">${(b.ejercicios||[]).map(x=>{const e=normEj(x);return `<li>${esc(e.ej)} · ${esc(e.ser)} × ${esc(e.rep)}${e.int?" · "+esc(e.int):""}</li>`}).join("")}</ul>`;
     }
-    return cab+`<div class="ses"><table><tr><th>Ejercicio</th><th>Series</th><th>Reps</th><th>Intensidad</th><th>RPE obj.</th><th>Reps hechas</th><th>RPE</th><th>RIR</th><th>Comentario</th></tr>
-    ${(b.ejercicios||[]).map((x,ei)=>{const e=normEj(x),k=bi+"-"+ei,r=R[k]||{};return `<tr><td>${esc(e.ej)}</td><td>${esc(e.ser)}</td><td>${esc(e.rep)}</td><td>${esc(e.int)}</td><td>${esc(e.rpe)}</td>
+    return cab+`<div class="ses"><table><tr><th>Ejercicio</th><th>Series</th><th>Reps</th><th>Intensidad</th><th>Reps hechas</th><th>RPE</th><th>RIR</th><th>Comentario</th></tr>
+    ${(b.ejercicios||[]).map((x,ei)=>{const e=normEj(x),k=bi+"-"+ei,r=R[k]||{};return `<tr><td>${esc(e.ej)}</td><td>${esc(e.ser)}</td><td>${esc(e.rep)}</td><td><input class="int" value="${esc(e.int)}" disabled></td>
       <td><input class="n" data-k="${k}" data-f="reps" value="${esc(r.reps)}" ${dis}></td>
       <td><input class="n" data-k="${k}" data-f="rpe" value="${esc(r.rpe)}" ${dis}></td>
       <td><input class="n" data-k="${k}" data-f="rir" value="${esc(r.rir)}" ${dis}></td>
@@ -420,6 +421,13 @@ async function fichaCliente(id){
       try{
         const lote=await leerExcel(f);
         if(!lote.length) throw new Error("No encuentro datos en el archivo.");
+        const fechas=new Set(lote.map(s=>s.fecha));
+        const previas=ses.filter(s=>fechas.has(s.fecha));
+        if(previas.length){
+          const conReg=previas.filter(p=>Object.keys(p.registro||{}).length).length;
+          if(!confirm(`Ya hay ${previas.length} sesión(es) con esas fechas${conReg?` (${conReg} con registros del cliente)`:""}. Se sustituirán por las nuevas. ¿Continuar?`)) return;
+          await db("DELETE","sesiones",`?id=in.(${previas.map(p=>p.id).join(",")})`,null,"return=minimal");
+        }
         await db("POST","sesiones","",lote.map(s=>({cliente_id:id,fecha:s.fecha,titulo:s.titulo,bloques:s.bloques,registro:{}})),"return=minimal");
         fichaCliente(id);
       }catch(err){msg("#m",err.message,false)}
