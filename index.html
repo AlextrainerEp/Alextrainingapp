@@ -334,7 +334,7 @@ function sesionHTML(s,editable){
   const dis=editable?"":"disabled";
   const RIR_OPTS=[0,1,2,3,4,5];
   const RPE_OPTS=Array.from({length:21},(_,i)=>i/2);
-  const opts=(arr,sel)=>`<option value="">–</option>`+arr.map(v=>`<option value="${v}"${String(sel??"")===String(v)?" selected":""}>${String(v).replace(".",",")}</option>`).join("");
+  const opts=(arr,sel,color)=>`<option value="">–</option>`+arr.map(v=>{const c=color?colorRPE(v):null;return `<option value="${v}"${c?` style="background:${c[0]};color:${c[1]}"`:""}${String(sel??"")===String(v)?" selected":""}>${String(v).replace(".",",")}</option>`}).join("");
   const bloques=(s.bloques||[]).map((b,bi)=>{
     const rb=R["b"+bi]||{};
     const cab=`<div class="cab">${esc(b.nombre)}</div>`;
@@ -348,10 +348,10 @@ function sesionHTML(s,editable){
         <input data-k="${k}" data-f="reps" value="${esc(r.reps)}" ${dis}>
         <div class="intb">${esc(e.int)}</div>
         <select data-k="${k}" data-f="rir" ${dis}>${opts(RIR_OPTS,r.rir)}</select>
-        <select data-k="${k}" data-f="rpe" ${dis}${rpeStyle(r.rpe)}>${opts(RPE_OPTS,r.rpe)}</select></div>
-    </div>`}).join("")+`<div class="row bl"><span class="muted">RPE del bloque</span><select data-k="b${bi}" data-f="rpe" ${dis}${rpeStyle(rb.rpe)}>${opts(RPE_OPTS,rb.rpe)}</select></div>`;
+        <select data-k="${k}" data-f="rpe" ${dis}${rpeStyle(r.rpe)}>${opts(RPE_OPTS,r.rpe,true)}</select></div>
+    </div>`}).join("");
   }).join("");
-  return bloques+`<div class="muted" style="margin-top:10px">Comentario del entrenamiento</div><textarea data-k="s" data-f="com" placeholder="Cómo ha ido la sesión" rows="2" ${dis}>${esc((R.s||{}).com)}</textarea>`;
+  return bloques+`<div class="row" style="justify-content:space-between;margin-top:12px"><b>RPE total del entrenamiento</b><select data-k="s" data-f="rpe" ${dis} style="width:110px;font-weight:700;background:${colorRPE((R.s||{}).rpe)[0]};color:${colorRPE((R.s||{}).rpe)[1]}">${opts(RPE_OPTS,(R.s||{}).rpe,true)}</select></div><div class="muted" style="margin-top:10px">Comentario del entrenamiento</div><textarea data-k="s" data-f="com" placeholder="Cómo ha ido la sesión" rows="2" ${dis}>${esc((R.s||{}).com)}</textarea>`;
 }
 function leerRegistro(raiz){
   const reg={};
