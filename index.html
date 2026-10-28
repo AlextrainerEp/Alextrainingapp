@@ -59,6 +59,13 @@ textarea{font-size:14px;width:100%;margin:4px 0 8px}
 .leyenda>div{display:grid;grid-template-columns:1.25fr 1fr;text-align:center;padding:4px 6px;font-weight:700;align-items:center}
 .leyenda>div span:last-child{font-weight:400;font-style:italic}
 .bl select{width:90px;margin:0;padding:4px;font-weight:700}
+.pick{padding:6px 2px;margin:0;width:100%;min-width:0;border:1px solid #bbb;border-radius:8px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;color:#1d1f21}
+.pick:disabled{opacity:1;cursor:default}
+.sheet-ov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:60;display:flex;align-items:flex-end}
+.sheet{background:#fff;width:100%;max-height:70vh;overflow:auto;border-radius:16px 16px 0 0;padding:12px 12px 24px}
+.sheet-t{font-weight:700;margin-bottom:8px;text-align:center}
+.sheet-g{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.pk{padding:14px 4px;border:0;border-radius:10px;font-size:17px;font-weight:700;color:#111;margin:0}
 .cab{background:#2e3133;color:#f2c230;padding:6px 10px;border-radius:8px;margin:12px 0 4px;font-size:15px;font-weight:700}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);overflow:auto;padding:16px;z-index:50}
 .modal-card{max-width:980px;margin:0 auto;background:#fff;border-radius:12px;padding:18px}
@@ -329,6 +336,37 @@ function esSeguimiento(b){
   if(typeof b.seguimiento==="boolean") return b.seguimiento;
   return !/movilidad|estabilidad|movement/i.test(b.nombre||"");
 }
+function pick(k,f,val,color,editable){
+  const c=color?colorRPE(val):["#fff","#1d1f21"];
+  const txt=(val===""||val==null)?"–":String(val).replace(".",",");
+  return `<button type="button" class="pick" data-k="${k}" data-f="${f}" data-v="${esc(val??"")}" data-c="${color?1:0}" ${editable?"":"disabled"} style="background:${c[0]};color:${c[1]}">${txt}</button>`;
+}
+let hojaPick=null;
+function cerrarPicker(){if(hojaPick){hojaPick.remove();hojaPick=null}}
+function abrirPicker(btn){
+  cerrarPicker();
+  const color=btn.dataset.c==="1";
+  const esRir=btn.dataset.f==="rir";
+  const arr=esRir?[0,1,2,3,4,5]:Array.from({length:21},(_,i)=>i/2);
+  const ov=document.createElement("div");
+  ov.className="sheet-ov";
+  ov.innerHTML=`<div class="sheet"><div class="sheet-t">${esRir?"RIR":"RPE"}</div><div class="sheet-g">
+    <button class="pk" data-v="" style="background:#fff">–</button>
+    ${arr.map(v=>{const c=color?colorRPE(v):["#f2f2f2","#111"];return `<button class="pk" data-v="${v}" style="background:${c[0]};color:${c[1]}">${String(v).replace(".",",")}</button>`}).join("")}
+  </div></div>`;
+  ov.onclick=ev=>{
+    if(ev.target===ov){cerrarPicker();return}
+    const o=ev.target.closest(".pk"); if(!o) return;
+    const v=o.dataset.v;
+    const c=color?colorRPE(v):["#fff","#1d1f21"];
+    btn.dataset.v=v;
+    btn.textContent=v===""?"–":v.replace(".",",");
+    btn.style.background=c[0];btn.style.color=c[1];
+    cerrarPicker();
+  };
+  document.body.appendChild(ov);
+  hojaPick=ov;
+}
 function sesionHTML(s,editable){
   const R=s.registro||{};
   const dis=editable?"":"disabled";
@@ -347,15 +385,15 @@ function sesionHTML(s,editable){
       <div class="exg exv6"><span>${esc(e.ser)}</span><span>${esc(e.rep)}</span>
         <input data-k="${k}" data-f="reps" value="${esc(r.reps)}" ${dis}>
         <div class="intb">${esc(e.int)}</div>
-        <select data-k="${k}" data-f="rir" ${dis}>${opts(RIR_OPTS,r.rir)}</select>
-        <select data-k="${k}" data-f="rpe" ${dis}${rpeStyle(r.rpe)}>${opts(RPE_OPTS,r.rpe,true)}</select></div>
+        ${pick(k,"rir",r.rir,false,editable)}
+        ${pick(k,"rpe",r.rpe,true,editable)}</div>
     </div>`}).join("");
   }).join("");
-  return bloques+`<div class="row" style="justify-content:space-between;margin-top:12px"><b>RPE total del entrenamiento</b><select data-k="s" data-f="rpe" ${dis} style="width:110px;font-weight:700;background:${colorRPE((R.s||{}).rpe)[0]};color:${colorRPE((R.s||{}).rpe)[1]}">${opts(RPE_OPTS,(R.s||{}).rpe,true)}</select></div><div class="muted" style="margin-top:10px">Comentario del entrenamiento</div><textarea data-k="s" data-f="com" placeholder="Cómo ha ido la sesión" rows="2" ${dis}>${esc((R.s||{}).com)}</textarea>`;
+  return bloques+`<div class="row" style="justify-content:space-between;margin-top:12px"><b>RPE total del entrenamiento</b><div style="width:110px">${pick("s","rpe",(R.s||{}).rpe,true,editable)}</div></div><div class="muted" style="margin-top:10px">Comentario del entrenamiento</div><textarea data-k="s" data-f="com" placeholder="Cómo ha ido la sesión" rows="2" ${dis}>${esc((R.s||{}).com)}</textarea>`;
 }
 function leerRegistro(raiz){
   const reg={};
-  raiz.querySelectorAll("[data-k]").forEach(el=>{const k=el.dataset.k;reg[k]=reg[k]||{};reg[k][el.dataset.f]=el.value});
+  raiz.querySelectorAll("[data-k]").forEach(el=>{const k=el.dataset.k;reg[k]=reg[k]||{};reg[k][el.dataset.f]=el.classList.contains("pick")?el.dataset.v:el.value});
   return reg;
 }
 function estadisticas(sesiones){
@@ -606,6 +644,10 @@ async function init(){
 }
 document.addEventListener("change",ev=>{
   if(ev.target.matches&&ev.target.matches('select[data-f="rpe"]')){const c=colorRPE(ev.target.value);ev.target.style.background=c[0];ev.target.style.color=c[1]}
+});
+document.addEventListener("click",ev=>{
+  const b=ev.target.closest&&ev.target.closest("button.pick");
+  if(b&&!b.disabled){abrirPicker(b);return}
 });
 init().catch(()=>pantallaLogin());
 </script>
