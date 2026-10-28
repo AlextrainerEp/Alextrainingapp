@@ -204,7 +204,11 @@ function pestanas(ids,fns){
 // Forma interna: {cod, ej, ser, rep, int, rpe, rir, prog}. Acepta también los nombres antiguos.
 function normEj(e){
   e=e||{};
-  return {cod:e.cod??e.codigo??"",ej:e.ej??e.ejercicio??"",ser:e.ser??e.series??"",rep:e.rep??e.reps??"",int:e.int??e.intensidad??"",rpe:e.rpe??e.rpe_objetivo??"",rir:e.rir??e.rir_objetivo??"",prog:e.prog??e.progresion??"",nota:e.nota??""};
+  let rep=e.rep??e.reps??"", int=e.int??e.intensidad??"";
+  // Si en la celda de reps hay texto (p. ej. "8/6/6 lastre 10kg 2 primeras"), ese texto va a Intensidad
+  const m=String(rep).match(/^(\d[\d\s+\/\-–.,"']*?)\s+([A-Za-zÁÉÍÓÚáéíóúñÑ].*)$/);
+  if(m){rep=m[1].trim();int=[m[2].trim(),String(int).trim()].filter(Boolean).join(" · ")}
+  return {cod:e.cod??e.codigo??"",ej:e.ej??e.ejercicio??"",ser:e.ser??e.series??"",rep,int,rpe:e.rpe??e.rpe_objetivo??"",rir:e.rir??e.rir_objetivo??"",prog:e.prog??e.progresion??"",nota:e.nota??""};
 }
 
 /* ---------- Excel ---------- */
