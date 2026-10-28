@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Alex Training Lab</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#1d1f21;background:#b9bcbe}
+.fondo{position:fixed;inset:0;background:#b9bcbe url("logo-negro.png") center 22%/min(56vw,520px) auto no-repeat;z-index:-1}
+header{background:#2e3133;color:#fff;display:flex;align-items:center;gap:12px;padding:10px 16px;flex-wrap:wrap}
+header img.logo{height:44px}
+header .t{flex:1;font-weight:700;color:#f2c230}
+main{max-width:980px;margin:0 auto;padding:16px}
+.card{background:#fff;border-radius:12px;padding:18px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.login{max-width:300px;margin:50vh auto 40px;padding:14px}
+.login .big{width:180px;max-width:70%;display:block;margin:0 auto 12px}
+input,select,textarea{width:100%;padding:10px;border:1px solid #bbb;border-radius:8px;font:inherit;margin:4px 0 10px}
+input[type=checkbox],input[type=file]{width:auto}
+input.n{width:70px;margin:0;padding:6px}
+label{display:block}
+button{background:#2e3133;color:#fff;border:0;border-radius:8px;padding:10px 16px;font:inherit;cursor:pointer}
+button.sec{background:#ddd;color:#1d1f21}
+button.gold{background:#f2c230;color:#1d1f21;font-weight:700}
+button.danger{background:#c0392b}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 12px}
+.tabs button{background:#eee;color:#1d1f21}
+.tabs button.on{background:#f2c230}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{border-bottom:1px solid #eee;padding:6px;text-align:left;vertical-align:top}
+.ses{overflow-x:auto}
+.msg{padding:8px 12px;border-radius:8px;margin:8px 0;display:none}
+.msg.err{display:block;background:#fdecea;color:#c0392b}
+.msg.ok{display:block;background:#e8f5e9;color:#2e7d32}
+.muted{color:#666;font-size:13px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:12px 0}
+.stat{background:#f5f5f5;border-radius:10px;padding:10px;text-align:center}
+.stat b{display:block;font-size:22px}
+.avatar{width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid #f2c230}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.bloque{background:#fafafa;border-left:4px solid #f2c230;padding:10px;margin:12px 0;border-radius:6px}
+details summary{cursor:pointer;padding:4px 0}
+.int{width:120px;margin:0;padding:6px;background:#fff}
+.ex{display:grid;grid-template-columns:1fr 56px 56px 56px;gap:4px;align-items:center;padding:6px 0;border-bottom:1px solid #eee}
+.ex input{margin:0;padding:6px 4px;font-size:14px;text-align:center}
+.ex .int{width:100px;margin-top:3px;padding:3px 6px;font-size:13px;text-align:left;background:#fff}
+.nota{font-size:12px;margin-top:2px}
+.lista{font-size:14px;line-height:1.7;padding:4px 0}
+.bl{justify-content:flex-end;margin:6px 0 4px}
+.bl input{width:70px;margin:0;padding:4px;text-align:center}
+textarea{font-size:14px;width:100%;margin:4px 0 8px}
+.cab{background:#2e3133;color:#f2c230;padding:6px 10px;border-radius:8px;margin:12px 0 4px;font-size:15px;font-weight:700}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);overflow:auto;padding:16px;z-index:50}
+.modal-card{max-width:980px;margin:0 auto;background:#fff;border-radius:12px;padding:18px}
+</style>
+</head>
+<body>
+<div class="fondo"></div>
+<div id="app"></div>
+
+<script>
+const SB_URL="https://xnqksbpwsqdgngaskbpx.supabase.co";
+const SB_KEY="sb_publishable_3cFWXykjHyxsdo65c2CZkA_8dM6U-HF";
+const ANAM=[["objetivo","Objetivo"],["experiencia","Experiencia deportiva"],["lesiones","Lesiones"],["salud","Salud (enfermedades relevantes)"],["medicacion","Medicación"],["disponibilidad","Disponibilidad horaria"],["observaciones","Observaciones"]];
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const norm=s=>String(s??"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().trim();
+let S=null; // {access, refresh, user, perfil}
+
+function guardarSesion(){try{if(S&&S.access)localStorage.setItem("alex_s",JSON.stringify({access:S.access,refresh:S.refresh}));else localStorage.removeItem("alex_s")}catch(e){}}
+function leerSesion(){try{return JSON.parse(localStorage.getItem("alex_s")||"null")}catch(e){return null}}
+function msg(sel,texto,ok){const el=$(sel);if(!el)return;el.textContent=texto;el.className="msg "+(ok?"ok":"err")}
+function traducir(m){
+  const t={"Invalid login credentials":"Email o contraseña incorrectos","User already registered":"Ya existe una cuenta con ese email","Email not confirmed":"Confirma tu email antes de entrar (revisa tu correo)","Password should be at least 6 characters.":"La contraseña debe tener al menos 6 caracteres","Unable to validate email address: invalid format":"El email no es válido","Email rate limit exceeded":"Demasiados intentos. Espera unos minutos."};
+  return t[m]||m;
+}
+const fechaLocal=d=>`${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
+
+/* ---------- Auth y base de datos ---------- */
+async function auth(path,body,method="POST",token){
+  const r=await fetch(SB_URL+"/auth/v1/"+path,{method,headers:{apikey:SB_KEY,"Content-Type":"application/json",Authorization:"Bearer "+(token||SB_KEY)},body:body?JSON.stringify(body):undefined});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(traducir(j.msg||j.error_description||j.message||("Error "+r.status)));
+  return j;
+}
+async function refrescar(){
+  const j=await auth("token?grant_type=refresh_token",{refresh_token:S.refresh});
+  S.access=j.access_token;S.refresh=j.refresh_token;guardarSesion();
+}
+async function db(method,tabla,query="",body,prefer,reintento){
+  const h={apikey:SB_KEY,Authorization:"Bearer "+(S&&S.access?S.access:SB_KEY),"Content-Type":"application/json"};
+  if(prefer)h.Prefer=prefer;
+  const r=await fetch(`${SB_URL}/rest/v1/${tabla}${query}`,{method,headers:h,body:body!==undefined&&body!==null?JSON.stringify(body):undefined});
+  if(r.status===401&&S&&S.refresh&&!reintento){await refrescar();return db(method,tabla,query,body,prefer,true)}
+  const t=await r.text();let j=null;try{j=t?JSON.parse(t):null}catch(e){}
+  if(!r.ok) throw new Error((j&&(j.message||j.hint))||("Error "+r.status));
+  return j;
+}
+async function cargarPerfil(){
+  const u=await auth("user",null,"GET",S.access);
+  S.user=u;
+  const r=await db("GET","perfiles",`?id=eq.${u.id}&select=*`);
+  if(!r||!r.length) throw new Error("Tu cuenta no tiene perfil. Contacta con el entrenador.");
+  S.perfil=r[0];
+}
+async function login(email,pw){
+  const j=await auth("token?grant_type=password",{email,password:pw});
+  S={access:j.access_token,refresh:j.refresh_token};
+  await cargarPerfil();guardarSesion();entrar();
+}
+async function salir(){S=null;guardarSesion();pantallaLogin()}
+
+/* ---------- Pantallas de acceso ---------- */
+function pantallaLogin(){
+  $("#app").innerHTML=`<div class="login card">
+    <img class="big" src="logo-principal.png" alt="Alex Training Lab">
+    <input id="em" type="email" placeholder="Email">
+    <input id="pw" type="password" placeholder="Contraseña">
+    <button class="gold" id="go" style="width:100%">Entrar</button>
+    <p style="text-align:center"><a href="#" id="ir-reg">Crear cuenta de cliente</a><br><a href="#" id="ir-rec">He olvidado la contraseña</a></p>
+    <div class="msg" id="m"></div></div>`;
+  $("#go").onclick=async()=>{try{await login($("#em").value.trim(),$("#pw").value)}catch(e){msg("#m",e.message,false)}};
+  $("#ir-reg").onclick=e=>{e.preventDefault();pantallaRegistro()};
+  $("#ir-rec").onclick=e=>{e.preventDefault();pantallaRecuperar()};
+}
+function pantallaRegistro(){
+  $("#app").innerHTML=`<div class="login card">
+    <img class="big" src="logo-principal.png" alt="Alex Training Lab">
+    <h3>Crear cuenta</h3>
+    <input id="rn" placeholder="Nombre">
+    <input id="re" type="email" placeholder="Email">
+    <input id="rp" type="password" placeholder="Contraseña (mín. 6 caracteres)">
+    <button class="gold" id="rg" style="width:100%">Registrarme</button>
+    <p style="text-align:center"><a href="#" id="volver">Volver</a></p>
+    <div class="msg" id="m"></div></div>`;
+  $("#volver").onclick=e=>{e.preventDefault();pantallaLogin()};
+  $("#rg").onclick=async()=>{
+    try{
+      const nombre=$("#rn").value.trim();
+      const j=await auth("signup",{email:$("#re").value.trim(),password:$("#rp").value,data:{nombre}});
+      if(j.access_token){S={access:j.access_token,refresh:j.refresh_token};await cargarPerfil();guardarSesion();panelCliente("anamnesis");}
+      else msg("#m","Cuenta creada. Revisa tu correo para confirmarla y luego entra.",true);
+    }catch(e){msg("#m",e.message,false)}
+  };
+}
+function pantallaRecuperar(){
+  $("#app").innerHTML=`<div class="login card">
+    <img class="big" src="logo-principal.png" alt="Alex Training Lab">
+    <h3>Recuperar contraseña</h3>
+    <input id="re" type="email" placeholder="Tu email">
+    <button class="gold" id="rr" style="width:100%">Enviar enlace</button>
+    <p style="text-align:center"><a href="#" id="volver">Volver</a></p>
+    <div class="msg" id="m"></div></div>`;
+  $("#volver").onclick=e=>{e.preventDefault();pantallaLogin()};
+  $("#rr").onclick=async()=>{
+    try{
+      const destino=location.origin+location.pathname;
+      await auth("recover?redirect_to="+encodeURIComponent(destino),{email:$("#re").value.trim()});
+      msg("#m","Si el email existe, te hemos enviado un enlace para cambiar la contraseña.",true);
+    }catch(e){msg("#m",e.message,false)}
+  };
+}
+function pantallaNuevaPass(){
+  $("#app").innerHTML=`<div class="login card">
+    <img class="big" src="logo-principal.png" alt="Alex Training Lab">
+    <h3>Nueva contraseña</h3>
+    <input id="np" type="password" placeholder="Nueva contraseña (mín. 6 caracteres)">
+    <button class="gold" id="nn" style="width:100%">Guardar</button>
+    <div class="msg" id="m"></div></div>`;
+  $("#nn").onclick=async()=>{
+    try{
+      await auth("user",{password:$("#np").value},"PUT",S.access);
+      msg("#m","Contraseña cambiada. Ya puedes entrar.",true);
+      S=null;guardarSesion();setTimeout(pantallaLogin,1500);
+    }catch(e){msg("#m",e.message,false)}
+  };
+}
+
+/* ---------- Estructura común ---------- */
+function shell(inner){
+  const p=(S&&S.perfil)||{};
+  const foto=(p.rol==="cliente"&&p.foto)?`<img class="avatar" src="${p.foto}" alt="">`:"";
+  $("#app").innerHTML=`<header><img class="logo" src="logo-alex.png" alt="" onerror="this.remove()">
+    <span class="t">${p.rol==="admin"?"Panel del entrenador":"Mi entrenamiento"}</span>${foto}
+    ${p.nombre?`<span>${esc(p.nombre)}</span>`:""}
+    <button class="sec" id="salir">Salir</button></header><main>${inner}</main>`;
+  $("#salir").onclick=salir;
+}
+function entrar(){
+  if(S.perfil.rol==="admin") listaClientes();
+  else panelCliente("entrenamientos");
+}
+function pestanas(ids,fns){
+  ids.forEach((id,i)=>{$("#"+id).onclick=()=>{ids.forEach(x=>$("#"+x).classList.remove("on"));$("#"+id).classList.add("on");fns[i]()}});
+}
+
+/* ---------- Formato de ejercicio ---------- */
+// Forma interna: {cod, ej, ser, rep, int, rpe, rir, prog}. Acepta también los nombres antiguos.
+function normEj(e){
+  e=e||{};
+  return {cod:e.cod??e.codigo??"",ej:e.ej??e.ejercicio??"",ser:e.ser??e.series??"",rep:e.rep??e.reps??"",int:e.int??e.intensidad??"",rpe:e.rpe??e.rpe_objetivo??"",rir:e.rir??e.rir_objetivo??"",prog:e.prog??e.progresion??"",nota:e.nota??""};
+}
+
+/* ---------- Excel ---------- */
+function celdaRaw(ws,a){const c=ws[a];return c?c.v:undefined}
+function celdaTxt(ws,a){const c=ws[a];return c?String(c.w??c.v??"").trim():""}
+// Columnas de la plantilla de Alex (dos días por fila: izquierda y derecha)
+const LADO=[
+ {warm:"B",wser:"C",wrep:"D",wint:"E",code:"F",ej:"G",ser:"H",rep:"I",int:"J",rpe:"K",rir:"L",prog:"M",dia:"J",micro:"F"},
+ {warm:"P",wser:"Q",wrep:"R",wint:"S",code:"T",ej:"U",ser:"V",rep:"W",int:"X",rpe:"Y",rir:"Z",prog:"AA",dia:"X",micro:"T"}
+];
+function leerPlantilla(ws){
+  const max=XLSX.utils.decode_range(ws["!ref"]).e.r+1;
+  const inicios=[];
+  for(let r=1;r<=max;r++) if(celdaTxt(ws,"D"+r).toUpperCase().startsWith("NOMBRE")) inicios.push(r);
+  const sesiones=[];
+  inicios.forEach((r0,i)=>{
+    const fin=(inicios[i+1]??max+1)-1;
+    LADO.forEach(L=>{
+      const bloques=new Map();
+      const ensure=nombre=>{if(!bloques.has(nombre)) bloques.set(nombre,{nombre,ejercicios:[]});return bloques.get(nombre)};
+      let warmActual="Calentamiento";
+      for(let r=r0+9;r<=fin;r++){
+        const wn=celdaTxt(ws,L.warm+r);
+        if(wn){
+          if(!celdaTxt(ws,L.wser+r)&&!celdaTxt(ws,L.wrep+r)){warmActual=wn;ensure(warmActual)}
+          else ensure(warmActual).ejercicios.push(normEj({ej:wn,ser:celdaTxt(ws,L.wser+r),rep:celdaTxt(ws,L.wrep+r),int:celdaTxt(ws,L.wint+r)}));
+        }
+        const code=celdaTxt(ws,L.code+r), ej=celdaTxt(ws,L.ej+r);
+        if(code&&ej){
+          const letra=code.replace(/[^A-Za-z]/g,"").charAt(0).toUpperCase()||"·";
+          ensure("Parte principal · "+letra).ejercicios.push(normEj({cod:code.replace(/\.$/,""),ej,ser:celdaTxt(ws,L.ser+r),rep:celdaTxt(ws,L.rep+r),int:celdaTxt(ws,L.int+r),rpe:celdaTxt(ws,L.rpe+r),rir:celdaTxt(ws,L.rir+r),prog:celdaTxt(ws,L.prog+r)}));
+        }
+      }
+      if(!bloques.size) return;
+      const fv=celdaRaw(ws,L.dia+(r0+2));
+      const fecha=fv instanceof Date?fechaLocal(fv):(celdaTxt(ws,L.dia+(r0+2))||"Sin fecha");
+      const dia=celdaTxt(ws,L.dia+(r0+1))||"Entrenamiento";
+      const micro=celdaTxt(ws,L.micro+(r0+6));
+      const todos=[...bloques.values()];
+      const orden=[...todos.filter(b=>!b.nombre.startsWith("Parte principal")),...todos.filter(b=>b.nombre.startsWith("Parte principal"))];
+      sesiones.push({fecha,titulo:dia+(micro?" · Microciclo "+micro:""),bloques:orden});
+    });
+  });
+  return sesiones;
+}
+async function leerExcel(file){
+  if(typeof XLSX==="undefined") throw new Error("No se ha cargado la librería de Excel. Revisa la conexión.");
+  const wb=XLSX.read(await file.arrayBuffer(),{type:"array",cellDates:true});
+  const lote=[];
+  for(const hoja of wb.SheetNames){
+    const ws=wb.Sheets[hoja];
+    if(!ws["!ref"]) continue;
+    const plantilla=leerPlantilla(ws);
+    if(plantilla.length){lote.push(...plantilla);continue}
+    // Hoja genérica: columna Ejercicio opcional; si no existe, cada fila con texto es un ejercicio
+    const filas=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:""});
+    const hi=filas.findIndex(r=>r.some(c=>norm(c)==="ejercicio"));
+    if(hi<0){
+      const ejs=filas.map(r=>r.filter(c=>String(c).trim()!=="").map(c=>String(c).trim()).join(" · ")).filter(Boolean);
+      if(ejs.length) lote.push({fecha:hoja,titulo:hoja,bloques:[{nombre:"General",ejercicios:ejs.map(ej=>normEj({ej}))}]});
+      continue;
+    }
+    const H=filas[hi].map(norm);
+    const c=n=>H.findIndex(h=>h.startsWith(n));
+    const iF=c("fecha"),iB=c("bloque"),iE=c("ejercicio"),iS=c("series"),iR=c("reps"),iI=c("intensidad"),iP=c("rpe"),iN=c("notas");
+    const get=(r,i)=>i>=0?String(r[i]??"").trim():"";
+    const porFecha=new Map();
+    for(const r of filas.slice(hi+1)){
+      const ej=get(r,iE);
+      if(!ej) continue;
+      const fecha=get(r,iF)||hoja;
+      if(!porFecha.has(fecha)) porFecha.set(fecha,new Map());
+      const bl=porFecha.get(fecha);
+      const bn=get(r,iB)||"General";
+      if(!bl.has(bn)) bl.set(bn,[]);
+      bl.get(bn).push(normEj({ej,ser:get(r,iS),rep:get(r,iR),int:get(r,iI),rpe:get(r,iP),prog:get(r,iN)}));
+    }
+    for(const [fecha,bl] of porFecha){
+      lote.push({fecha,titulo:fecha===hoja?hoja:`${hoja} · ${fecha}`,bloques:[...bl].map(([nombre,ejercicios])=>({nombre,ejercicios}))});
+    }
+  }
+  return lote;
+}
+
+/* ---------- Vista de sesión (cliente y entrenador) ---------- */
+function esSeguimiento(b){
+  if(typeof b.seguimiento==="boolean") return b.seguimiento;
+  return !/movilidad|estabilidad|movement/i.test(b.nombre||"");
+}
+function sesionHTML(s,editable){
+  const R=s.registro||{};
+  const dis=editable?"":"disabled";
+  const bloques=(s.bloques||[]).map((b,bi)=>{
+    const rb=R["b"+bi]||{};
+    const cab=`<div class="cab">${esc(b.nombre)}</div>`;
+    if(!esSeguimiento(b)){
+      return cab+`<div class="lista">${(b.ejercicios||[]).map(x=>{const e=normEj(x);return `<div>${esc(e.ej)} · ${esc(e.ser)} × ${esc(e.rep)}${e.int?" · "+esc(e.int):""}${e.nota?` <span class="muted">(${esc(e.nota)})</span>`:""}</div>`}).join("")}</div>`;
+    }
+    return cab+(b.ejercicios||[]).map((x,ei)=>{const e=normEj(x),k=bi+"-"+ei,r=R[k]||{};return `<div class="ex">
+      <div><b>${esc(e.ej)}</b> <span class="muted">${esc(e.ser)}×${esc(e.rep)}</span>${e.nota?`<div class="muted nota">${esc(e.nota)}</div>`:""}<input class="int" value="${esc(e.int)}" disabled></div>
+      <input data-k="${k}" data-f="reps" placeholder="Reps" value="${esc(r.reps)}" ${dis}>
+      <input data-k="${k}" data-f="rpe" placeholder="RPE" value="${esc(r.rpe)}" ${dis}>
+      <input data-k="${k}" data-f="rir" placeholder="RIR" value="${esc(r.rir)}" ${dis}>
+    </div>`}).join("")+`<div class="row bl"><span class="muted">RPE del bloque</span><input data-k="b${bi}" data-f="rpe" placeholder="RPE" value="${esc(rb.rpe)}" ${dis}></div>`;
+  }).join("");
+  return bloques+`<div class="muted" style="margin-top:10px">Comentario del entrenamiento</div><textarea data-k="s" data-f="com" placeholder="Cómo ha ido la sesión" rows="2" ${dis}>${esc((R.s||{}).com)}</textarea>`;
+}
+function leerRegistro(raiz){
+  const reg={};
+  raiz.querySelectorAll("[data-k]").forEach(el=>{const k=el.dataset.k;reg[k]=reg[k]||{};reg[k][el.dataset.f]=el.value});
+  return reg;
+}
+function estadisticas(sesiones){
+  const rpe=[],rir=[];let reps=0;
+  sesiones.forEach(s=>Object.entries(s.registro||{}).forEach(([k,v])=>{
+    if(!/^\d+-\d+$/.test(k)) return;
+    const p=parseFloat(String(v.rpe).replace(",","."));if(!isNaN(p))rpe.push(p);
+    const q=parseFloat(String(v.rir).replace(",","."));if(!isNaN(q))rir.push(q);
+    const n=parseInt(v.reps,10);if(!isNaN(n))reps+=n;
+  }));
+  const media=a=>a.length?(a.reduce((x,y)=>x+y,0)/a.length).toFixed(1):"–";
+  return {sesiones:sesiones.length,rpe:media(rpe),rir:media(rir),reps};
+}
+function tituloSesion(s){
+  return `${esc(s.titulo||"Sesión")}${s.fecha&&s.fecha!==s.titulo?` <span class="muted">· ${esc(s.fecha)}</span>`:""}`;
+}
+
+/* ---------- Editor de sesión (entrenador) ---------- */
+function abrirEditor(s,alGuardar){
+  let st={titulo:s.titulo||"",fecha:s.fecha||"",bloques:(s.bloques||[]).map(b=>({nombre:b.nombre||"",seguimiento:esSeguimiento(b),ejercicios:(b.ejercicios||[]).map(normEj)}))};
+  const ov=document.createElement("div");
+  ov.className="modal";
+  ov.innerHTML=`<div class="modal-card"><h3>Editar sesión</h3><div id="ed"></div></div>`;
+  document.body.appendChild(ov);
+  const leer=()=>({
+    titulo:ov.querySelector("#e-tit").value.trim(),
+    fecha:ov.querySelector("#e-fe").value.trim(),
+    bloques:[...ov.querySelectorAll(".e-bl")].map(bd=>({
+      nombre:bd.querySelector(".e-bn").value.trim(),
+      seguimiento:bd.querySelector(".e-seg").checked,
+      ejercicios:[...bd.querySelectorAll(".e-ex")].map(tr=>{const o={};tr.querySelectorAll("[data-f]").forEach(i=>o[i.dataset.f]=i.value.trim());return normEj(o)})
+    }))
+  });
+  const pintar=()=>{
+    ov.querySelector("#ed").innerHTML=`
+      <label>Título <input id="e-tit" value="${esc(st.titulo)}"></label>
+      <label>Fecha <input id="e-fe" value="${esc(st.fecha)}"></label>
+      ${st.bloques.map((b,bi)=>`<div class="bloque e-bl">
+        <div class="row"><input class="e-bn" value="${esc(b.nombre)}" placeholder="Nombre del bloque" style="flex:1;font-weight:700"><label style="margin:0"><input type="checkbox" class="e-seg" ${b.seguimiento?"checked":""} style="width:auto"> Registrar reps/RPE/RIR</label><button class="sec" data-act="delb" data-bi="${bi}">Borrar bloque</button></div>
+        <div class="ses"><table>
+          <tr><th>Código</th><th>Ejercicio</th><th>Series</th><th>Reps</th><th>Intensidad / kg</th><th>RIR obj.</th><th>Progresión</th><th>Nota</th><th></th></tr>
+          ${b.ejercicios.map((e,ei)=>`<tr class="e-ex">
+            <td><input data-f="cod" value="${esc(e.cod)}"></td>
+            <td><input data-f="ej" value="${esc(e.ej)}"></td>
+            <td><input class="n" data-f="ser" value="${esc(e.ser)}"></td>
+            <td><input class="n" data-f="rep" value="${esc(e.rep)}"></td>
+            <td><input data-f="int" value="${esc(e.int)}"></td>
+                        <td><input class="n" data-f="rir" value="${esc(e.rir)}"></td>
+            <td><input data-f="prog" value="${esc(e.prog)}"></td>
+            <td><input data-f="nota" value="${esc(e.nota)}"></td>
+            <td><button class="danger" data-act="dele" data-bi="${bi}" data-ei="${ei}">×</button></td></tr>`).join("")}
+        </table></div>
+        <button class="sec" style="margin-top:8px" data-act="adde" data-bi="${bi}">+ Ejercicio</button></div>`).join("")}
+      <button class="sec" data-act="addb">+ Bloque</button>
+      <div class="row" style="margin-top:12px"><button class="gold" data-act="guardar">Guardar cambios</button><button class="sec" data-act="cerrar">Cancelar</button><span class="msg" id="e-m"></span></div>
+      <p class="muted">Si borras o añades ejercicios, los registros que ya haya hecho el cliente pueden quedar desplazados. Revísalos después.</p>`;
+  };
+  ov.onclick=async ev=>{
+    const b=ev.target.closest("[data-act]");if(!b)return;
+    const a=b.dataset.act,bi=+b.dataset.bi,ei=+b.dataset.ei;
+    st=leer();
+    if(a==="cerrar"){ov.remove();return}
+    if(a==="addb") st.bloques.push({nombre:"Nuevo bloque",ejercicios:[]});
+    if(a==="delb"){if(!confirm("¿Borrar este bloque y sus ejercicios?"))return;st.bloques.splice(bi,1)}
+    if(a==="adde") st.bloques[bi].ejercicios.push(normEj({}));
+    if(a==="dele") st.bloques[bi].ejercicios.splice(ei,1);
+    if(a==="guardar"){
+      try{await alGuardar(st);ov.remove()}
+      catch(e){const m=ov.querySelector("#e-m");m.textContent=e.message;m.className="msg err"}
+      return;
+    }
+    pintar();
+  };
+  pintar();
+}
+
+/* ---------- Panel del entrenador ---------- */
+async function listaClientes(){
+  const cs=await db("GET","perfiles","?rol=eq.cliente&order=nombre.asc&select=id,nombre,foto");
+  shell(`<div class="card"><h2>Clientes (${cs.length})</h2>
+    ${cs.length?"":`<p class="muted">Todavía no hay clientes. Se registran ellos desde la pantalla de inicio.</p>`}
+    ${cs.map(c=>`<div class="row" style="justify-content:space-between;border-bottom:1px solid #eee;padding:8px 0">
+      <span>${c.foto?`<img class="avatar" src="${c.foto}" alt=""> `:""}${esc(c.nombre||"Sin nombre")}</span>
+      <button data-c="${c.id}">Abrir</button></div>`).join("")}</div>`);
+  document.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>fichaCliente(b.dataset.c));
+}
+async function fichaCliente(id){
+  const [c]=await db("GET","perfiles",`?id=eq.${id}&select=*`);
+  const ses=await db("GET","sesiones",`?cliente_id=eq.${id}&order=created_at.desc&select=*`);
+  shell(`<button class="sec" id="volver">← Clientes</button>
+    <div class="card"><h2>${esc(c.nombre||"Sin nombre")}</h2>
+    <div class="tabs"><button id="ta" class="on">Entrenamientos</button><button id="tb">Anamnesis</button></div>
+    <div id="tab"></div></div>`);
+  $("#volver").onclick=listaClientes;
+
+  const verEntrenos=()=>{
+    const e=estadisticas(ses);
+    $("#tab").innerHTML=`
+      <div class="row"><label>Subir hoja de Excel <input type="file" id="xls" accept=".xlsx,.xls,.csv"></label></div>
+      <div class="msg" id="m"></div>
+      <div class="stats">
+        <div class="stat">Sesiones<b>${e.sesiones}</b></div>
+        <div class="stat">RPE medio<b>${e.rpe}</b></div>
+        <div class="stat">RIR medio<b>${e.rir}</b></div>
+        <div class="stat">Reps totales<b>${e.reps}</b></div>
+      </div>
+      ${ses.map(s=>`<details class="card"><summary><b>${tituloSesion(s)}</b>
+        <span style="float:right"><button class="sec" data-ed="${s.id}">Editar</button> <button class="danger" data-del="${s.id}">Borrar</button></span></summary>
+        <div style="margin-top:10px">${sesionHTML(s,false)}</div></details>`).join("")
+        || `<p class="muted">Sin entrenamientos. Sube el Excel arriba.</p>`}`;
+    $("#xls").onchange=async ev=>{
+      const f=ev.target.files[0];if(!f)return;
+      try{
+        const lote=await leerExcel(f);
+        if(!lote.length) throw new Error("No encuentro datos en el archivo.");
+        const fechas=new Set(lote.map(s=>s.fecha));
+        const previas=ses.filter(s=>fechas.has(s.fecha));
+        if(previas.length){
+          const conReg=previas.filter(p=>Object.keys(p.registro||{}).length).length;
+          if(!confirm(`Ya hay ${previas.length} sesión(es) con esas fechas${conReg?` (${conReg} con registros del cliente)`:""}. Se sustituirán por las nuevas. ¿Continuar?`)) return;
+          await db("DELETE","sesiones",`?id=in.(${previas.map(p=>p.id).join(",")})`,null,"return=minimal");
+        }
+        await db("POST","sesiones","",lote.map(s=>({cliente_id:id,fecha:s.fecha,titulo:s.titulo,bloques:s.bloques,registro:{}})),"return=minimal");
+        fichaCliente(id);
+      }catch(err){msg("#m",err.message,false)}
+    };
+    document.querySelectorAll("[data-ed]").forEach(b=>b.onclick=ev=>{
+      ev.preventDefault();ev.stopPropagation();
+      const s=ses.find(x=>x.id===b.dataset.ed);
+      abrirEditor(s,async st=>{
+        await db("PATCH","sesiones",`?id=eq.${s.id}`,{titulo:st.titulo,fecha:st.fecha,bloques:st.bloques},"return=minimal");
+        fichaCliente(id);
+      });
+    });
+    document.querySelectorAll("[data-del]").forEach(b=>b.onclick=async ev=>{
+      ev.preventDefault();ev.stopPropagation();
+      if(!confirm("¿Borrar esta sesión? Se pierden también los registros del cliente.")) return;
+      try{await db("DELETE","sesiones",`?id=eq.${b.dataset.del}`,null,"return=minimal");fichaCliente(id)}
+      catch(err){alert(err.message)}
+    });
+  };
+  const verAnam=()=>{
+    $("#tab").innerHTML=c.anamnesis
+      ? ANAM.map(([k,l])=>`<p><b>${l}:</b> ${esc(c.anamnesis[k]||"–")}</p>`).join("")
+      : `<p class="muted">Todavía no ha rellenado la anamnesis.</p>`;
+  };
+  pestanas(["ta","tb"],[verEntrenos,verAnam]);
+  verEntrenos();
+}
+
+/* ---------- Panel del cliente ---------- */
+function panelCliente(tab){
+  shell(`<div class="tabs"><button id="c1">Entrenamientos</button><button id="c2">Anamnesis</button><button id="c3">Perfil</button></div><div id="tab"></div>`);
+  const fns=[tabEntrenos,tabAnamnesis,tabPerfil];
+  pestanas(["c1","c2","c3"],fns);
+  const idx={entrenamientos:0,anamnesis:1,perfil:2}[tab]||0;
+  ["c1","c2","c3"].forEach((x,i)=>$("#"+x).classList.toggle("on",i===idx));
+  fns[idx]();
+}
+async function tabEntrenos(){
+  const ses=await db("GET","sesiones",`?cliente_id=eq.${S.user.id}&order=created_at.desc&select=*`);
+  $("#tab").innerHTML=ses.length
+    ? ses.map(s=>`<div class="card"><h3>${tituloSesion(s)}</h3>
+        ${sesionHTML(s,true)}
+        <div class="row"><button data-save="${s.id}">Guardar registro</button><span class="muted" data-st="${s.id}"></span></div></div>`).join("")
+    : `<p class="muted">Todavía no tienes entrenamientos cargados.</p>`;
+  document.querySelectorAll("[data-save]").forEach(b=>b.onclick=async()=>{
+    const id=b.dataset.save;
+    const st=document.querySelector(`[data-st="${id}"]`);
+    try{
+      await db("PATCH","sesiones",`?id=eq.${id}`,{registro:leerRegistro(b.closest(".card"))},"return=minimal");
+      st.textContent="Guardado ✓";
+    }catch(e){st.textContent="Error: "+e.message}
+  });
+}
+function tabAnamnesis(){
+  const a=S.perfil.anamnesis||{};
+  $("#tab").innerHTML=`${ANAM.map(([k,l])=>`<label>${l}<textarea data-a="${k}">${esc(a[k]||"")}</textarea></label>`).join("")}
+    <label><input type="checkbox" id="cons" ${a.consent?"checked":""}> Acepto que mis datos de salud se usen solo para preparar mi entrenamiento.</label>
+    <div class="row" style="margin-top:10px"><button class="gold" id="guardarA">Guardar anamnesis</button><span class="msg" id="m"></span></div>`;
+  $("#guardarA").onclick=async()=>{
+    if(!$("#cons").checked) return msg("#m","Debes aceptar el consentimiento para guardar.",false);
+    const data={consent:true};
+    document.querySelectorAll("[data-a]").forEach(t=>data[t.dataset.a]=t.value.trim());
+    try{
+      await db("PATCH","perfiles",`?id=eq.${S.user.id}`,{anamnesis:data},"return=minimal");
+      S.perfil.anamnesis=data;msg("#m","Guardado ✓",true);
+    }catch(e){msg("#m",e.message,false)}
+  };
+}
+function tabPerfil(){
+  const p=S.perfil;
+  $("#tab").innerHTML=`<div class="row">${p.foto?`<img class="avatar" style="width:90px;height:90px" src="${p.foto}" alt="">`:`<span class="muted">Sin foto</span>`}
+    <label>Foto de perfil <input type="file" id="foto" accept="image/*"></label></div>
+    <h3>Cambiar contraseña</h3>
+    <input id="np" type="password" placeholder="Nueva contraseña (mín. 6 caracteres)">
+    <button id="cp">Cambiar contraseña</button>
+    <div class="msg" id="m"></div>`;
+  $("#foto").onchange=async ev=>{
+    const f=ev.target.files[0];if(!f)return;
+    try{
+      const d=await fotoAJPG(f);
+      await db("PATCH","perfiles",`?id=eq.${S.user.id}`,{foto:d},"return=minimal");
+      S.perfil.foto=d;panelCliente("perfil");
+    }catch(e){msg("#m",e.message,false)}
+  };
+  $("#cp").onclick=async()=>{
+    try{
+      await auth("user",{password:$("#np").value},"PUT",S.access);
+      msg("#m","Contraseña cambiada ✓",true);$("#np").value="";
+    }catch(e){msg("#m",e.message,false)}
+  };
+}
+function fotoAJPG(file){
+  return new Promise((res,rej)=>{
+    const img=new Image();
+    img.onload=()=>{
+      const c=document.createElement("canvas");c.width=c.height=240;
+      const s=Math.min(img.width,img.height),x=(img.width-s)/2,y=(img.height-s)/2;
+      c.getContext("2d").drawImage(img,x,y,s,s,0,0,240,240);
+      res(c.toDataURL("image/jpeg",0.8));
+    };
+    img.onerror=rej;
+    img.src=URL.createObjectURL(file);
+  });
+}
+
+/* ---------- Arranque ---------- */
+async function init(){
+  const h=new URLSearchParams(location.hash.slice(1));
+  if(h.get("type")==="recovery"&&h.get("access_token")){
+    S={access:h.get("access_token"),refresh:h.get("refresh_token")};
+    history.replaceState(null,"",location.pathname);
+    return pantallaNuevaPass();
+  }
+  const g=leerSesion();
+  if(g&&g.access){
+    S={access:g.access,refresh:g.refresh};
+    try{await cargarPerfil();return entrar()}
+    catch(e){
+      try{await refrescar();await cargarPerfil();return entrar()}
+      catch(e2){S=null;guardarSesion()}
+    }
+  }
+  pantallaLogin();
+}
+init().catch(()=>pantallaLogin());
+</script>
+</body>
+</html>
