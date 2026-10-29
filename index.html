@@ -51,6 +51,7 @@ details summary{cursor:pointer;padding:4px 0}
 .vid-no{color:#888;border-color:#999;cursor:default}
 .vid{color:#f2c230;text-decoration:none;font-size:13px;font-weight:700;border:1px solid #f2c230;border-radius:6px;padding:3px 8px;white-space:nowrap}
 .exn .nota{color:#ddd;font-weight:400;font-size:12px}
+.exlink{color:inherit;text-decoration:underline;text-underline-offset:3px}
 .exg{display:grid;grid-template-columns:.7fr .7fr .7fr 1.7fr .7fr .7fr;gap:4px;text-align:center;align-items:center}
 .exh6 span{font-size:11px;color:#666;padding-top:4px}
 .exv6 span,.exv6 input,.exv6 select{font-size:14px;padding:6px 2px;margin:0;text-align:center;width:100%;min-width:0}
@@ -299,20 +300,27 @@ async function leerExcel(file){
     const iF=c("fecha"),iB=c("bloque"),iE=c("ejercicio"),iS=c("series"),iR=c("reps"),iI=c("intensidad"),iP=c("rpe"),iN=c("notas");
     const get=(r,i)=>i>=0?String(r[i]??"").trim():"";
     const porFecha=new Map();
-    for(const r of filas.slice(hi+1)){
+    const rng=XLSX.utils.decode_range(ws["!ref"]);
+    for(let k=hi+1;k<filas.length;k++){
+      const r=filas[k];
       const ej=get(r,iE);
       if(!ej) continue;
+      const video=iE>=0?linkCelda(ws,XLSX.utils.encode_cell({r:rng.s.r+k,c:rng.s.c+iE})):"";
       const fecha=get(r,iF)||hoja;
       if(!porFecha.has(fecha)) porFecha.set(fecha,new Map());
       const bl=porFecha.get(fecha);
       const bn=get(r,iB)||"General";
       if(!bl.has(bn)) bl.set(bn,[]);
-      bl.get(bn).push(normEj({ej,ser:get(r,iS),rep:get(r,iR),int:get(r,iI),rpe:get(r,iP),prog:get(r,iN)}));
+      bl.get(bn).push(normEj({ej,ser:get(r,iS),rep:get(r,iR),int:get(r,iI),rpe:get(r,iP),prog:get(r,iN),video}));
     }
     for(const [fecha,bl] of porFecha){
       lote.push({fecha,titulo:fecha===hoja?hoja:`${hoja} · ${fecha}`,bloques:[...bl].map(([nombre,ejercicios])=>({nombre,ejercicios}))});
     }
   }
+  // Si un ejercicio aparece en varias sesiones y solo en una tiene enlace, se comparte el enlace por nombre
+  const porNombre=new Map();
+  lote.forEach(s=>s.bloques.forEach(b=>b.ejercicios.forEach(e=>{const k=norm(e.ej);if(e.video&&!porNombre.has(k))porNombre.set(k,e.video)})));
+  lote.forEach(s=>s.bloques.forEach(b=>b.ejercicios.forEach(e=>{if(!e.video&&porNombre.has(norm(e.ej)))e.video=porNombre.get(norm(e.ej))})));
   return lote;
 }
 
@@ -352,6 +360,11 @@ function urlVideo(u){
 function btnVideo(e){
   const u=urlVideo(e.video);
   return u?`<a class="vid" href="${esc(u)}" target="_blank" rel="noopener">▶ Video explicativo</a>`:`<span class="vid vid-no">Sin vídeo</span>`;
+}
+// El nombre del ejercicio enlaza directamente al vídeo (si lo tiene)
+function nombreVideo(e){
+  const u=urlVideo(e.video);
+  return u?`<a class="exlink" href="${esc(u)}" target="_blank" rel="noopener">${esc(e.ej)}</a>`:esc(e.ej);
 }
 function esSeguimiento(b){
   if(typeof b.seguimiento==="boolean") return b.seguimiento;
@@ -398,10 +411,10 @@ function sesionHTML(s,editable){
     const rb=R["b"+bi]||{};
     const cab=`<div class="cab">${esc(b.nombre)}</div>`;
     if(!esSeguimiento(b)){
-      return cab+`<div class="lista">${(b.ejercicios||[]).map(x=>{const e=normEj(x);return `<div class="lin"><span>${esc(e.ej)} · ${esc(e.ser)} × ${esc(e.rep)}${e.int?" · "+esc(e.int):""}${e.nota?` <span class="muted">(${esc(e.nota)})</span>`:""}</span>${btnVideo(e)}</div>`}).join("")}</div>`;
+      return cab+`<div class="lista">${(b.ejercicios||[]).map(x=>{const e=normEj(x);return `<div class="lin"><span>${nombreVideo(e)} · ${esc(e.ser)} × ${esc(e.rep)}${e.int?" · "+esc(e.int):""}${e.nota?` <span class="muted">(${esc(e.nota)})</span>`:""}</span>${btnVideo(e)}</div>`}).join("")}</div>`;
     }
     return cab+(b.ejercicios||[]).map((x,ei)=>{const e=normEj(x),k=bi+"-"+ei,r=R[k]||{};return `<div class="ex">
-      <div class="exn"><span>${esc(e.ej)}${e.nota?` <span class="nota">· ${esc(e.nota)}</span>`:""}</span>${btnVideo(e)}</div>
+      <div class="exn"><span>${nombreVideo(e)}${e.nota?` <span class="nota">· ${esc(e.nota)}</span>`:""}</span>${btnVideo(e)}</div>
       <div class="exg exh6"><span>Series</span><span>Reps</span><span>Hechas</span><span>Intensidad</span><span>RIR</span><span>RPE</span></div>
       <div class="exg exv6"><span>${esc(e.ser)}</span><span>${esc(e.rep)}</span>
         <input data-k="${k}" data-f="reps" value="${esc(r.reps)}" ${dis}>
