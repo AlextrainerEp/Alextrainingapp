@@ -45,6 +45,8 @@ details summary{cursor:pointer;padding:4px 0}
 .int{width:120px;margin:0;padding:6px;background:#fff}
 .ex{border-bottom:1px solid #eee;padding:0 0 8px;margin-bottom:8px}
 .exn{background:#2e3133;color:#f2c230;font-weight:700;padding:6px 10px;border-radius:8px 8px 0 0;font-size:15px}
+.exn{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.vid{color:#f2c230;text-decoration:none;font-size:13px;font-weight:700;border:1px solid #f2c230;border-radius:6px;padding:3px 8px;white-space:nowrap}
 .exn .nota{color:#ddd;font-weight:400;font-size:12px}
 .exg{display:grid;grid-template-columns:.7fr .7fr .7fr 1.7fr .7fr .7fr;gap:4px;text-align:center;align-items:center}
 .exh6 span{font-size:11px;color:#666;padding-top:4px}
@@ -220,7 +222,7 @@ function normEj(e){
   // Si en la celda de reps hay texto (p. ej. "8/6/6 lastre 10kg 2 primeras"), ese texto va a Intensidad
   const m=String(rep).match(/^(\d[\d\s+\/\-–.,"']*?)\s+([A-Za-zÁÉÍÓÚáéíóúñÑ].*)$/);
   if(m){rep=m[1].trim();int=[m[2].trim(),String(int).trim()].filter(Boolean).join(" · ")}
-  return {cod:e.cod??e.codigo??"",ej:e.ej??e.ejercicio??"",ser:e.ser??e.series??"",rep,int,rpe:e.rpe??e.rpe_objetivo??"",rir:e.rir??e.rir_objetivo??"",prog:e.prog??e.progresion??"",nota:e.nota??""};
+  return {cod:e.cod??e.codigo??"",ej:e.ej??e.ejercicio??"",ser:e.ser??e.series??"",rep,int,rpe:e.rpe??e.rpe_objetivo??"",rir:e.rir??e.rir_objetivo??"",prog:e.prog??e.progresion??"",nota:e.nota??"",video:e.video??""};
 }
 
 /* ---------- Excel ---------- */
@@ -332,6 +334,12 @@ function leyendaRPE(){
 }
 
 /* ---------- Vista de sesión (cliente y entrenador) ---------- */
+function urlVideo(u){
+  u=String(u||"").trim();
+  if(!u) return "";
+  if(!/^https?:\/\//i.test(u)) u="https://"+u;
+  return /^https?:\/\/[^\s]+$/i.test(u)?u:"";
+}
 function esSeguimiento(b){
   if(typeof b.seguimiento==="boolean") return b.seguimiento;
   return !/movilidad|estabilidad|movement/i.test(b.nombre||"");
@@ -380,7 +388,7 @@ function sesionHTML(s,editable){
       return cab+`<div class="lista">${(b.ejercicios||[]).map(x=>{const e=normEj(x);return `<div>${esc(e.ej)} · ${esc(e.ser)} × ${esc(e.rep)}${e.int?" · "+esc(e.int):""}${e.nota?` <span class="muted">(${esc(e.nota)})</span>`:""}</div>`}).join("")}</div>`;
     }
     return cab+(b.ejercicios||[]).map((x,ei)=>{const e=normEj(x),k=bi+"-"+ei,r=R[k]||{};return `<div class="ex">
-      <div class="exn">${esc(e.ej)}${e.nota?` <span class="nota">· ${esc(e.nota)}</span>`:""}</div>
+      <div class="exn"><span>${esc(e.ej)}${e.nota?` <span class="nota">· ${esc(e.nota)}</span>`:""}</span>${urlVideo(e.video)?`<a class="vid" href="${esc(urlVideo(e.video))}" target="_blank" rel="noopener">▶ Video explicativo</a>`:""}</div>
       <div class="exg exh6"><span>Series</span><span>Reps</span><span>Hechas</span><span>Intensidad</span><span>RIR</span><span>RPE</span></div>
       <div class="exg exv6"><span>${esc(e.ser)}</span><span>${esc(e.rep)}</span>
         <input data-k="${k}" data-f="reps" value="${esc(r.reps)}" ${dis}>
@@ -434,7 +442,7 @@ function abrirEditor(s,alGuardar){
       ${st.bloques.map((b,bi)=>`<div class="bloque e-bl">
         <div class="row"><input class="e-bn" value="${esc(b.nombre)}" placeholder="Nombre del bloque" style="flex:1;font-weight:700"><label style="margin:0"><input type="checkbox" class="e-seg" ${b.seguimiento?"checked":""} style="width:auto"> Registrar reps/RPE/RIR</label><button class="sec" data-act="delb" data-bi="${bi}">Borrar bloque</button></div>
         <div class="ses"><table>
-          <tr><th>Código</th><th>Ejercicio</th><th>Series</th><th>Reps</th><th>Intensidad / kg</th><th>RIR obj.</th><th>Progresión</th><th>Nota</th><th></th></tr>
+          <tr><th>Código</th><th>Ejercicio</th><th>Series</th><th>Reps</th><th>Intensidad / kg</th><th>RIR obj.</th><th>Progresión</th><th>Nota</th><th>Video (YouTube)</th><th></th></tr>
           ${b.ejercicios.map((e,ei)=>`<tr class="e-ex">
             <td><input data-f="cod" value="${esc(e.cod)}"></td>
             <td><textarea data-f="ej" rows="2" style="min-width:130px;margin:0;padding:6px;font-size:14px">${esc(e.ej)}</textarea></td>
@@ -444,6 +452,7 @@ function abrirEditor(s,alGuardar){
                         <td><input class="n" data-f="rir" value="${esc(e.rir)}"></td>
             <td><textarea data-f="prog" rows="2" style="min-width:130px;margin:0;padding:6px;font-size:14px">${esc(e.prog)}</textarea></td>
             <td><textarea data-f="nota" rows="2" style="min-width:130px;margin:0;padding:6px;font-size:14px">${esc(e.nota)}</textarea></td>
+            <td><textarea data-f="video" rows="2" placeholder="https://youtube.com/..." style="min-width:150px;margin:0;padding:6px;font-size:13px">${esc(e.video)}</textarea></td>
             <td><button class="danger" data-act="dele" data-bi="${bi}" data-ei="${ei}">×</button></td></tr>`).join("")}
         </table></div>
         <button class="sec" style="margin-top:8px" data-act="adde" data-bi="${bi}">+ Ejercicio</button></div>`).join("")}
