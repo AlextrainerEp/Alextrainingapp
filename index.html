@@ -52,6 +52,8 @@ details summary{cursor:pointer;padding:4px 0}
 .vid{color:#f2c230;text-decoration:none;font-size:13px;font-weight:700;border:1px solid #f2c230;border-radius:6px;padding:3px 8px;white-space:nowrap}
 .exn .nota{color:#ddd;font-weight:400;font-size:12px}
 .exlink{color:inherit;text-decoration:underline;text-underline-offset:3px}
+.bcom{padding:6px 10px 10px;background:#f7f7f7;border-radius:0 0 8px 8px}
+.bcom textarea{margin-top:4px}
 .exg{display:grid;grid-template-columns:.7fr .7fr .7fr 1.7fr .7fr .7fr;gap:4px;text-align:center;align-items:center}
 .exh6 span{font-size:11px;color:#666;padding-top:4px}
 .exv6 span,.exv6 input,.exv6 select{font-size:14px;padding:6px 2px;margin:0;text-align:center;width:100%;min-width:0}
@@ -421,7 +423,7 @@ function sesionHTML(s,editable){
         <div class="intb">${esc(e.int)}</div>
         ${pick(k,"rir",r.rir,false,editable)}
         ${pick(k,"rpe",r.rpe,true,editable)}</div>
-    </div>`}).join("");
+    </div>`}).join("")+`<div class="bcom"><div class="muted">Comentario del bloque</div><textarea data-k="b${bi}" data-f="com" placeholder="Cómo ha ido este bloque" rows="2" ${dis}>${esc(rb.com)}</textarea></div>`;
   }).join("");
   return bloques+`<div class="row" style="justify-content:space-between;margin-top:12px"><b>RPE total del entrenamiento</b><div style="width:110px">${pick("s","rpe",(R.s||{}).rpe,true,editable)}</div></div><div class="muted" style="margin-top:10px">Comentario del entrenamiento</div><textarea data-k="s" data-f="com" placeholder="Cómo ha ido la sesión" rows="2" ${dis}>${esc((R.s||{}).com)}</textarea>`;
 }
