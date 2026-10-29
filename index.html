@@ -59,6 +59,11 @@ details summary{cursor:pointer;padding:4px 0}
 .exv6 span,.exv6 input,.exv6 select{font-size:14px;padding:6px 2px;margin:0;text-align:center;width:100%;min-width:0}
 .intb{background:#fff;border:1px solid #bbb;border-radius:6px;padding:6px 4px;font-size:13px;line-height:1.25;min-height:36px;display:flex;align-items:center;justify-content:center;text-align:center;white-space:normal;overflow-wrap:anywhere}
 .lista{font-size:14px;line-height:1.7;padding:4px 0}
+/* Tarjeta de sesión translúcida: se ve el fondo, el texto sigue legible */
+.card.sesion{background:rgba(255,255,255,.62);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);box-shadow:0 2px 10px rgba(0,0,0,.08)}
+.sesion .ex{border-bottom:1px solid rgba(0,0,0,.12)}
+.sesion .lin{border-bottom:1px solid rgba(0,0,0,.12)}
+.sesion .intb,.sesion input,.sesion textarea{background-color:rgba(255,255,255,.85)}
 .bl{justify-content:flex-end;margin:6px 0 4px}
 .bl input{width:70px;margin:0;padding:4px;text-align:center}
 textarea{font-size:14px;width:100%;margin:4px 0 8px}
@@ -593,7 +598,7 @@ function panelCliente(tab){
 async function tabEntrenos(){
   const ses=await db("GET","sesiones",`?cliente_id=eq.${S.user.id}&order=created_at.desc&select=*`);
   $("#tab").innerHTML=ses.length
-    ? ses.map(s=>`<div class="card"><h3>${tituloSesion(s)}</h3>
+    ? ses.map(s=>`<div class="card sesion"><h3>${tituloSesion(s)}</h3>
         ${sesionHTML(s,true)}
         <div class="row"><button data-save="${s.id}">Guardar registro</button><span class="muted" data-st="${s.id}"></span></div></div>`).join("")
     : `<p class="muted">Todavía no tienes entrenamientos cargados.</p>`;
