@@ -9,7 +9,7 @@
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%}
 body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#1d1f21;background:#b9bcbe}
-.fondo{position:fixed;inset:0;background:#b9bcbe url("logo-negro.png") center 22%/min(56vw,520px) auto no-repeat;z-index:-1}
+.fondo{position:fixed;inset:0;background:#b9bcbe url("logo-negro.png") center 90px/min(80vw,600px) auto no-repeat;z-index:-1}
 header{background:#2e3133;color:#fff;display:flex;align-items:center;gap:12px;padding:10px 16px;flex-wrap:wrap}
 header img.logo{height:44px}
 header .t{flex:1;font-weight:700;color:#f2c230}
@@ -62,9 +62,9 @@ details summary{cursor:pointer;padding:4px 0}
 .bl{justify-content:flex-end;margin:6px 0 4px}
 .bl input{width:70px;margin:0;padding:4px;text-align:center}
 textarea{font-size:14px;width:100%;margin:4px 0 8px}
-.leyenda{border-radius:10px;overflow:hidden;border:2px solid #111;margin-bottom:12px;font-size:14px;background:#fff}
-.leyenda>b{display:block;background:#111;color:#fff;padding:6px 10px;font-size:14px}
-.leyenda>div{display:grid;grid-template-columns:1.25fr 1fr;text-align:center;padding:4px 6px;font-weight:700;align-items:center}
+.leyenda{border-radius:8px;overflow:hidden;border:1px solid #111;margin:12px 0 0;font-size:11px;background:#fff}
+.leyenda>b{display:block;background:#111;color:#fff;padding:3px 8px;font-size:11px}
+.leyenda>div{display:grid;grid-template-columns:1.25fr 1fr;text-align:center;padding:1px 4px;font-weight:700;align-items:center}
 .leyenda>div span:last-child{font-weight:400;font-style:italic}
 .bl select{width:90px;margin:0;padding:4px;font-weight:700}
 .pick{padding:6px 2px;margin:0;width:100%;min-width:0;border:1px solid #bbb;border-radius:8px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;color:#1d1f21}
@@ -598,7 +598,7 @@ async function tabEntrenos(){
         ${sesionHTML(s,true)}
         <div class="row"><button data-save="${s.id}">Guardar registro</button><span class="muted" data-st="${s.id}"></span></div></div>`).join("")
     : `<p class="muted">Todavía no tienes entrenamientos cargados.</p>`;
-  $("#tab").insertAdjacentHTML("afterbegin",leyendaRPE());
+  $("#tab").insertAdjacentHTML("beforeend",leyendaRPE());
   document.querySelectorAll("[data-save]").forEach(b=>b.onclick=async()=>{
     const id=b.dataset.save;
     const st=document.querySelector(`[data-st="${id}"]`);
