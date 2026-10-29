@@ -46,6 +46,9 @@ details summary{cursor:pointer;padding:4px 0}
 .ex{border-bottom:1px solid #eee;padding:0 0 8px;margin-bottom:8px}
 .exn{background:#2e3133;color:#f2c230;font-weight:700;padding:6px 10px;border-radius:8px 8px 0 0;font-size:15px}
 .exn{display:flex;justify-content:flex-start;align-items:center;gap:8px;flex-wrap:wrap}
+.lin{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #eee}
+.lin .vid{color:#2e3133;border-color:#2e3133;flex-shrink:0}
+.vid-no{color:#888;border-color:#999;cursor:default}
 .vid{color:#f2c230;text-decoration:none;font-size:13px;font-weight:700;border:1px solid #f2c230;border-radius:6px;padding:3px 8px;white-space:nowrap}
 .exn .nota{color:#ddd;font-weight:400;font-size:12px}
 .exg{display:grid;grid-template-columns:.7fr .7fr .7fr 1.7fr .7fr .7fr;gap:4px;text-align:center;align-items:center}
@@ -340,6 +343,10 @@ function urlVideo(u){
   if(!/^https?:\/\//i.test(u)) u="https://"+u;
   return /^https?:\/\/[^\s]+$/i.test(u)?u:"";
 }
+function btnVideo(e){
+  const u=urlVideo(e.video);
+  return u?`<a class="vid" href="${esc(u)}" target="_blank" rel="noopener">▶ Video explicativo</a>`:`<span class="vid vid-no">Sin vídeo</span>`;
+}
 function esSeguimiento(b){
   if(typeof b.seguimiento==="boolean") return b.seguimiento;
   return !/movilidad|estabilidad|movement/i.test(b.nombre||"");
@@ -385,10 +392,10 @@ function sesionHTML(s,editable){
     const rb=R["b"+bi]||{};
     const cab=`<div class="cab">${esc(b.nombre)}</div>`;
     if(!esSeguimiento(b)){
-      return cab+`<div class="lista">${(b.ejercicios||[]).map(x=>{const e=normEj(x);return `<div>${esc(e.ej)} · ${esc(e.ser)} × ${esc(e.rep)}${e.int?" · "+esc(e.int):""}${e.nota?` <span class="muted">(${esc(e.nota)})</span>`:""}</div>`}).join("")}</div>`;
+      return cab+`<div class="lista">${(b.ejercicios||[]).map(x=>{const e=normEj(x);return `<div class="lin"><span>${esc(e.ej)} · ${esc(e.ser)} × ${esc(e.rep)}${e.int?" · "+esc(e.int):""}${e.nota?` <span class="muted">(${esc(e.nota)})</span>`:""}</span>${btnVideo(e)}</div>`}).join("")}</div>`;
     }
     return cab+(b.ejercicios||[]).map((x,ei)=>{const e=normEj(x),k=bi+"-"+ei,r=R[k]||{};return `<div class="ex">
-      <div class="exn"><span>${esc(e.ej)}${e.nota?` <span class="nota">· ${esc(e.nota)}</span>`:""}</span>${urlVideo(e.video)?`<a class="vid" href="${esc(urlVideo(e.video))}" target="_blank" rel="noopener">▶ Video explicativo</a>`:""}</div>
+      <div class="exn"><span>${esc(e.ej)}${e.nota?` <span class="nota">· ${esc(e.nota)}</span>`:""}</span>${btnVideo(e)}</div>
       <div class="exg exh6"><span>Series</span><span>Reps</span><span>Hechas</span><span>Intensidad</span><span>RIR</span><span>RPE</span></div>
       <div class="exg exv6"><span>${esc(e.ser)}</span><span>${esc(e.rep)}</span>
         <input data-k="${k}" data-f="reps" value="${esc(r.reps)}" ${dis}>
