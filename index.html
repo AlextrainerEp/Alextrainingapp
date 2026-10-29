@@ -470,11 +470,11 @@ function abrirEditor(s,alGuardar){
       ${st.bloques.map((b,bi)=>`<div class="bloque e-bl">
         <div class="row"><input class="e-bn" value="${esc(b.nombre)}" placeholder="Nombre del bloque" style="flex:1;font-weight:700"><label style="margin:0"><input type="checkbox" class="e-seg" ${b.seguimiento?"checked":""} style="width:auto"> Registrar reps/RPE/RIR</label><button class="sec" data-act="delb" data-bi="${bi}">Borrar bloque</button></div>
         <div class="ses"><table>
-          <tr><th>Código</th><th>Ejercicio</th><th>Video (YouTube)</th><th>Series</th><th>Reps</th><th>Intensidad / kg</th><th>RIR obj.</th><th>Progresión</th><th>Nota</th><th></th></tr>
+          <tr><th>Código</th><th>Ejercicio y vídeo (YouTube)</th><th>Series</th><th>Reps</th><th>Intensidad / kg</th><th>RIR obj.</th><th>Progresión</th><th>Nota</th><th></th></tr>
           ${b.ejercicios.map((e,ei)=>`<tr class="e-ex">
             <td><input data-f="cod" value="${esc(e.cod)}"></td>
-            <td><textarea data-f="ej" rows="2" style="min-width:130px;margin:0;padding:6px;font-size:14px">${esc(e.ej)}</textarea></td>
-            <td><textarea data-f="video" rows="2" placeholder="https://youtube.com/..." style="min-width:120px;margin:0;padding:6px;font-size:13px">${esc(e.video)}</textarea></td>
+            <td><textarea data-f="ej" rows="2" style="min-width:150px;margin:0 0 4px;padding:6px;font-size:14px">${esc(e.ej)}</textarea>
+              <input data-f="video" value="${esc(e.video)}" placeholder="Pega aquí el enlace de YouTube" style="min-width:150px;margin:0;padding:6px;font-size:13px"></td>
             <td><input class="n" data-f="ser" value="${esc(e.ser)}"></td>
             <td><textarea data-f="rep" rows="2" style="min-width:130px;margin:0;padding:6px;font-size:14px">${esc(e.rep)}</textarea></td>
             <td><textarea data-f="int" rows="2" style="min-width:130px;margin:0;padding:6px;font-size:14px">${esc(e.int)}</textarea></td>
