@@ -236,6 +236,12 @@ const LADO=[
  {warm:"B",wser:"C",wrep:"D",wint:"E",code:"F",ej:"G",ser:"H",rep:"I",int:"J",rpe:"K",rir:"L",prog:"M",dia:"J",micro:"F"},
  {warm:"P",wser:"Q",wrep:"R",wint:"S",code:"T",ej:"U",ser:"V",rep:"W",int:"X",rpe:"Y",rir:"Z",prog:"AA",dia:"X",micro:"T"}
 ];
+function linkCelda(ws,a){
+  const c=ws[a]; if(!c) return "";
+  if(c.l&&c.l.Target) return c.l.Target;
+  const m=String(c.f||"").match(/HYPERLINK\s*\(\s*"([^"]+)"/i);
+  return m?m[1]:"";
+}
 function leerPlantilla(ws){
   const max=XLSX.utils.decode_range(ws["!ref"]).e.r+1;
   const inicios=[];
@@ -251,12 +257,12 @@ function leerPlantilla(ws){
         const wn=celdaTxt(ws,L.warm+r);
         if(wn){
           if(!celdaTxt(ws,L.wser+r)&&!celdaTxt(ws,L.wrep+r)){warmActual=wn;ensure(warmActual)}
-          else ensure(warmActual).ejercicios.push(normEj({ej:wn,ser:celdaTxt(ws,L.wser+r),rep:celdaTxt(ws,L.wrep+r),int:celdaTxt(ws,L.wint+r)}));
+          else ensure(warmActual).ejercicios.push(normEj({ej:wn,ser:celdaTxt(ws,L.wser+r),rep:celdaTxt(ws,L.wrep+r),int:celdaTxt(ws,L.wint+r),video:linkCelda(ws,L.warm+r)}));
         }
         const code=celdaTxt(ws,L.code+r), ej=celdaTxt(ws,L.ej+r);
         if(code&&ej){
           const letra=code.replace(/[^A-Za-z]/g,"").charAt(0).toUpperCase()||"·";
-          ensure("Parte principal · "+letra).ejercicios.push(normEj({cod:code.replace(/\.$/,""),ej,ser:celdaTxt(ws,L.ser+r),rep:celdaTxt(ws,L.rep+r),int:celdaTxt(ws,L.int+r),rpe:celdaTxt(ws,L.rpe+r),rir:celdaTxt(ws,L.rir+r),prog:celdaTxt(ws,L.prog+r)}));
+          ensure("Parte principal · "+letra).ejercicios.push(normEj({cod:code.replace(/\.$/,""),ej,ser:celdaTxt(ws,L.ser+r),rep:celdaTxt(ws,L.rep+r),int:celdaTxt(ws,L.int+r),rpe:celdaTxt(ws,L.rpe+r),rir:celdaTxt(ws,L.rir+r),prog:celdaTxt(ws,L.prog+r),video:linkCelda(ws,L.ej+r)}));
         }
       }
       if(!bloques.size) return;
