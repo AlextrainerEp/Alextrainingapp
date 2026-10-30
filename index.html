@@ -10,17 +10,17 @@
 html,body{margin:0;min-height:100%}
 body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#1d1f21;background:#b9bcbe}
 /* Frase bajo el logo de fondo, separada unos tres renglones */
-.frase{position:absolute;left:0;right:0;top:calc(90px + min(80vw,600px)*0.37 + 3.2em);margin:0;padding:0 16px;text-align:center;font-size:14px;line-height:1.4;font-style:italic;color:#2e3133;max-width:640px;margin-inline:auto}
-.fondo{position:fixed;inset:0;background:#b9bcbe url("logo-negro.png") center 90px/min(80vw,600px) auto no-repeat;z-index:-1}
+.frase{position:absolute;left:0;right:0;top:calc(150px + min(80vw,600px)*0.37 + 12px);margin:0;padding:0 16px;text-align:center;font-size:14px;line-height:1.4;font-style:italic;color:#2e3133;max-width:640px;margin-inline:auto}
+.fondo{position:fixed;inset:0;background:#b9bcbe url("logo-negro.png") center 150px/min(80vw,600px) auto no-repeat;z-index:-1}
 header{background:#2e3133;color:#fff;display:flex;align-items:center;gap:12px;padding:10px 16px;flex-wrap:wrap}
 header img.logo{height:44px}
 header .t{flex:1;font-weight:700;color:#f2c230}
 /* El contenido empieza por debajo del logo de fondo para que se vea entero */
 /* Panel del entrenador: el contenido baja para dejar a la vista la frase del fondo */
-.adm{padding-top:calc(min(80vw,600px)*0.37 + 170px)}
-main{max-width:980px;margin:0 auto;padding:calc(min(80vw,600px)*0.37 + 110px) 16px 16px}
+.adm{padding-top:calc(150px + min(80vw,600px)*0.37 + 170px)}
+main{max-width:980px;margin:0 auto;padding:calc(150px + min(80vw,600px)*0.37 + 120px) 16px 16px}
 .card{background:rgba(255,255,255,.62);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);border-radius:12px;padding:18px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.12)}
-.login{max-width:520px;width:calc(100% - 32px);margin:calc(min(80vw,600px)*0.37 + 120px) auto 40px;padding:14px;background:rgba(255,255,255,.62);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+.login{max-width:520px;width:calc(100% - 32px);margin:calc(150px + min(80vw,600px)*0.37 + 120px) auto 40px;padding:14px;background:rgba(255,255,255,.62);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
 /* Días de entrenamiento plegables: solo se ve el día que se abre */
 .dia-sum{cursor:pointer;list-style:none}
 .dia-sum::-webkit-details-marker{display:none}
