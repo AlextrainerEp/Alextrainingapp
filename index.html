@@ -398,10 +398,8 @@ function nombreVideo(e){
   const u=urlVideo(e.video);
   return u?`<a class="exlink" href="${esc(u)}" target="_blank" rel="noopener">${esc(e.ej)}</a>`:esc(e.ej);
 }
-function esSeguimiento(b){
-  if(typeof b.seguimiento==="boolean") return b.seguimiento;
-  return !/movilidad|estabilidad|movement/i.test(b.nombre||"");
-}
+// Todos los bloques tienen la misma estructura: Series, Reps, Hechas, Intensidad, RIR y RPE
+function esSeguimiento(b){return true}
 function pick(k,f,val,color,editable){
   const c=color?colorRPE(val):["#fff","#1d1f21"];
   const txt=(val===""||val==null)?"–":String(val).replace(".",",");
@@ -489,7 +487,7 @@ function abrirEditor(s,alGuardar){
     fecha:ov.querySelector("#e-fe").value.trim(),
     bloques:[...ov.querySelectorAll(".e-bl")].map(bd=>({
       nombre:bd.querySelector(".e-bn").value.trim(),
-      seguimiento:bd.querySelector(".e-seg").checked,
+      seguimiento:true,
       ejercicios:[...bd.querySelectorAll(".e-ex")].map(tr=>{const o={};tr.querySelectorAll("[data-f]").forEach(i=>o[i.dataset.f]=i.value.trim());return normEj(o)})
     }))
   });
@@ -498,7 +496,7 @@ function abrirEditor(s,alGuardar){
       <label>Título <input id="e-tit" value="${esc(st.titulo)}"></label>
       <label>Fecha <input id="e-fe" value="${esc(st.fecha)}"></label>
       ${st.bloques.map((b,bi)=>`<div class="bloque e-bl">
-        <div class="row"><input class="e-bn" value="${esc(b.nombre)}" placeholder="Nombre del bloque" style="flex:1;font-weight:700"><label style="margin:0"><input type="checkbox" class="e-seg" ${b.seguimiento?"checked":""} style="width:auto"> Registrar reps/RPE/RIR</label><button class="sec" data-act="delb" data-bi="${bi}">Borrar bloque</button></div>
+        <div class="row"><input class="e-bn" value="${esc(b.nombre)}" placeholder="Nombre del bloque" style="flex:1;font-weight:700"><button class="sec" data-act="delb" data-bi="${bi}">Borrar bloque</button></div>
         <div class="ses"><table>
           <tr><th>Código</th><th>Ejercicio y vídeo (YouTube)</th><th>Series</th><th>Reps</th><th>Intensidad / kg</th><th>RIR obj.</th><th>Progresión</th><th>Nota</th><th></th></tr>
           ${b.ejercicios.map((e,ei)=>`<tr class="e-ex">
