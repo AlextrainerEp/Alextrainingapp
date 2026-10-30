@@ -302,7 +302,11 @@ function leerPlantilla(ws){
       for(let r=r0+9;r<=fin;r++){
         const wn=celdaTxt(ws,L.warm+r);
         if(wn){
-          if(!celdaTxt(ws,L.wser+r)&&!celdaTxt(ws,L.wrep+r)){warmActual=wn;ensure(warmActual)}
+          // Cabecera de bloque: sin series ni reps ni video, y escrita en mayúsculas (o un nombre de bloque conocido).
+          // Un ejercicio tipo "Movilidad de tobillo" (en minúsculas) se queda como ejercicio.
+          const esCab=!celdaTxt(ws,L.wser+r)&&!celdaTxt(ws,L.wrep+r)&&!linkCelda(ws,L.warm+r)&&
+            ((wn===wn.toUpperCase()&&/[A-ZÁÉÍÓÚÑ]/.test(wn))||/^(calentamiento|movilidad|estabilidad|movement skills|parte principal)$/i.test(wn.trim()));
+          if(esCab){warmActual=wn;ensure(warmActual)}
           else ensure(warmActual).ejercicios.push(normEj({ej:wn,ser:celdaTxt(ws,L.wser+r),rep:celdaTxt(ws,L.wrep+r),int:celdaTxt(ws,L.wint+r),video:linkCelda(ws,L.warm+r)}));
         }
         const code=celdaTxt(ws,L.code+r), ej=celdaTxt(ws,L.ej+r);
