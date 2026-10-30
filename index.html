@@ -21,6 +21,7 @@ main{max-width:980px;margin:0 auto;padding:calc(min(80vw,600px)*0.37 + 110px) 16
 .dia-sum{cursor:pointer;list-style:none}
 .dia-sum::-webkit-details-marker{display:none}
 .dia-sum h3{display:inline;margin:0}
+.cli-name{cursor:pointer;text-decoration:underline;text-underline-offset:3px;font-weight:600}
 .tagline{text-align:center;font-weight:600;color:#1d1f21;margin:0 0 14px;font-size:15px}
 .login .big{width:100%;max-width:440px;height:auto;display:block;margin:0 auto 12px}
 input,select,textarea{width:100%;padding:10px;border:1px solid #bbb;border-radius:8px;font:inherit;margin:4px 0 10px}
@@ -545,7 +546,7 @@ function tabHistorial(ses){
 }
 async function tabHistorialCliente(){
   const ses=await db("GET","sesiones",`?cliente_id=eq.${S.user.id}&order=created_at.desc&select=*`);
-  $("#tab").innerHTML=tabHistorial(ses);
+  $("#sub").innerHTML=tabHistorial(ses);
 }
 
 /* ---------- Panel del entrenador ---------- */
@@ -554,7 +555,7 @@ async function listaClientes(){
   shell(`<div class="card"><h2>Clientes (${cs.length})</h2>
     ${cs.length?"":`<p class="muted">Todavía no hay clientes. Se registran ellos desde la pantalla de inicio.</p>`}
     ${cs.map(c=>`<div class="row" style="justify-content:space-between;border-bottom:1px solid #eee;padding:8px 0">
-      <span>${c.foto?`<img class="avatar" src="${c.foto}" alt=""> `:""}${esc(c.nombre||"Sin nombre")}</span>
+      <span class="cli-name" data-c="${c.id}">${c.foto?`<img class="avatar" src="${c.foto}" alt=""> `:""}${esc(c.nombre||"Sin nombre")}</span>
       <button data-c="${c.id}">Abrir</button></div>`).join("")}</div>`);
   document.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>fichaCliente(b.dataset.c));
 }
@@ -624,17 +625,24 @@ async function fichaCliente(id){
 }
 
 /* ---------- Panel del cliente ---------- */
+function subTabs(lista){
+  $("#tab").innerHTML=`<div class="tabs">${lista.map((n,i)=>`<button id="sb${i}" class="${i?"":"on"}">${n[0]}</button>`).join("")}</div><div id="sub"></div>`;
+  pestanas(lista.map((_,i)=>"sb"+i),lista.map(n=>n[1]));
+  lista[0][1]();
+}
+function tabEntrenosCliente(){subTabs([["Mi entrenamiento",tabEntrenos],["Historial",tabHistorialCliente]])}
+function tabPerfilCliente(){subTabs([["Foto y contraseña",tabPerfil],["Anamnesis",tabAnamnesis]])}
 function panelCliente(tab){
-  shell(`<div class="tabs"><button id="c1">Entrenamientos</button><button id="c2">Anamnesis</button><button id="c3">Perfil</button><button id="c4">Historial</button></div><div id="tab"></div>`);
-  const fns=[tabEntrenos,tabAnamnesis,tabPerfil,tabHistorialCliente];
-  pestanas(["c1","c2","c3","c4"],fns);
-  const idx={entrenamientos:0,anamnesis:1,perfil:2,historial:3}[tab]||0;
-  ["c1","c2","c3","c4"].forEach((x,i)=>$("#"+x).classList.toggle("on",i===idx));
+  shell(`<div class="tabs"><button id="c1">Entrenamientos</button><button id="c2">Perfil</button></div><div id="tab"></div>`);
+  const fns=[tabEntrenosCliente,tabPerfilCliente];
+  pestanas(["c1","c2"],fns);
+  const idx={entrenamientos:0,historial:0,perfil:1,anamnesis:1}[tab]||0;
+  ["c1","c2"].forEach((x,i)=>$("#"+x).classList.toggle("on",i===idx));
   fns[idx]();
 }
 async function tabEntrenos(){
   const ses=await db("GET","sesiones",`?cliente_id=eq.${S.user.id}&order=created_at.desc&select=*`);
-  $("#tab").innerHTML=ses.length
+  $("#sub").innerHTML=ses.length
     ? ses.map(s=>`<details class="card sesion"><summary class="dia-sum"><h3>${tituloSesion(s)}</h3></summary>
         ${sesionHTML(s,true)}
         <div class="row"><button data-save="${s.id}">Guardar registro</button><span class="muted" data-st="${s.id}"></span></div></details>`).join("")
@@ -650,7 +658,7 @@ async function tabEntrenos(){
 }
 function tabAnamnesis(){
   const a=S.perfil.anamnesis||{};
-  $("#tab").innerHTML=`${ANAM.map(([k,l])=>`<label>${l}<textarea data-a="${k}">${esc(a[k]||"")}</textarea></label>`).join("")}
+  $("#sub").innerHTML=`${ANAM.map(([k,l])=>`<label>${l}<textarea data-a="${k}">${esc(a[k]||"")}</textarea></label>`).join("")}
     <label><input type="checkbox" id="cons" ${a.consent?"checked":""}> Acepto que mis datos de salud se usen solo para preparar mi entrenamiento.</label>
     <div class="row" style="margin-top:10px"><button class="gold" id="guardarA">Guardar anamnesis</button><span class="msg" id="m"></span></div>`;
   $("#guardarA").onclick=async()=>{
@@ -665,7 +673,7 @@ function tabAnamnesis(){
 }
 function tabPerfil(){
   const p=S.perfil;
-  $("#tab").innerHTML=`<div class="row">${p.foto?`<img class="avatar" style="width:90px;height:90px" src="${p.foto}" alt="">`:`<span class="muted">Sin foto</span>`}
+  $("#sub").innerHTML=`<div class="row">${p.foto?`<img class="avatar" style="width:90px;height:90px" src="${p.foto}" alt="">`:`<span class="muted">Sin foto</span>`}
     <label>Foto de perfil <input type="file" id="foto" accept="image/*"></label></div>
     <h3>Cambiar contraseña</h3>
     <input id="np" type="password" placeholder="Nueva contraseña (mín. 6 caracteres)">
