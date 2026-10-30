@@ -17,6 +17,7 @@ header .t{flex:1;font-weight:700;color:#f2c230}
 main{max-width:980px;margin:0 auto;padding:calc(min(80vw,600px)*0.37 + 110px) 16px 16px}
 .card{background:rgba(255,255,255,.62);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);border-radius:12px;padding:18px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.12)}
 .login{max-width:520px;width:calc(100% - 32px);margin:calc(min(80vw,600px)*0.37 + 120px) auto 40px;padding:14px;background:rgba(255,255,255,.62);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+.tagline{text-align:center;font-weight:600;color:#1d1f21;margin:0 0 14px;font-size:15px}
 .login .big{width:100%;max-width:440px;height:auto;display:block;margin:0 auto 12px}
 input,select,textarea{width:100%;padding:10px;border:1px solid #bbb;border-radius:8px;font:inherit;margin:4px 0 10px}
 input[type=checkbox],input[type=file]{width:auto}
@@ -146,6 +147,7 @@ async function salir(){S=null;guardarSesion();pantallaLogin()}
 function pantallaLogin(){
   $("#app").innerHTML=`<div class="login card">
     <img class="big" src="logo-principal-negro.png" alt="Alex Training Lab">
+    <p class="tagline">Entrenamientos personalizados para conseguir tus objetivos</p>
     <input id="em" type="email" placeholder="Email">
     <input id="pw" type="password" placeholder="Contraseña">
     <button class="gold" id="go" style="width:100%">Entrar</button>
@@ -158,6 +160,7 @@ function pantallaLogin(){
 function pantallaRegistro(){
   $("#app").innerHTML=`<div class="login card">
     <img class="big" src="logo-principal-negro.png" alt="Alex Training Lab">
+    <p class="tagline">Entrenamientos personalizados para conseguir tus objetivos</p>
     <h3>Crear cuenta</h3>
     <input id="rn" placeholder="Nombre">
     <input id="re" type="email" placeholder="Email">
@@ -178,6 +181,7 @@ function pantallaRegistro(){
 function pantallaRecuperar(){
   $("#app").innerHTML=`<div class="login card">
     <img class="big" src="logo-principal-negro.png" alt="Alex Training Lab">
+    <p class="tagline">Entrenamientos personalizados para conseguir tus objetivos</p>
     <h3>Recuperar contraseña</h3>
     <input id="re" type="email" placeholder="Tu email">
     <button class="gold" id="rr" style="width:100%">Enviar enlace</button>
@@ -195,6 +199,7 @@ function pantallaRecuperar(){
 function pantallaNuevaPass(){
   $("#app").innerHTML=`<div class="login card">
     <img class="big" src="logo-principal-negro.png" alt="Alex Training Lab">
+    <p class="tagline">Entrenamientos personalizados para conseguir tus objetivos</p>
     <h3>Nueva contraseña</h3>
     <input id="np" type="password" placeholder="Nueva contraseña (mín. 6 caracteres)">
     <button class="gold" id="nn" style="width:100%">Guardar</button>
