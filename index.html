@@ -21,6 +21,8 @@ main{max-width:980px;margin:0 auto;padding:calc(min(80vw,600px)*0.37 + 110px) 16
 .dia-sum{cursor:pointer;list-style:none}
 .dia-sum::-webkit-details-marker{display:none}
 .dia-sum h3{display:inline;margin:0}
+/* Caja de la lista de entrenados: más difuminada */
+.card.difuminada{background:rgba(255,255,255,.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 .perfil-btn{display:flex;flex-direction:column;align-items:center;line-height:1.15;padding:4px 10px;background:#ddd;color:#1d1f21}
 .perfil-btn small{font-size:11px;font-weight:400;opacity:.8}
 .cli-name{cursor:pointer;text-decoration:underline;text-underline-offset:3px;font-weight:600}
@@ -555,8 +557,8 @@ async function tabHistorialCliente(){
 /* ---------- Panel del entrenador ---------- */
 async function listaClientes(){
   const cs=await db("GET","perfiles","?rol=eq.cliente&order=nombre.asc&select=id,nombre,foto");
-  shell(`<div class="card"><h2>Clientes (${cs.length})</h2>
-    ${cs.length?"":`<p class="muted">Todavía no hay clientes. Se registran ellos desde la pantalla de inicio.</p>`}
+  shell(`<div class="card difuminada"><h2>Entrenados (${cs.length})</h2>
+    ${cs.length?"":`<p class="muted">Todavía no hay entrenados. Se registran ellos desde la pantalla de inicio.</p>`}
     ${cs.map(c=>`<div class="row" style="justify-content:space-between;border-bottom:1px solid #eee;padding:8px 0">
       <span class="cli-name" data-c="${c.id}">${c.foto?`<img class="avatar" src="${c.foto}" alt=""> `:""}${esc(c.nombre||"Sin nombre")}</span>
       <button data-c="${c.id}">Abrir</button></div>`).join("")}</div>`);
