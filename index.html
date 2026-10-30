@@ -9,6 +9,8 @@
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%}
 body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#1d1f21;background:#b9bcbe}
+/* Frase bajo el logo de fondo, separada unos tres renglones */
+.frase{position:absolute;left:0;right:0;top:calc(90px + min(80vw,600px)*0.37 + 3.2em);margin:0;padding:0 16px;text-align:center;font-size:14px;line-height:1.4;font-style:italic;color:#2e3133;max-width:640px;margin-inline:auto}
 .fondo{position:fixed;inset:0;background:#b9bcbe url("logo-negro.png") center 90px/min(80vw,600px) auto no-repeat;z-index:-1}
 header{background:#2e3133;color:#fff;display:flex;align-items:center;gap:12px;padding:10px 16px;flex-wrap:wrap}
 header img.logo{height:44px}
@@ -99,7 +101,7 @@ textarea{font-size:14px;width:100%;margin:4px 0 8px}
 </style>
 </head>
 <body>
-<div class="fondo"></div>
+<div class="fondo"><p class="frase">“ Trabajando para conseguir todos nuestros “ Everything negative, pressure, challenges, is all an opportunity for me to rise” Kobe Bryant</p></div>
 <div id="app"></div>
 
 <script>
@@ -230,7 +232,7 @@ function shell(inner){
   const p=(S&&S.perfil)||{};
   const foto=(p.rol==="cliente"&&p.foto)?`<img class="avatar" src="${p.foto}" alt="">`:"";
   $("#app").innerHTML=`<header><img class="logo" src="logo-alex.png" alt="" onerror="this.remove()">
-    <span class="t">${p.rol==="admin"?"Panel del entrenador":"Mi entrenamiento"}</span>${foto}
+    <span class="t">${p.rol==="admin"?"Panel del entrenador":""}</span>${foto}
     ${p.rol==="admin"?(p.nombre?`<span>${esc(p.nombre)}</span>`:""):`<button class="sec perfil-btn" id="ir-perfil"><span>${esc(p.nombre||"Mi perfil")}</span><small>Perfil</small></button>`}
     <button class="sec" id="salir">Salir</button></header><main>${inner}</main>`;
   $("#salir").onclick=salir;
