@@ -69,6 +69,17 @@ details summary{cursor:pointer;padding:4px 0}
 .vid{color:#f2c230;text-decoration:none;font-size:13px;font-weight:700;border:1px solid #f2c230;border-radius:6px;padding:3px 8px;white-space:nowrap}
 .exn .nota{color:#ddd;font-weight:400;font-size:12px}
 .exlink{color:inherit;text-decoration:underline;text-underline-offset:3px}
+/* Tabla compacta: una línea por ejercicio */
+.ghead,.grow{display:grid;grid-template-columns:minmax(0,1.9fr) .42fr .42fr .55fr 1.15fr .5fr .55fr;gap:3px;align-items:center}
+.ghead{font-size:11px;color:#555;text-align:center;padding:4px 0;border-bottom:1px solid #ccc;font-weight:700}
+.ghead span:first-child{text-align:left}
+.grow{padding:4px 0;border-bottom:1px solid rgba(0,0,0,.12);font-size:13px}
+.grow>span{text-align:center}
+.gname{font-weight:600;line-height:1.2;min-width:0;overflow-wrap:anywhere}
+.grow input{width:100%;min-width:0;margin:0;padding:4px 2px;font-size:13px;text-align:center}
+.grow .intb{font-size:12px;min-height:30px;padding:3px 2px}
+.grow .pick{width:100%;padding:4px 2px;font-size:13px;margin:0}
+.vmini{font-size:11px;padding:1px 5px;margin-left:4px;vertical-align:middle}
 .bcom{padding:6px 10px 10px;background:#f7f7f7;border-radius:0 0 8px 8px}
 .bcom textarea{margin-top:4px}
 .exg{display:grid;grid-template-columns:.7fr .7fr .7fr 1.7fr .7fr .7fr;gap:4px;text-align:center;align-items:center}
@@ -399,6 +410,11 @@ function nombreVideo(e){
   return u?`<a class="exlink" href="${esc(u)}" target="_blank" rel="noopener">${esc(e.ej)}</a>`:esc(e.ej);
 }
 // Todos los bloques tienen la misma estructura: Series, Reps, Hechas, Intensidad, RIR y RPE
+// Botón de vídeo compacto para las filas de ejercicio
+function btnVideoMini(e){
+  const u=urlVideo(e.video);
+  return u?` <a class="vid vmini" href="${esc(u)}" target="_blank" rel="noopener" title="Video explicativo">▶</a>`:` <span class="vid vid-no vmini" title="Sin vídeo">–</span>`;
+}
 function esSeguimiento(b){return true}
 function pick(k,f,val,color,editable){
   const c=color?colorRPE(val):["#fff","#1d1f21"];
@@ -443,14 +459,14 @@ function sesionHTML(s,editable,conLeyenda=editable){
     if(!esSeguimiento(b)){
       return cab+`<div class="lista">${(b.ejercicios||[]).map(x=>{const e=normEj(x);return `<div class="lin"><span>${nombreVideo(e)} · ${esc(e.ser)} × ${esc(e.rep)}${e.int?" · "+esc(e.int):""}${e.nota?` <span class="muted">(${esc(e.nota)})</span>`:""}</span>${btnVideo(e)}</div>`}).join("")}</div>`;
     }
-    return cab+(b.ejercicios||[]).map((x,ei)=>{const e=normEj(x),k=bi+"-"+ei,r=R[k]||{};return `<div class="ex">
-      <div class="exn"><span>${nombreVideo(e)}${e.nota?` <span class="nota">· ${esc(e.nota)}</span>`:""}</span>${btnVideo(e)}</div>
-      <div class="exg exh6"><span>Series</span><span>Reps</span><span>Hechas</span><span>Intensidad</span><span>RIR</span><span>RPE</span></div>
-      <div class="exg exv6"><span>${esc(e.ser)}</span><span>${esc(e.rep)}</span>
-        <input data-k="${k}" data-f="reps" value="${esc(r.reps)}" ${dis}>
-        <div class="intb">${esc(e.int)}</div>
-        ${pick(k,"rir",r.rir,false,editable)}
-        ${pick(k,"rpe",r.rpe,true,editable)}</div>
+    const cabeza=`<div class="ghead"><span>Ejercicio</span><span>Series</span><span>Reps</span><span>Hechas</span><span>Intensidad</span><span>RIR</span><span>RPE</span></div>`;
+    return cab+cabeza+(b.ejercicios||[]).map((x,ei)=>{const e=normEj(x),k=bi+"-"+ei,r=R[k]||{};return `<div class="grow">
+      <div class="gname">${nombreVideo(e)}${btnVideoMini(e)}${e.nota?` <span class="nota">· ${esc(e.nota)}</span>`:""}</div>
+      <span>${esc(e.ser)}</span><span>${esc(e.rep)}</span>
+      <input data-k="${k}" data-f="reps" value="${esc(r.reps)}" ${dis}>
+      <div class="intb">${esc(e.int)}</div>
+      ${pick(k,"rir",r.rir,false,editable)}
+      ${pick(k,"rpe",r.rpe,true,editable)}
     </div>`}).join("")+`<div class="bcom"><div class="muted">Comentario del bloque</div><textarea data-k="b${bi}" data-f="com" placeholder="Cómo ha ido este bloque" rows="2" ${dis}>${esc(rb.com)}</textarea></div>`;
   }).join("");
   return bloques+`<div class="rpe-tot"><b>RPE total del entrenamiento</b><div class="rpe-tot-pick">${pick("s","rpe",(R.s||{}).rpe,true,editable)}</div></div><div class="muted" style="margin-top:10px">Comentario del entrenamiento</div><textarea data-k="s" data-f="com" placeholder="Cómo ha ido la sesión" rows="2" ${dis}>${esc((R.s||{}).com)}</textarea>${conLeyenda?`<div style="margin-top:12px">${leyendaRPE()}</div>`:""}`;
