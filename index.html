@@ -74,6 +74,7 @@ details summary{cursor:pointer;padding:4px 0}
 .ghead{font-size:11px;color:#555;text-align:center;padding:4px 0;border-bottom:1px solid #ccc;font-weight:700}
 .ghead span:first-child{text-align:left}
 .grow{padding:4px 0;border-bottom:1px solid rgba(0,0,0,.12);font-size:13px}
+.grow.sep{margin-top:12px;border-top:2px solid #2e3133}
 .grow>span{text-align:center}
 .gname{font-weight:600;line-height:1.2;min-width:0;overflow-wrap:anywhere}
 .grow input{width:100%;min-width:0;margin:0;padding:4px 2px;font-size:13px;text-align:center}
@@ -469,7 +470,8 @@ function sesionHTML(s,editable,conLeyenda=editable){
   const cabeza=`<div class="ghead"><span>Ejercicio</span><span>Series</span><span>Reps</span><span>Hechas</span><span>Intensidad</span><span>RIR</span><span>RPE</span></div>`;
   const bloques=grupos.map(g=>{
     const cab=`<div class="cab">${esc(g.nombre)}</div>`;
-    return cab+cabeza+g.items.map(({x,bi,ei})=>{const e=normEj(x),k=bi+"-"+ei,r=R[k]||{};return `<div class="grow">
+    const letra=x=>String((normEj(x).cod)||"").replace(/[^A-Za-z]/g,"").charAt(0).toUpperCase();
+    return cab+cabeza+g.items.map(({x,bi,ei},idx)=>{const e=normEj(x),k=bi+"-"+ei,r=R[k]||{};const sep=idx>0&&letra(x)!==letra(g.items[idx-1].x)?" sep":"";return `<div class="grow${sep}">
       <div class="gname">${e.cod?`<b>${esc(e.cod)}</b> `:""}${nombreVideo(e)}${btnVideoMini(e)}${e.nota?` <span class="nota">· ${esc(e.nota)}</span>`:""}</div>
       <span>${esc(e.ser)}</span><span>${esc(e.rep)}</span>
       <input data-k="${k}" data-f="reps" value="${esc(r.reps)}" ${dis}>
@@ -564,15 +566,14 @@ function abrirEditor(s,alGuardar){
 function hecho(s){
   return Object.values(s.registro||{}).some(v=>v&&Object.values(v).some(x=>x!==""&&x!=null));
 }
-function tabHistorial(ses){
+function tabHistorial(ses,cliente=false){
   const hechos=ses.filter(hecho);
   const e=estadisticas(hechos);
-  return `<div class="stats">
-      <div class="stat">Realizados<b>${e.sesiones}</b></div>
-      <div class="stat">RPE medio<b>${e.rpe}</b></div>
-      <div class="stat">RIR medio<b>${e.rir}</b></div>
-      <div class="stat">Reps totales<b>${e.reps}</b></div>
-    </div>
+  // Página del entrenado: sesiones planificadas, completadas y RPE medio
+  const stats=cliente
+    ? `<div class="stat">Sesiones planificadas<b>${ses.length}</b></div><div class="stat">Sesiones completadas<b>${hechos.length}</b></div><div class="stat">RPE medio<b>${e.rpe}</b></div>`
+    : `<div class="stat">Realizados<b>${e.sesiones}</b></div><div class="stat">RPE medio<b>${e.rpe}</b></div><div class="stat">RIR medio<b>${e.rir}</b></div><div class="stat">Reps totales<b>${e.reps}</b></div>`;
+  return `<div class="stats">${stats}</div>
     ${hechos.length
       ? hechos.map(s=>`<details class="card"><summary><b>${tituloSesion(s)}</b></summary>
           <div style="margin-top:10px">${sesionHTML(s,false)}</div></details>`).join("")
@@ -580,7 +581,7 @@ function tabHistorial(ses){
 }
 async function tabHistorialCliente(){
   const ses=await db("GET","sesiones",`?cliente_id=eq.${S.user.id}&order=created_at.desc&select=*`);
-  $("#tab").innerHTML=tabHistorial(ses);
+  $("#tab").innerHTML=tabHistorial(ses,true);
 }
 
 /* ---------- Panel del entrenador ---------- */
