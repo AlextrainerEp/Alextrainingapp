@@ -16,6 +16,8 @@ header{background:#2e3133;color:#fff;display:flex;align-items:center;gap:12px;pa
 header img.logo{height:44px}
 header .t{flex:1;font-weight:700;color:#f2c230}
 /* El contenido empieza por debajo del logo de fondo para que se vea entero */
+/* Panel del entrenador: el contenido baja para dejar a la vista la frase del fondo */
+.adm{padding-top:calc(min(80vw,600px)*0.37 + 170px)}
 main{max-width:980px;margin:0 auto;padding:calc(min(80vw,600px)*0.37 + 110px) 16px 16px}
 .card{background:rgba(255,255,255,.62);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);border-radius:12px;padding:18px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.12)}
 .login{max-width:520px;width:calc(100% - 32px);margin:calc(min(80vw,600px)*0.37 + 120px) auto 40px;padding:14px;background:rgba(255,255,255,.62);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
@@ -236,7 +238,7 @@ function shell(inner){
   $("#app").innerHTML=`<header><img class="logo" src="logo-alex.png" alt="" onerror="this.remove()">
     <span class="t">${p.rol==="admin"?"Panel del entrenador":""}</span>${foto}
     ${p.rol==="admin"?(p.nombre?`<span>${esc(p.nombre)}</span>`:""):`<button class="sec perfil-btn" id="ir-perfil"><span>${esc(p.nombre||"Mi perfil")}</span><small>Perfil</small></button>`}
-    <button class="sec" id="salir">Salir</button></header><main>${inner}</main>`;
+    <button class="sec" id="salir">Salir</button></header><main class="${p.rol==='admin'?'adm':''}">${inner}</main>`;
   $("#salir").onclick=salir;
   const ip=$("#ir-perfil"); if(ip) ip.onclick=()=>panelCliente("perfil");
 }
@@ -431,7 +433,7 @@ function abrirPicker(btn){
   document.body.appendChild(ov);
   hojaPick=ov;
 }
-function sesionHTML(s,editable){
+function sesionHTML(s,editable,conLeyenda=editable){
   const R=s.registro||{};
   const dis=editable?"":"disabled";
   const RIR_OPTS=[0,1,2,3,4,5];
@@ -453,7 +455,7 @@ function sesionHTML(s,editable){
         ${pick(k,"rpe",r.rpe,true,editable)}</div>
     </div>`}).join("")+`<div class="bcom"><div class="muted">Comentario del bloque</div><textarea data-k="b${bi}" data-f="com" placeholder="Cómo ha ido este bloque" rows="2" ${dis}>${esc(rb.com)}</textarea></div>`;
   }).join("");
-  return bloques+`<div class="rpe-tot"><b>RPE total del entrenamiento</b><div class="rpe-tot-pick">${pick("s","rpe",(R.s||{}).rpe,true,editable)}</div></div><div class="muted" style="margin-top:10px">Comentario del entrenamiento</div><textarea data-k="s" data-f="com" placeholder="Cómo ha ido la sesión" rows="2" ${dis}>${esc((R.s||{}).com)}</textarea>${editable?`<div style="margin-top:12px">${leyendaRPE()}</div>`:""}`;
+  return bloques+`<div class="rpe-tot"><b>RPE total del entrenamiento</b><div class="rpe-tot-pick">${pick("s","rpe",(R.s||{}).rpe,true,editable)}</div></div><div class="muted" style="margin-top:10px">Comentario del entrenamiento</div><textarea data-k="s" data-f="com" placeholder="Cómo ha ido la sesión" rows="2" ${dis}>${esc((R.s||{}).com)}</textarea>${conLeyenda?`<div style="margin-top:12px">${leyendaRPE()}</div>`:""}`;
 }
 function leerRegistro(raiz){
   const reg={};
@@ -590,8 +592,16 @@ async function fichaCliente(id){
       </div>
       ${ses.map(s=>`<details class="card"><summary><b>${tituloSesion(s)}</b>
         <span style="float:right"><button class="sec" data-ed="${s.id}">Editar</button> <button class="danger" data-del="${s.id}">Borrar</button></span></summary>
-        <div style="margin-top:10px">${sesionHTML(s,false)}</div></details>`).join("")
+        <div style="margin-top:10px">${sesionHTML(s,true,false)}<div class="row" style="margin-top:10px"><button data-tsave="${s.id}">Guardar cambios</button><span class="muted" data-tst="${s.id}"></span></div></div></details>`).join("")
         || `<p class="muted">Sin entrenamientos. Sube el Excel arriba.</p>`}`;
+    document.querySelectorAll("[data-tsave]").forEach(b=>b.onclick=async ev=>{
+      ev.preventDefault();ev.stopPropagation();
+      const id=b.dataset.tsave, st=document.querySelector(`[data-tst="${id}"]`);
+      try{
+        await db("PATCH","sesiones",`?id=eq.${id}`,{registro:leerRegistro(b.closest("details"))},"return=minimal");
+        st.textContent="Guardado ✓";
+      }catch(e){st.textContent="Error: "+e.message}
+    });
     $("#xls").onchange=async ev=>{
       const f=ev.target.files[0];if(!f)return;
       try{
