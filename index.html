@@ -457,21 +457,26 @@ function sesionHTML(s,editable,conLeyenda=editable){
   const RIR_OPTS=[0,1,2,3,4,5];
   const RPE_OPTS=Array.from({length:21},(_,i)=>i/2);
   const opts=(arr,sel,color)=>`<option value="">–</option>`+arr.map(v=>{const c=color?colorRPE(v):null;return `<option value="${v}"${c?` style="background:${c[0]};color:${c[1]}"`:""}${String(sel??"")===String(v)?" selected":""}>${String(v).replace(".",",")}</option>`}).join("");
-  const bloques=(s.bloques||[]).map((b,bi)=>{
-    const rb=R["b"+bi]||{};
-    const cab=`<div class="cab">${esc(b.nombre)}</div>`;
-    if(!esSeguimiento(b)){
-      return cab+`<div class="lista">${(b.ejercicios||[]).map(x=>{const e=normEj(x);return `<div class="lin"><span>${nombreVideo(e)} · ${esc(e.ser)} × ${esc(e.rep)}${e.int?" · "+esc(e.int):""}${e.nota?` <span class="muted">(${esc(e.nota)})</span>`:""}</span>${btnVideo(e)}</div>`}).join("")}</div>`;
-    }
-    const cabeza=`<div class="ghead"><span>Ejercicio</span><span>Series</span><span>Reps</span><span>Hechas</span><span>Intensidad</span><span>RIR</span><span>RPE</span></div>`;
-    return cab+cabeza+(b.ejercicios||[]).map((x,ei)=>{const e=normEj(x),k=bi+"-"+ei,r=R[k]||{};return `<div class="grow">
+  // Agrupa las "Parte principal · A/B/C…" antiguas en una sola, manteniendo las claves de registro originales (bi-ei)
+  const grupos=[];
+  (s.bloques||[]).forEach((b,bi)=>{
+    const esPrin=/^parte principal/i.test(b.nombre||"");
+    const items=(b.ejercicios||[]).map((x,ei)=>({x,bi,ei}));
+    const ult=grupos[grupos.length-1];
+    if(esPrin&&ult&&ult.principal){ult.items.push(...items);return}
+    grupos.push({nombre:esPrin?"Parte principal":(b.nombre||""),principal:esPrin,items});
+  });
+  const cabeza=`<div class="ghead"><span>Ejercicio</span><span>Series</span><span>Reps</span><span>Hechas</span><span>Intensidad</span><span>RIR</span><span>RPE</span></div>`;
+  const bloques=grupos.map(g=>{
+    const cab=`<div class="cab">${esc(g.nombre)}</div>`;
+    return cab+cabeza+g.items.map(({x,bi,ei})=>{const e=normEj(x),k=bi+"-"+ei,r=R[k]||{};return `<div class="grow">
       <div class="gname">${e.cod?`<b>${esc(e.cod)}</b> `:""}${nombreVideo(e)}${btnVideoMini(e)}${e.nota?` <span class="nota">· ${esc(e.nota)}</span>`:""}</div>
       <span>${esc(e.ser)}</span><span>${esc(e.rep)}</span>
       <input data-k="${k}" data-f="reps" value="${esc(r.reps)}" ${dis}>
       <div class="intb">${esc(e.int)}</div>
       ${pick(k,"rir",r.rir,false,editable)}
       ${pick(k,"rpe",r.rpe,true,editable)}
-    </div>`}).join("")+`<div class="bcom"><div class="muted">Comentario del bloque</div><textarea data-k="b${bi}" data-f="com" placeholder="Cómo ha ido este bloque" rows="2" ${dis}>${esc(rb.com)}</textarea></div>`;
+    </div>`}).join("");
   }).join("");
   return bloques+`<div class="rpe-tot"><b>RPE total del entrenamiento</b><div class="rpe-tot-pick">${pick("s","rpe",(R.s||{}).rpe,true,editable)}</div></div><div class="muted" style="margin-top:10px">Comentario del entrenamiento</div><textarea data-k="s" data-f="com" placeholder="Cómo ha ido la sesión" rows="2" ${dis}>${esc((R.s||{}).com)}</textarea>${conLeyenda?`<div style="margin-top:12px">${leyendaRPE()}</div>`:""}`;
 }
