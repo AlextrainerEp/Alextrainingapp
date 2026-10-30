@@ -17,6 +17,10 @@ header .t{flex:1;font-weight:700;color:#f2c230}
 main{max-width:980px;margin:0 auto;padding:calc(min(80vw,600px)*0.37 + 110px) 16px 16px}
 .card{background:rgba(255,255,255,.62);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);border-radius:12px;padding:18px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.12)}
 .login{max-width:520px;width:calc(100% - 32px);margin:calc(min(80vw,600px)*0.37 + 120px) auto 40px;padding:14px;background:rgba(255,255,255,.62);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+/* Días de entrenamiento plegables: solo se ve el día que se abre */
+.dia-sum{cursor:pointer;list-style:none}
+.dia-sum::-webkit-details-marker{display:none}
+.dia-sum h3{display:inline;margin:0}
 .tagline{text-align:center;font-weight:600;color:#1d1f21;margin:0 0 14px;font-size:15px}
 .login .big{width:100%;max-width:440px;height:auto;display:block;margin:0 auto 12px}
 input,select,textarea{width:100%;padding:10px;border:1px solid #bbb;border-radius:8px;font:inherit;margin:4px 0 10px}
@@ -604,9 +608,9 @@ function panelCliente(tab){
 async function tabEntrenos(){
   const ses=await db("GET","sesiones",`?cliente_id=eq.${S.user.id}&order=created_at.desc&select=*`);
   $("#tab").innerHTML=ses.length
-    ? ses.map(s=>`<div class="card sesion"><h3>${tituloSesion(s)}</h3>
+    ? ses.map(s=>`<details class="card sesion"><summary class="dia-sum"><h3>${tituloSesion(s)}</h3></summary>
         ${sesionHTML(s,true)}
-        <div class="row"><button data-save="${s.id}">Guardar registro</button><span class="muted" data-st="${s.id}"></span></div></div>`).join("")
+        <div class="row"><button data-save="${s.id}">Guardar registro</button><span class="muted" data-st="${s.id}"></span></div></details>`).join("")
     : `<p class="muted">Todavía no tienes entrenamientos cargados.</p>`;
   document.querySelectorAll("[data-save]").forEach(b=>b.onclick=async()=>{
     const id=b.dataset.save;
