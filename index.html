@@ -129,8 +129,9 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const norm=s=>String(s??"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().trim();
 let S=null; // {access, refresh, user, perfil}
 
-function guardarSesion(){try{if(S&&S.access)localStorage.setItem("alex_s",JSON.stringify({access:S.access,refresh:S.refresh}));else localStorage.removeItem("alex_s")}catch(e){}}
-function leerSesion(){try{return JSON.parse(localStorage.getItem("alex_s")||"null")}catch(e){return null}}
+// La sesión se guarda por pestaña (sessionStorage): cada pestaña puede ser un usuario distinto
+function guardarSesion(){try{if(S&&S.access)sessionStorage.setItem("alex_s",JSON.stringify({access:S.access,refresh:S.refresh}));else sessionStorage.removeItem("alex_s")}catch(e){}}
+function leerSesion(){try{return JSON.parse(sessionStorage.getItem("alex_s")||"null")}catch(e){return null}}
 function msg(sel,texto,ok){const el=$(sel);if(!el)return;el.textContent=texto;el.className="msg "+(ok?"ok":"err")}
 function traducir(m){
   const t={"Invalid login credentials":"Email o contraseña incorrectos","User already registered":"Ya existe una cuenta con ese email","Email not confirmed":"Confirma tu email antes de entrar (revisa tu correo)","Password should be at least 6 characters.":"La contraseña debe tener al menos 6 caracteres","Unable to validate email address: invalid format":"El email no es válido","Email rate limit exceeded":"Demasiados intentos. Espera unos minutos."};
@@ -315,12 +316,9 @@ function leerPlantilla(ws){
       const dia=celdaTxt(ws,L.dia+(r0+1))||"Entrenamiento";
       const micro=celdaTxt(ws,L.micro+(r0+6));
       const todos=[...bloques.values()];
-      // Parte principal: A = core (bloque propio); B, C y D = fuerza, seguidos en un solo bloque
+      // Parte principal: un solo bloque, cada ejercicio con su código delante (A1, A2, B1…)
       const principal=todos.filter(b=>b.nombre.startsWith("Parte principal"));
-      const core=principal.filter(b=>b.nombre.endsWith("· A"));
-      const fuerza=principal.filter(b=>!b.nombre.endsWith("· A"));
-      const bloquesP=[...core];
-      if(fuerza.length) bloquesP.push({nombre:"Parte principal · B",ejercicios:fuerza.flatMap(b=>b.ejercicios)});
+      const bloquesP=principal.length?[{nombre:"Parte principal",ejercicios:principal.flatMap(b=>b.ejercicios)}]:[];
       const orden=[...todos.filter(b=>!b.nombre.startsWith("Parte principal")),...bloquesP];
       sesiones.push({fecha,titulo:dia+(micro?" · Microciclo "+micro:""),bloques:orden});
     });
@@ -467,7 +465,7 @@ function sesionHTML(s,editable,conLeyenda=editable){
     }
     const cabeza=`<div class="ghead"><span>Ejercicio</span><span>Series</span><span>Reps</span><span>Hechas</span><span>Intensidad</span><span>RIR</span><span>RPE</span></div>`;
     return cab+cabeza+(b.ejercicios||[]).map((x,ei)=>{const e=normEj(x),k=bi+"-"+ei,r=R[k]||{};return `<div class="grow">
-      <div class="gname">${nombreVideo(e)}${btnVideoMini(e)}${e.nota?` <span class="nota">· ${esc(e.nota)}</span>`:""}</div>
+      <div class="gname">${e.cod?`<b>${esc(e.cod)}</b> `:""}${nombreVideo(e)}${btnVideoMini(e)}${e.nota?` <span class="nota">· ${esc(e.nota)}</span>`:""}</div>
       <span>${esc(e.ser)}</span><span>${esc(e.rep)}</span>
       <input data-k="${k}" data-f="reps" value="${esc(r.reps)}" ${dis}>
       <div class="intb">${esc(e.int)}</div>
