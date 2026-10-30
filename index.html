@@ -315,7 +315,13 @@ function leerPlantilla(ws){
       const dia=celdaTxt(ws,L.dia+(r0+1))||"Entrenamiento";
       const micro=celdaTxt(ws,L.micro+(r0+6));
       const todos=[...bloques.values()];
-      const orden=[...todos.filter(b=>!b.nombre.startsWith("Parte principal")),...todos.filter(b=>b.nombre.startsWith("Parte principal"))];
+      // Parte principal: A = core (bloque propio); B, C y D = fuerza, seguidos en un solo bloque
+      const principal=todos.filter(b=>b.nombre.startsWith("Parte principal"));
+      const core=principal.filter(b=>b.nombre.endsWith("· A"));
+      const fuerza=principal.filter(b=>!b.nombre.endsWith("· A"));
+      const bloquesP=[...core];
+      if(fuerza.length) bloquesP.push({nombre:"Parte principal · B",ejercicios:fuerza.flatMap(b=>b.ejercicios)});
+      const orden=[...todos.filter(b=>!b.nombre.startsWith("Parte principal")),...bloquesP];
       sesiones.push({fecha,titulo:dia+(micro?" · Microciclo "+micro:""),bloques:orden});
     });
   });
@@ -599,10 +605,10 @@ async function fichaCliente(id){
       <div class="row"><label>Subir hoja de Excel <input type="file" id="xls" accept=".xlsx,.xls,.csv"></label></div>
       <div class="msg" id="m"></div>
       <div class="stats">
-        <div class="stat">Sesiones<b>${e.sesiones}</b></div>
+        <div class="stat">Sesiones planificadas<b>${ses.length}</b></div>
         <div class="stat">RPE medio<b>${e.rpe}</b></div>
         <div class="stat">RIR medio<b>${e.rir}</b></div>
-        <div class="stat">Reps totales<b>${e.reps}</b></div>
+        <div class="stat">Sesiones realizadas<b>${ses.filter(hecho).length}</b></div>
       </div>
       ${ses.map(s=>`<details class="card"><summary><b>${tituloSesion(s)}</b>
         <span style="float:right"><button class="sec" data-ed="${s.id}">Editar</button> <button class="danger" data-del="${s.id}">Borrar</button></span></summary>
