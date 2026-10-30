@@ -74,7 +74,10 @@ details summary{cursor:pointer;padding:4px 0}
 .bl input{width:70px;margin:0;padding:4px;text-align:center}
 textarea{font-size:14px;width:100%;margin:4px 0 8px}
 .leyenda{border-radius:6px;overflow:hidden;border:1px solid #111;margin:0;font-size:10px;background:#fff;max-width:420px}
-.leyenda>summary{display:block;background:#111;color:#fff;padding:4px 8px;font-size:11px;cursor:pointer;font-weight:700}
+.leyenda>b{display:block;background:#111;color:#fff;padding:4px 8px;font-size:11px;font-weight:700}
+.rpe-tot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
+.rpe-tot-pick{width:110px;flex-shrink:0}
+.rpe-tot-pick .pick{width:100%}
 .leyenda>div{display:grid;grid-template-columns:1.25fr 1fr;text-align:center;padding:0 4px;font-weight:700;align-items:center;line-height:1.5}
 .leyenda>div span:last-child{font-weight:400;font-style:italic}
 .bl select{width:90px;margin:0;padding:4px;font-weight:700}
@@ -364,7 +367,7 @@ function leyendaRPE(){
     ["1 · 1,5","Muy suave",[1,1.5]],
     ["0 · 0,5","Reposo",[0,0.5]]
   ];
-  return `<details class="leyenda"><summary>Escala RPE (¿cuál es tu sensación de esfuerzo?)</summary>${filas.map(([n,t,v])=>{const c=colorRPE(v[0]);return `<div style="background:${c[0]};color:${c[1]}"><span>${n}</span><span>${t}</span></div>`}).join("")}</details>`;
+  return `<div class="leyenda"><b>Escala RPE (¿cuál es tu sensación de esfuerzo?)</b>${filas.map(([n,t,v])=>{const c=colorRPE(v[0]);return `<div style="background:${c[0]};color:${c[1]}"><span>${n}</span><span>${t}</span></div>`}).join("")}</div>`;
 }
 
 /* ---------- Vista de sesión (cliente y entrenador) ---------- */
@@ -440,7 +443,7 @@ function sesionHTML(s,editable){
         ${pick(k,"rpe",r.rpe,true,editable)}</div>
     </div>`}).join("")+`<div class="bcom"><div class="muted">Comentario del bloque</div><textarea data-k="b${bi}" data-f="com" placeholder="Cómo ha ido este bloque" rows="2" ${dis}>${esc(rb.com)}</textarea></div>`;
   }).join("");
-  return bloques+`<div class="row" style="justify-content:space-between;margin-top:12px"><b>RPE total del entrenamiento</b><div style="width:110px">${pick("s","rpe",(R.s||{}).rpe,true,editable)}</div></div><div class="muted" style="margin-top:10px">Comentario del entrenamiento</div><textarea data-k="s" data-f="com" placeholder="Cómo ha ido la sesión" rows="2" ${dis}>${esc((R.s||{}).com)}</textarea>${editable?`<div style="margin-top:12px">${leyendaRPE()}</div>`:""}`;
+  return bloques+`<div class="rpe-tot"><b>RPE total del entrenamiento</b><div class="rpe-tot-pick">${pick("s","rpe",(R.s||{}).rpe,true,editable)}</div></div><div class="muted" style="margin-top:10px">Comentario del entrenamiento</div><textarea data-k="s" data-f="com" placeholder="Cómo ha ido la sesión" rows="2" ${dis}>${esc((R.s||{}).com)}</textarea>${editable?`<div style="margin-top:12px">${leyendaRPE()}</div>`:""}`;
 }
 function leerRegistro(raiz){
   const reg={};
@@ -522,6 +525,29 @@ function abrirEditor(s,alGuardar){
   pintar();
 }
 
+/* ---------- Historial de entrenamientos realizados ---------- */
+function hecho(s){
+  return Object.values(s.registro||{}).some(v=>v&&Object.values(v).some(x=>x!==""&&x!=null));
+}
+function tabHistorial(ses){
+  const hechos=ses.filter(hecho);
+  const e=estadisticas(hechos);
+  return `<div class="stats">
+      <div class="stat">Realizados<b>${e.sesiones}</b></div>
+      <div class="stat">RPE medio<b>${e.rpe}</b></div>
+      <div class="stat">RIR medio<b>${e.rir}</b></div>
+      <div class="stat">Reps totales<b>${e.reps}</b></div>
+    </div>
+    ${hechos.length
+      ? hechos.map(s=>`<details class="card"><summary><b>${tituloSesion(s)}</b></summary>
+          <div style="margin-top:10px">${sesionHTML(s,false)}</div></details>`).join("")
+      : '<p class="muted">Todavía no hay entrenamientos realizados. Aparecerán aquí cuando se guarde el registro.</p>'}`;
+}
+async function tabHistorialCliente(){
+  const ses=await db("GET","sesiones",`?cliente_id=eq.${S.user.id}&order=created_at.desc&select=*`);
+  $("#tab").innerHTML=tabHistorial(ses);
+}
+
 /* ---------- Panel del entrenador ---------- */
 async function listaClientes(){
   const cs=await db("GET","perfiles","?rol=eq.cliente&order=nombre.asc&select=id,nombre,foto");
@@ -537,7 +563,7 @@ async function fichaCliente(id){
   const ses=await db("GET","sesiones",`?cliente_id=eq.${id}&order=created_at.desc&select=*`);
   shell(`<button class="sec" id="volver">← Clientes</button>
     <div class="card"><h2>${esc(c.nombre||"Sin nombre")}</h2>
-    <div class="tabs"><button id="ta" class="on">Entrenamientos</button><button id="tb">Anamnesis</button></div>
+    <div class="tabs"><button id="ta" class="on">Entrenamientos</button><button id="tb">Anamnesis</button><button id="tc">Historial</button></div>
     <div id="tab"></div></div>`);
   $("#volver").onclick=listaClientes;
 
@@ -592,17 +618,18 @@ async function fichaCliente(id){
       ? ANAM.map(([k,l])=>`<p><b>${l}:</b> ${esc(c.anamnesis[k]||"–")}</p>`).join("")
       : `<p class="muted">Todavía no ha rellenado la anamnesis.</p>`;
   };
-  pestanas(["ta","tb"],[verEntrenos,verAnam]);
+  const verHist=()=>{$("#tab").innerHTML=tabHistorial(ses)};
+  pestanas(["ta","tb","tc"],[verEntrenos,verAnam,verHist]);
   verEntrenos();
 }
 
 /* ---------- Panel del cliente ---------- */
 function panelCliente(tab){
-  shell(`<div class="tabs"><button id="c1">Entrenamientos</button><button id="c2">Anamnesis</button><button id="c3">Perfil</button></div><div id="tab"></div>`);
-  const fns=[tabEntrenos,tabAnamnesis,tabPerfil];
-  pestanas(["c1","c2","c3"],fns);
-  const idx={entrenamientos:0,anamnesis:1,perfil:2}[tab]||0;
-  ["c1","c2","c3"].forEach((x,i)=>$("#"+x).classList.toggle("on",i===idx));
+  shell(`<div class="tabs"><button id="c1">Entrenamientos</button><button id="c2">Anamnesis</button><button id="c3">Perfil</button><button id="c4">Historial</button></div><div id="tab"></div>`);
+  const fns=[tabEntrenos,tabAnamnesis,tabPerfil,tabHistorialCliente];
+  pestanas(["c1","c2","c3","c4"],fns);
+  const idx={entrenamientos:0,anamnesis:1,perfil:2,historial:3}[tab]||0;
+  ["c1","c2","c3","c4"].forEach((x,i)=>$("#"+x).classList.toggle("on",i===idx));
   fns[idx]();
 }
 async function tabEntrenos(){
