@@ -83,6 +83,17 @@ textarea{font-size:14px;width:100%;margin:4px 0 8px}
 .cab{background:#2e3133;color:#f2c230;padding:6px 10px;border-radius:8px;margin:12px 0 4px;font-size:15px;font-weight:700}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);overflow:auto;padding:16px;z-index:50}
 .modal-card{max-width:980px;margin:0 auto;background:#fff;border-radius:12px;padding:18px}
+/* ===== Bloque de acceso y banda de plan (integrado desde el artefacto) ===== */
+.acceso{max-width:360px;margin:50vh auto 40px}
+.hero-login{text-align:center;color:#fff;background:linear-gradient(135deg,#1a1a1a,#2e3133);border-radius:12px 12px 0 0;padding:22px 16px 14px}
+.hero-login h1{margin:0;font-size:26px;letter-spacing:3px;color:#f2c230}
+.hero-login p{margin:6px 0 0;color:#ddd;font-size:14px}
+.auth-tabs{display:flex;margin:0 0 12px}
+.auth-tabs button{flex:1;border-radius:0;background:#ddd;color:#1d1f21}
+.auth-tabs button.on{background:#f2c230}
+.plan-banner{background:linear-gradient(135deg,#1a1a1a,#2e3133);color:#fff;border-radius:12px;padding:18px;margin-bottom:16px;border-bottom:4px solid #f2c230}
+.plan-banner h2{margin:0 0 6px;color:#f2c230;font-size:20px}
+.plan-banner p{margin:0;color:#ddd;font-size:14px;line-height:1.5}
 </style>
 </head>
 <body>
@@ -144,15 +155,17 @@ async function salir(){S=null;guardarSesion();pantallaLogin()}
 
 /* ---------- Pantallas de acceso ---------- */
 function pantallaLogin(){
-  $("#app").innerHTML=`<div class="login card">
-    <img class="big" src="logo-principal.png" alt="Alex Training Lab">
-    <input id="em" type="email" placeholder="Email">
-    <input id="pw" type="password" placeholder="Contraseña">
-    <button class="gold" id="go" style="width:100%">Entrar</button>
-    <p style="text-align:center"><a href="#" id="ir-reg">Crear cuenta de cliente</a><br><a href="#" id="ir-rec">He olvidado la contraseña</a></p>
-    <div class="msg" id="m"></div></div>`;
+  $("#app").innerHTML=`<div class="acceso">
+    <div class="hero-login"><h1>ALEX TRAINING LAB</h1><p>Entrenamientos personalizados para conseguir tus objetivos</p></div>
+    <div class="card" style="border-radius:0 0 12px 12px;margin-top:0">
+      <div class="auth-tabs"><button class="on" id="t-ent">Entrar</button><button id="t-reg">Nuevo Usuario</button></div>
+      <input id="em" type="email" placeholder="Email">
+      <input id="pw" type="password" placeholder="Contraseña">
+      <button class="gold" id="go" style="width:100%">Entrar</button>
+      <p style="text-align:center"><a href="#" id="ir-rec">He olvidado la contraseña</a></p>
+      <div class="msg" id="m"></div></div></div>`;
   $("#go").onclick=async()=>{try{await login($("#em").value.trim(),$("#pw").value)}catch(e){msg("#m",e.message,false)}};
-  $("#ir-reg").onclick=e=>{e.preventDefault();pantallaRegistro()};
+  $("#t-reg").onclick=e=>{e.preventDefault();pantallaRegistro()};
   $("#ir-rec").onclick=e=>{e.preventDefault();pantallaRecuperar()};
 }
 function pantallaRegistro(){
@@ -589,7 +602,7 @@ async function fichaCliente(id){
 
 /* ---------- Panel del cliente ---------- */
 function panelCliente(tab){
-  shell(`<div class="tabs"><button id="c1">Entrenamientos</button><button id="c2">Anamnesis</button><button id="c3">Perfil</button></div><div id="tab"></div>`);
+  shell(`<div class="plan-banner"><h2>Tu Plan de Entrenamiento</h2><p>Cada sesión está diseñada para ti. Sigue tu plan, registra tu progreso y alcanza tus metas.</p></div><div class="tabs"><button id="c1">Entrenamientos</button><button id="c2">Anamnesis</button><button id="c3">Perfil</button></div><div id="tab"></div>`);
   const fns=[tabEntrenos,tabAnamnesis,tabPerfil];
   pestanas(["c1","c2","c3"],fns);
   const idx={entrenamientos:0,anamnesis:1,perfil:2}[tab]||0;
