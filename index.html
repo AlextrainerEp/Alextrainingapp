@@ -170,6 +170,11 @@ textarea{font-size:14px;width:100%;margin:4px 0 8px}
 .an-panel .anam .an-chips label:has(input:checked){background:#2e3133;color:#fff;border-color:#2e3133}
 .an-panel .an-res th,.an-panel .an-res td{border-bottom:1px solid #e3e5e7;padding:8px 6px}
 .an-panel .bloque{background:#f4f5f6}
+.cli-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.cli-top .tabs{margin:8px 0 12px}
+.avatar-btn{background:none;border:0;padding:0;cursor:pointer;flex:0 0 auto}
+.avatar-btn .avatar{width:56px;height:56px}
+.avatar-ini{display:inline-flex;align-items:center;justify-content:center;background:#D9DDE0;color:#1d1f21;font-weight:600;font-size:22px}
 </style>
 </head>
 <body>
@@ -302,7 +307,7 @@ function pantallaNuevaPass(){
 /* ---------- Estructura común ---------- */
 function shell(inner){
   const p=(S&&S.perfil)||{};
-  const foto=(p.rol==="cliente"&&p.foto)?`<img class="avatar" src="${p.foto}" alt="">`:"";
+  const foto="";
   $("#app").innerHTML=`<header><img class="logo" src="logo-alex.png" alt="" onerror="this.remove()">
     <span class="t">${p.rol==="admin"?"Panel del entrenador":""}</span>${foto}
     ${p.rol==="admin"?(p.nombre?`<span>${esc(p.nombre)}</span>`:""):`<button class="sec perfil-btn" id="ir-perfil"><span>${esc(p.nombre||"Mi perfil")}</span><small>Perfil</small></button>`}
@@ -854,19 +859,44 @@ function subTabs(lista){
 }
 function tabEntrenosCliente(){subTabs([["Mi entrenamiento",tabEntrenos],["Historial",tabHistorialCliente]])}
 function tabPerfilCliente(){subTabs([["Foto y contraseña",tabPerfil],["Anamnesis",tabAnamnesis]])}
-function panelCliente(tab){
-  // Anamnesis (desde el nombre de la cabecera): página propia, solo el formulario, con Volver
-  if(tab==="perfil"||tab==="anamnesis"){
+async function valoracionVisible(){
+  try{
+    const r=await db("GET","valoraciones",`?cliente_id=eq.${S.user.id}&visible=eq.true&select=datos,actualizada`);
+    return (r&&r[0])||null;
+  }catch(e){return null}
+}
+// Valoración inicial: solo lectura, y solo llega aquí si el entrenador la ha hecho visible
+function tabValoracionCliente(v){
+  const d=v.datos||{};
+  const filas=Object.keys(d).map(k=>{
+    const val=typeof d[k]==="object"?JSON.stringify(d[k]):String(d[k]);
+    return `<p><b>${esc(k)}:</b> ${esc(val)}</p>`;
+  }).join("");
+  $("#tab").innerHTML=`<div class="an-panel"><p class="muted">Valoración hecha por tu entrenador${v.actualizada?" · "+anFecha(v.actualizada):""}. Solo lectura.</p>${filas||'<p class="muted">Sin datos todavía.</p>'}</div>`;
+}
+async function panelCliente(tab){
+  // Perfil (foto y contraseña): página propia con Volver
+  if(tab==="perfil"){
     shell(`<button class="sec" id="volverA">← Volver</button><div id="tab"><div id="sub"></div></div>`);
     $("#volverA").onclick=()=>panelCliente();
-    tabAnamnesis(); return;
+    tabPerfil(); return;
   }
-  shell(`<div class="tabs"><button id="c1">Mis entrenamientos</button><button id="c2">Historial</button><button id="c3">Entrenador</button></div><div id="tab"></div>`);
-  const fns=[tabEntrenos,tabHistorialCliente,tabMensajesCliente];
-  pestanas(["c1","c2","c3"],fns);
-  const idx=tab==="historial"?1:tab==="mensajes"?2:0;
-  ["c1","c2","c3"].forEach((x,i)=>$("#"+x).classList.toggle("on",i===idx));
-  fns[idx]();
+  const val=await valoracionVisible();
+  const lista=[["Mis entrenamientos",tabEntrenos],["Historial",tabHistorialCliente]];
+  if(val) lista.push(["Valoración inicial",()=>tabValoracionCliente(val)]);
+  lista.push(["Anamnesis",()=>{$("#tab").innerHTML='<div id="sub"></div>';tabAnamnesis()}]);
+  const claves={entrenamientos:"Mis entrenamientos",historial:"Historial",valoracion:"Valoración inicial",anamnesis:"Anamnesis"};
+  const p=S.perfil||{};
+  const av=p.foto?`<img class="avatar" src="${p.foto}" alt="">`:`<span class="avatar avatar-ini">${esc((p.nombre||"?")[0].toUpperCase())}</span>`;
+  shell(`<div class="cli-top"><button class="avatar-btn" id="ir-perfil-av" title="Foto y contraseña">${av}</button><div class="tabs" id="ctabs"></div></div><div id="tab"></div>`);
+  const ids=lista.map((_,i)=>"c"+i);
+  $("#ctabs").innerHTML=lista.map((n,i)=>`<button id="${ids[i]}">${n[0]}</button>`).join("");
+  pestanas(ids,lista.map(n=>n[1]));
+  $("#ir-perfil-av").onclick=()=>panelCliente("perfil");
+  let idx=lista.findIndex(n=>n[0]===claves[tab]);
+  if(idx<0) idx=0;
+  ids.forEach((x,i)=>$("#"+x).classList.toggle("on",i===idx));
+  lista[idx][1]();
 }
 async function tabEntrenos(){
   // Solo las sesiones pendientes: las completadas pasan al historial
