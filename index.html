@@ -912,32 +912,15 @@ async function fichaCliente(id){
   const [c]=await db("GET","perfiles",`?id=eq.${id}&select=*`);
   const ses=await db("GET","sesiones",`?cliente_id=eq.${id}&order=created_at.desc&select=*`);
   shell(`<div id="tab"></div>`,c);
-  $("#cnav").innerHTML=`<button id="volver">← Clientes</button><button id="ta" class="on">Entrenamientos</button><button id="te">Calendario</button><button id="tb">Anamnesis</button><button id="tc">Historial</button><button id="td">Mensajes</button>`;
+  $("#cnav").innerHTML=`<button id="volver">← Clientes</button><button id="ta" class="on">Entrenamientos</button><button id="tb">Anamnesis</button><button id="tc">Historial</button><button id="td">Mensajes</button>`;
   $("#volver").onclick=listaClientes;
 
   const verEntrenos=()=>{
-    const e=estadisticas(ses);
     $("#tab").innerHTML=`
       <div class="row"><label>Subir hoja de Excel <input type="file" id="xls" accept=".xlsx,.xls,.csv"></label></div>
       <div class="msg" id="m"></div>
-      <div class="stats">
-        <div class="stat">Sesiones planificadas<b>${ses.length}</b></div>
-        <div class="stat">RPE medio<b>${e.rpe}</b></div>
-        <div class="stat">RIR medio<b>${e.rir}</b></div>
-        <div class="stat">Sesiones realizadas<b>${ses.filter(hecho).length}</b></div>
-      </div>
-      ${ses.map(s=>`<details class="card"><summary><b>${tituloSesion(s)}</b>
-        <span style="float:right"><button class="sec" data-ed="${s.id}">Editar</button> <button class="danger" data-del="${s.id}">Borrar</button></span></summary>
-        <div style="margin-top:10px">${sesionHTML(s,true,false)}<div class="row" style="margin-top:10px"><button data-tsave="${s.id}">Guardar cambios</button><span class="muted" data-tst="${s.id}"></span></div></div></details>`).join("")
-        || `<p class="muted">Sin entrenamientos. Sube el Excel arriba.</p>`}`;
-    document.querySelectorAll("[data-tsave]").forEach(b=>b.onclick=async ev=>{
-      ev.preventDefault();ev.stopPropagation();
-      const id=b.dataset.tsave, st=document.querySelector(`[data-tst="${id}"]`);
-      try{
-        await db("PATCH","sesiones",`?id=eq.${id}`,{registro:leerRegistro(b.closest("details"))},"return=minimal");
-        st.textContent="Guardado ✓";
-      }catch(e){st.textContent="Error: "+e.message}
-    });
+      <div id="sub"></div>`;
+    tabEntrenosCal("#sub",id,true);
     $("#xls").onchange=async ev=>{
       const f=ev.target.files[0];if(!f)return;
       try{
@@ -954,25 +937,11 @@ async function fichaCliente(id){
         fichaCliente(id);
       }catch(err){msg("#m",err.message,false)}
     };
-    document.querySelectorAll("[data-ed]").forEach(b=>b.onclick=ev=>{
-      ev.preventDefault();ev.stopPropagation();
-      const s=ses.find(x=>x.id===b.dataset.ed);
-      abrirEditor(s,async st=>{
-        await db("PATCH","sesiones",`?id=eq.${s.id}`,{titulo:st.titulo,fecha:st.fecha,bloques:st.bloques},"return=minimal");
-        fichaCliente(id);
-      });
-    });
-    document.querySelectorAll("[data-del]").forEach(b=>b.onclick=async ev=>{
-      ev.preventDefault();ev.stopPropagation();
-      if(!confirm("¿Borrar esta sesión? Se pierden también los registros del cliente.")) return;
-      try{await db("DELETE","sesiones",`?id=eq.${b.dataset.del}`,null,"return=minimal");fichaCliente(id)}
-      catch(err){alert(err.message)}
-    });
   };
   const verAnam=()=>subTabs([["Respuestas",()=>anRespuestasEntrenador(c)],["Valoración inicial",()=>anValoracionEntrenador(c)],["Ver valoración",()=>anValoracionVer(c)]]);
   const verHist=()=>{$("#tab").innerHTML=tabHistorial(ses)};
   const verMsgs=()=>tabMensajes(id,true);
-  pestanas(["ta","te","tb","tc","td"],[verEntrenos,()=>tabCalendario(c.id,true),verAnam,verHist,verMsgs]);
+  pestanas(["ta","tb","tc","td"],[verEntrenos,verAnam,verHist,verMsgs]);
   verEntrenos();
 }
 
@@ -1252,8 +1221,8 @@ async function tabCalendario(clienteId,puedeMover,host="#tab"){
 
 
 /* ---------- Entrenamientos del cliente: calendario + día seleccionado ---------- */
-async function tabEntrenosCal(host="#sub"){
-  const todas=await db("GET","sesiones",`?cliente_id=eq.${S.user.id}&order=created_at.desc&select=*`);
+async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false){
+  const todas=await db("GET","sesiones",`?cliente_id=eq.${clienteId}&order=created_at.desc&select=*`);
   const hoy=new Date(), hoyIso=isoLocal(hoy);
   const conF=todas.map(s=>({s,d:parseFecha(s.fecha)})).filter(x=>x.d);
   const pendFut=conF.filter(x=>!hecho(x.s)&&isoLocal(x.d)>=hoyIso).sort((a,b)=>a.d-b.d)[0];
@@ -1266,7 +1235,7 @@ async function tabEntrenosCal(host="#sub"){
   const sinFecha=todas.filter(s=>!parseFecha(s.fecha));
   const tarjeta=(s,abierta)=>`<details class="card sesion${hecho(s)?" hecha":""}"${abierta?" open":""}><summary class="dia-sum">${badgeFecha(s)}<h3>${nombreEntreno(s)}</h3></summary>
       ${sesionHTML(s,true)}
-      <div class="row"><button data-save="${s.id}">Guardar registro</button><span class="muted" data-st="${s.id}"></span></div>
+      <div class="row"><button data-save="${s.id}">${admin?"Guardar cambios":"Guardar registro"}</button>${admin?`<button class="sec" data-ed="${s.id}">Editar</button><button class="danger" data-del="${s.id}">Borrar</button>`:""}<span class="muted" data-st="${s.id}"></span></div>
       <div class="row mover"><label>Mover a otro día <input type="date" data-mover-in="${s.id}"></label><button class="sec" data-mover="${s.id}">Mover</button></div></details>`;
   const pintar=()=>{
     const y=mes.getFullYear(), mo=mes.getMonth();
@@ -1303,7 +1272,7 @@ async function tabEntrenosCal(host="#sub"){
         const reg=leerRegistro(b.closest(".card"));
         await db("PATCH","sesiones",`?id=eq.${id}`,{registro:reg},"return=minimal");
         const s=todas.find(x=>x.id===id); if(s) s.registro=reg;
-        if(hecho({registro:reg})){st.textContent="Completado ✓ · pasa al historial";setTimeout(()=>tabEntrenosCal(host),1000)}
+        if(!admin&&hecho({registro:reg})){st.textContent="Completado ✓ · pasa al historial";setTimeout(()=>tabEntrenosCal(host,clienteId,admin),1000)}
         else st.textContent="Guardado ✓";
       }catch(e){st.textContent="Error: "+e.message}
     });
@@ -1322,6 +1291,20 @@ async function tabEntrenosCal(host="#sub"){
         diaSel=val; mes=new Date(+ny,+nm-1,1); pintar();
       }catch(e){st.textContent="Error: "+e.message}
     });
+    if(admin){
+      cont.querySelectorAll("[data-ed]").forEach(b=>b.onclick=()=>{
+        const s=todas.find(x=>x.id===b.dataset.ed);
+        abrirEditor(s,async st=>{
+          await db("PATCH","sesiones",`?id=eq.${s.id}`,{titulo:st.titulo,fecha:st.fecha,bloques:st.bloques},"return=minimal");
+          fichaCliente(clienteId);
+        });
+      });
+      cont.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{
+        if(!confirm("¿Borrar esta sesión? Se pierden también los registros del cliente.")) return;
+        try{await db("DELETE","sesiones",`?id=eq.${b.dataset.del}`,null,"return=minimal");fichaCliente(clienteId)}
+        catch(err){alert(err.message)}
+      });
+    }
   };
   pintar();
 }
