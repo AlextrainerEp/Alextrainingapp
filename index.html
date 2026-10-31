@@ -188,8 +188,8 @@ textarea{font-size:14px;width:100%;margin:4px 0 8px}
 .cal-head{display:flex;align-items:center;justify-content:space-between;margin:8px 0}
 .cal-det{margin-top:12px;padding-top:10px;border-top:1px solid #d0d3d6}
 /* Cliente: logo de fondo más abajo y menú en la barra superior */
-body.cli .frase{top:calc(var(--logo-top,230px) + min(80vw,600px)*0.37 + 12px)}
-main.cli{padding-top:calc(var(--hdr,64px) + 16px)}
+body.cli .frase{top:calc(12px + min(80vw,600px)*0.37 + 10px)}
+main.cli{padding-top:calc(min(80vw,600px)*0.37 + 90px)}
 .lista-cli{max-width:640px;margin:0 auto;max-height:calc(100vh - var(--hdr,64px) - 48px);overflow:auto}
 .nombre-cli{font-weight:700;color:#D9DDE0;white-space:nowrap}
 .cli-nav{display:flex;gap:6px;flex-wrap:wrap;flex:1;justify-content:center}
@@ -197,6 +197,28 @@ main.cli{padding-top:calc(var(--hdr,64px) + 16px)}
 .cli-nav button.on{background:#D9DDE0;color:#1d1f21;font-weight:700}
 .foto-hdr{background:none;border:0;padding:0;cursor:pointer;flex:0 0 auto}
 .foto-hdr img{width:56px;height:56px;border-radius:50%;object-fit:cover;border:3px solid #D9DDE0;display:block}
+.cal-wrap{padding:10px}
+.cal-grid{gap:3px}
+.cal-d{min-height:42px;padding:3px;font-size:12px}
+.cal-d.tiene{background:rgba(255,255,255,.75)}
+.cal-n{display:inline-block;background:#2e3133;color:#fff;border-radius:10px;font-size:11px;padding:0 6px;margin-top:2px}
+.cal-n.ok{background:#3c8d4a}
+.cal-lista{margin-top:10px;display:flex;flex-direction:column;gap:4px}
+.cal-fila{display:block;width:100%;text-align:left;background:rgba(255,255,255,.7);color:#111;border:1px solid #c5c9cc;border-radius:6px;padding:4px 8px;font-size:13px;cursor:pointer}
+.cal-fila.ok{background:rgba(228,242,228,.85)}
+.cal-check{color:#2f7d3c;font-weight:700}
+.cal-sin{margin-top:8px;font-size:13px}
+.cal-sin summary{cursor:pointer}
+.cal-sin .cal-fila{margin-top:4px}
+.ent-lista{max-width:420px;margin:0;padding:12px}
+.ent-tit{font-size:16px;margin:2px 0 8px;color:#111}
+.ent-abrir{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:rgba(255,255,255,.7);color:#111;border:1px solid #c5c9cc;border-radius:8px;padding:5px 10px;margin-bottom:4px;font-size:14px;cursor:pointer}
+.ent-av{width:28px;height:28px;border-radius:50%;object-fit:cover;flex:0 0 auto}
+.ent-ini{display:inline-flex;align-items:center;justify-content:center;background:#D9DDE0;font-weight:600;font-size:13px}
+/* Vista de entrenador y entrenado: logo centrado bajo la cabecera, frase debajo del logo */
+body.cli .fondo{position:absolute;top:var(--hdr,64px);bottom:0;left:0;right:0;background-position:center 12px}
+/* Tarjetas de entrenamientos: más opacas para poder leerlas sobre el logo */
+body.cli .card{background:rgba(255,255,255,.85);backdrop-filter:none;-webkit-backdrop-filter:none}
 </style>
 </head>
 <body>
@@ -352,8 +374,11 @@ function shell(inner,ficha){
   ajustarCabecera();
 }
 function entrar(){
-  if(S.perfil.rol==="admin") listaClientes();
-  else panelCliente("entrenamientos");
+  if(S.perfil.rol==="admin"){
+    shell(`<div id="tab"></div>`);
+    $("#cnav").innerHTML='<button id="ent">Entrenados</button>';
+    $("#ent").onclick=listaClientes;
+  } else panelCliente("entrenamientos");
 }
 function pestanas(ids,fns){
   ids.forEach((id,i)=>{$("#"+id).onclick=()=>{ids.forEach(x=>$("#"+x).classList.remove("on"));$("#"+id).classList.add("on");fns[i]()}});
@@ -687,12 +712,12 @@ async function tabHistorialCliente(host="#tab"){
 /* ---------- Panel del entrenador ---------- */
 async function listaClientes(){
   const cs=await db("GET","perfiles","?rol=eq.cliente&order=nombre.asc&select=id,nombre,foto");
-  shell(`<div id="tab"><div class="card difuminada lista-cli"><h2>Entrenados (${cs.length})</h2>
+  shell(`<div id="tab"><div class="an-panel ent-lista">
+    <h2 class="ent-tit">Entrenados (${cs.length})</h2>
     ${cs.length?"":`<p class="muted">Todavía no hay entrenados. Se registran ellos desde la pantalla de inicio.</p>`}
-    ${cs.map(c=>`<div class="row" style="justify-content:space-between;border-bottom:1px solid #eee;padding:8px 0">
-      <span class="cli-name" data-c="${c.id}">${c.foto?`<img class="avatar" src="${c.foto}" alt=""> `:""}${esc(c.nombre||"Sin nombre")}</span>
-      <button data-c="${c.id}">Abrir</button></div>`).join("")}</div></div>`);
-  $("#cnav").innerHTML='<button class="on">Clientes</button>';
+    ${cs.map(c=>`<button class="ent-abrir" data-c="${c.id}">${c.foto?`<img class="ent-av" src="${c.foto}" alt="">`:`<span class="ent-av ent-ini">${esc((c.nombre||"?")[0].toUpperCase())}</span>`}<span>${esc(c.nombre||"Sin nombre")}</span></button>`).join("")}
+  </div></div>`);
+  $("#cnav").innerHTML='<button class="on">Entrenados</button>';
   document.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>fichaCliente(b.dataset.c));
 }
 async function fichaCliente(id){
@@ -918,15 +943,18 @@ function parseFecha(txt){
 const isoLocal=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 // Calendario mensual. puedeMover: el entrenador y el cliente pueden cambiar la fecha de una sesión
 async function tabCalendario(clienteId,puedeMover,host="#tab"){
-  $(host).innerHTML='<div id="cal" class="an-panel"></div>';
+  $(host).innerHTML='<div id="cal" class="an-panel cal-wrap"></div>';
   const ses=await db("GET","sesiones",`?cliente_id=eq.${clienteId}&select=*`);
-  const hoy=new Date();
-  let mes=new Date(hoy.getFullYear(),hoy.getMonth(),1);
-  const chip=s=>`<button class="cal-ses${hecho(s)?" ok":""}" data-ses="${s.id}">${esc(s.titulo||"Sesión")}</button>`;
+  const hoy=new Date(), hoyIso=isoLocal(hoy);
+  // Se abre en el mes de la próxima sesión con fecha (o la última si ya pasaron todas)
+  const conFecha=ses.map(s=>({s,d:parseFecha(s.fecha)})).filter(x=>x.d).sort((a,b)=>a.d-b.d);
+  const ref=conFecha.find(x=>isoLocal(x.d)>=hoyIso)||conFecha[conFecha.length-1];
+  let mes=ref?new Date(ref.d.getFullYear(),ref.d.getMonth(),1):new Date(hoy.getFullYear(),hoy.getMonth(),1);
+  const fila=(s,txt)=>`<button class="cal-fila${hecho(s)?" ok":""}" data-ses="${s.id}">${txt}${hecho(s)?' <span class="cal-check">✓</span>':""}</button>`;
   const detalle=id=>{
     const s=ses.find(x=>x.id===id); if(!s) return;
     const d=parseFecha(s.fecha);
-    $("#calDet").innerHTML=`<div class="cal-det"><h3>${esc(s.titulo||"Sesión")}</h3>
+    $("#calDet").innerHTML=`<div class="cal-det"><b>${esc(s.titulo||"Sesión")}</b>
       <p class="muted">Fecha actual: ${esc(s.fecha||"sin fecha")}${hecho(s)?" · completada":""}</p>
       ${puedeMover?`<div class="row"><input type="date" id="calFe" value="${d?isoLocal(d):""}"><button class="gold" id="calMover">Mover a esta fecha</button><button class="sec" id="calCerrar">Cerrar</button></div><div class="msg" id="calMsg"></div>`:""}</div>`;
     if(!puedeMover) return;
@@ -949,24 +977,28 @@ async function tabCalendario(clienteId,puedeMover,host="#tab"){
     for(let i=0;i<primero;i++) celdas.push(null);
     for(let d=1;d<=ultimo;d++) celdas.push(new Date(mes.getFullYear(),mes.getMonth(),d));
     while(celdas.length%7) celdas.push(null);
-    const porDia=new Map(), sinFecha=[];
+    const porDia=new Map(), delMes=[], sinFecha=[];
     ses.forEach(s=>{
       const d=parseFecha(s.fecha);
       if(!d){sinFecha.push(s);return}
       const k=isoLocal(d);
       if(!porDia.has(k)) porDia.set(k,[]);
       porDia.get(k).push(s);
+      if(d.getFullYear()===mes.getFullYear()&&d.getMonth()===mes.getMonth()) delMes.push({s,d});
     });
+    delMes.sort((a,b)=>a.d-b.d);
     $("#cal").innerHTML=`
       <div class="cal-head"><button class="sec" id="calPrev">‹</button><b>${MESES_CAL[mes.getMonth()]} ${mes.getFullYear()}</b><button class="sec" id="calNext">›</button></div>
       <div class="cal-grid">${DIAS_SEM.map(d=>`<div class="cal-dh">${d}</div>`).join("")}
         ${celdas.map(d=>{
           if(!d) return `<div class="cal-d vacio"></div>`;
-          const k=isoLocal(d);
-          return `<div class="cal-d${k===isoLocal(hoy)?" hoy":""}"><span class="cal-num">${d.getDate()}</span>${(porDia.get(k)||[]).map(chip).join("")}</div>`;
+          const k=isoLocal(d), lista=porDia.get(k)||[];
+          const hechas=lista.filter(hecho).length;
+          return `<div class="cal-d${k===isoLocal(hoy)?" hoy":""}${lista.length?" tiene":""}"><span class="cal-num">${d.getDate()}</span>${lista.length?`<span class="cal-n${hechas===lista.length?" ok":""}">${lista.length}</span>`:""}</div>`;
         }).join("")}
       </div>
-      ${sinFecha.length?`<details class="bloque"><summary><b>Sin fecha (${sinFecha.length})</b></summary>${sinFecha.map(chip).join("")}</details>`:""}
+      <div class="cal-lista">${delMes.length?delMes.map(({s,d})=>fila(s,`<b>${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}</b> ${esc(s.titulo||"Sesión")}`)).join(""):'<p class="muted">No hay sesiones este mes.</p>'}</div>
+      ${sinFecha.length?`<details class="cal-sin"><summary>Sin fecha (${sinFecha.length})</summary>${sinFecha.map(s=>fila(s,esc(s.titulo||"Sesión"))).join("")}</details>`:""}
       <div id="calDet"></div>`;
     $("#calPrev").onclick=()=>{mes=new Date(mes.getFullYear(),mes.getMonth()-1,1);pintar()};
     $("#calNext").onclick=()=>{mes=new Date(mes.getFullYear(),mes.getMonth()+1,1);pintar()};
