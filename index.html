@@ -840,12 +840,11 @@ function subTabs(lista){
 }
 function tabEntrenosCliente(){subTabs([["Mi entrenamiento",tabEntrenos],["Historial",tabHistorialCliente]])}
 function tabPerfilCliente(){
-  const ids=["pf0"], fns=[tabPerfil];
-  if(!pestanaOculta("valoracion")){ids.push("pf1");fns.push(tabValoracionCliente)}
-  $("#tab").innerHTML=`<div class="tabs"><button id="pf0" class="on">Foto y contraseña</button>${!pestanaOculta("valoracion")?'<button id="pf1">Valoración inicial</button>':""}${!pestanaOculta("anamnesis")?'<button id="pf2">Anamnesis</button>':""}</div><div id="sub"></div>`;
-  pestanas(ids,fns);
-  fns[0]();
-  if(!pestanaOculta("anamnesis")) $("#pf2").onclick=()=>panelCliente("anamnesis");
+  const lista=[];
+  if(!pestanaOculta("valoracion")) lista.push(["Valoración inicial",tabValoracionCliente]);
+  if(!pestanaOculta("anamnesis")) lista.push(["Anamnesis",tabAnamnesis]);
+  if(!lista.length){$("#tab").innerHTML='<p class="muted">No hay secciones disponibles.</p>';return}
+  subTabs(lista);
 }
 function tabValoracionCliente(){
   $("#sub").innerHTML=`<label>Valoración inicial<textarea id="valC" rows="12">${esc(S.perfil.valoracion||"")}</textarea></label>
@@ -864,12 +863,7 @@ function panelCliente(tab){
   shell(`<div class="tabs">${todas.map(t=>`<button id="${t[1]}">${t[2]}</button>`).join("")}</div><div id="tab"></div>`);
   pestanas(todas.map(t=>t[1]),todas.map(t=>t[3]));
   // "perfil", "anamnesis" y "valoracion" se abren desde el nombre de la cabecera
-  if(tab==="anamnesis"){
-    shell(`<button class="sec" id="volverA">← Volver</button><div id="tab"></div>`);
-    $("#volverA").onclick=()=>panelCliente("perfil");
-    tabAnamnesis(); return;
-  }
-  if(tab==="perfil"||tab==="valoracion"){tabPerfilCliente();return}
+  if(tab==="perfil"||tab==="anamnesis"||tab==="valoracion"){tabPerfilCliente();return}
   let idx=todas.findIndex(t=>t[0]===tab); if(idx<0) idx=0;
   todas.forEach((t,i)=>$("#"+t[1]).classList.toggle("on",i===idx));
   if(todas.length) todas[idx][3](); else $("#tab").innerHTML='<p class="muted">No hay pestañas visibles. Consulta con tu entrenador.</p>';
@@ -897,7 +891,7 @@ async function tabEntrenos(){
 }
 function tabAnamnesis(){
   const a=S.perfil.anamnesis||{};
-  $("#tab").innerHTML=`${ANAM.map(([k,l])=>`<label>${l}<textarea data-a="${k}">${esc(a[k]||"")}</textarea></label>`).join("")}
+  $("#sub").innerHTML=`${ANAM.map(([k,l])=>`<label>${l}<textarea data-a="${k}">${esc(a[k]||"")}</textarea></label>`).join("")}
     <label><input type="checkbox" id="cons" ${a.consent?"checked":""}> Acepto que mis datos de salud se usen solo para preparar mi entrenamiento.</label>
     <div class="row" style="margin-top:10px"><button class="gold" id="guardarA">Guardar anamnesis</button><span class="msg" id="m"></span></div>`;
   $("#guardarA").onclick=async()=>{
@@ -907,7 +901,6 @@ function tabAnamnesis(){
     try{
       await db("PATCH","perfiles",`?id=eq.${S.user.id}`,{anamnesis:data},"return=minimal");
       S.perfil.anamnesis=data;msg("#m","Guardado ✓",true);
-      setTimeout(()=>panelCliente("perfil"),800);
     }catch(e){msg("#m",e.message,false)}
   };
 }
