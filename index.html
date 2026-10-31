@@ -187,9 +187,16 @@ textarea{font-size:14px;width:100%;margin:4px 0 8px}
 .cal-ses.ok{background:#e4f2e4}
 .cal-head{display:flex;align-items:center;justify-content:space-between;margin:8px 0}
 .cal-det{margin-top:12px;padding-top:10px;border-top:1px solid #d0d3d6}
-main.cli{padding-top:calc(150px + min(80vw,600px)*0.37 + 80px)}
+/* Cliente: logo de fondo más abajo y menú en la barra superior */
+body.cli .fondo{background-position:center var(--logo-top,230px)}
+body.cli .frase{top:calc(var(--logo-top,230px) + min(80vw,600px)*0.37 + 12px)}
+main.cli{padding-top:calc(var(--logo-top,230px) + min(80vw,600px)*0.37 + 40px - var(--hdr,64px))}
+.nombre-cli{font-weight:700;color:#D9DDE0;white-space:nowrap}
+.cli-nav{display:flex;gap:6px;flex-wrap:wrap;flex:1;justify-content:center}
+.cli-nav button{background:#5a5f63;color:#fff;padding:6px 10px;font-size:14px;border:0;border-radius:6px;cursor:pointer}
+.cli-nav button.on{background:#D9DDE0;color:#1d1f21;font-weight:700}
 .foto-hdr{background:none;border:0;padding:0;cursor:pointer;flex:0 0 auto}
-.foto-hdr img{width:120px;height:120px;border-radius:50%;object-fit:cover;border:3px solid #D9DDE0;display:block}
+.foto-hdr img{width:56px;height:56px;border-radius:50%;object-fit:cover;border:3px solid #D9DDE0;display:block}
 </style>
 </head>
 <body>
@@ -320,17 +327,29 @@ function pantallaNuevaPass(){
 }
 
 /* ---------- Estructura común ---------- */
-function shell(inner){
+// Mide la cabecera real (cambia según el ancho: el menú puede ocupar una o varias líneas)
+function ajustarCabecera(){
+  const h=(document.querySelector("header")||{offsetHeight:64}).offsetHeight;
+  document.documentElement.style.setProperty("--hdr",h+"px");
+  document.documentElement.style.setProperty("--logo-top",(h+30)+"px");
+}
+window.addEventListener("resize",()=>{if(document.body.classList.contains("cli"))ajustarCabecera()});
+function shell(inner,ficha){
   const p=(S&&S.perfil)||{};
-  const foto="";
-  const cab=(p.rol==="cliente"&&p.foto)?`<button class="foto-hdr" id="ir-foto" title="Mi perfil"><img src="${p.foto}" alt=""></button>`:`<img class="logo" src="logo-alex.png" alt="" onerror="this.remove()">`;
-  $("#app").innerHTML=`<header>${cab}
-    <span class="t">${p.rol==="admin"?"Panel del entrenador":""}</span>${foto}
-    ${p.rol==="admin"?(p.nombre?`<span>${esc(p.nombre)}</span>`:""):`<button class="sec perfil-btn" id="ir-perfil"><span>${esc(p.nombre||"Mi perfil")}</span><small>Perfil</small></button>`}
-    <button class="sec" id="salir">Salir</button></header><main class="${p.rol==='admin'?'adm':'cli'}">${inner}</main>`;
+  const vistaCliente=!!ficha||p.rol!=="admin";
+  document.body.classList.toggle("cli",vistaCliente);
+  const fotoCab=ficha?ficha.foto:(p.rol!=="admin"?p.foto:"");
+  const cab=fotoCab?`<button class="foto-hdr" id="ir-foto" title="${ficha?"Perfil del entrenado":"Mi perfil"}"><img src="${fotoCab}" alt=""></button>`:`<img class="logo" src="logo-alex.png" alt="" onerror="this.remove()">`;
+  let centro;
+  if(ficha) centro=`<span class="nombre-cli">${esc(ficha.nombre||"Sin nombre")}</span>`;
+  else if(p.rol==="admin") centro=`<span class="t">Panel del entrenador</span>${p.nombre?`<span>${esc(p.nombre)}</span>`:""}`;
+  else centro=`<button class="sec perfil-btn" id="ir-perfil"><span>${esc(p.nombre||"Mi perfil")}</span><small>Perfil</small></button>`;
+  const nav=vistaCliente?'<nav class="cli-nav" id="cnav"></nav>':"";
+  $("#app").innerHTML=`<header>${cab}${centro}${nav}<button class="sec" id="salir">Salir</button></header><main class="${vistaCliente?"cli":"adm"}">${inner}</main>`;
   $("#salir").onclick=salir;
-  const ifo=$("#ir-foto"); if(ifo) ifo.onclick=()=>panelCliente();
+  const ifo=$("#ir-foto"); if(ifo&&!ficha) ifo.onclick=()=>panelCliente();
   const ip=$("#ir-perfil"); if(ip) ip.onclick=()=>panelCliente("perfil");
+  ajustarCabecera();
 }
 function entrar(){
   if(S.perfil.rol==="admin") listaClientes();
@@ -678,10 +697,8 @@ async function listaClientes(){
 async function fichaCliente(id){
   const [c]=await db("GET","perfiles",`?id=eq.${id}&select=*`);
   const ses=await db("GET","sesiones",`?cliente_id=eq.${id}&order=created_at.desc&select=*`);
-  shell(`<button class="sec" id="volver">← Clientes</button>
-    <div class="card ficha"><div class="row" style="align-items:center;gap:12px">${c.foto?`<img class="avatar" style="width:90px;height:90px" src="${c.foto}" alt="">`:`<span class="muted">Sin foto</span>`}<h2 style="margin:0">${esc(c.nombre||"Sin nombre")}</h2></div>
-    <div class="tabs"><button id="ta" class="on">Entrenamientos</button><button id="te">Calendario</button><button id="tb">Anamnesis</button><button id="tc">Historial</button><button id="td">Mensajes</button></div>
-    <div id="tab"></div></div>`);
+  shell(`<div id="tab"></div>`,c);
+  $("#cnav").innerHTML=`<button id="volver">← Clientes</button><button id="ta" class="on">Entrenamientos</button><button id="te">Calendario</button><button id="tb">Anamnesis</button><button id="tc">Historial</button><button id="td">Mensajes</button>`;
   $("#volver").onclick=listaClientes;
 
   const verEntrenos=()=>{
@@ -973,17 +990,20 @@ function anamnesisCliente(){
   $("#anEditar").onclick=()=>tabAnamnesis();
 }
 async function panelCliente(tab,sub){
-  // Todo el panel del cliente está en su perfil
+  // Todo el panel del cliente está en su perfil; el menú va en la barra superior
   const val=await valoracionVisible();
   const lista=[["Mis entrenamientos",()=>tabEntrenos("#sub")],["Calendario",()=>tabCalendario(S.user.id,true,"#sub")],["Historial",()=>tabHistorialCliente("#sub")]];
   if(val) lista.push(["Valoración inicial",()=>tabValoracionCliente(val,"#sub")]);
   lista.push(["Anamnesis",anamnesisCliente],["Foto y contraseña",tabPerfil]);
   const claves={entrenamientos:"Mis entrenamientos",calendario:"Calendario",historial:"Historial",valoracion:"Valoración inicial",anamnesis:"Anamnesis",perfil:"Foto y contraseña"};
   const key=tab==="perfil"?(sub||"perfil"):(tab||"entrenamientos");
-  shell(`<div id="tab"></div>`);
+  shell(`<div id="tab"><div id="sub"></div></div>`);
   let idx=lista.findIndex(n=>n[0]===claves[key]);
   if(idx<0) idx=0;
-  subTabs(lista,idx);
+  const ids=lista.map((_,i)=>"cn"+i);
+  $("#cnav").innerHTML=lista.map((n,i)=>`<button id="${ids[i]}" class="${i===idx?"on":""}">${n[0]}</button>`).join("");
+  pestanas(ids,lista.map(n=>n[1]));
+  lista[idx][1]();
 }
 async function tabEntrenos(host="#tab"){
   // Solo las sesiones pendientes: las completadas pasan al historial
