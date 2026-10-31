@@ -157,6 +157,16 @@ textarea{font-size:14px;width:100%;margin:4px 0 8px}
 .an-pair{display:flex;gap:10px;flex-wrap:wrap}
 .an-pair label{display:flex;align-items:center;gap:6px;color:#444}
 .an-pair input{width:80px}
+/* Panel de lectura de la anamnesis: fondo blanco casi opaco para que no se mezcle con el logo */
+.an-panel{background:rgba(255,255,255,.95);color:#1d1f21;border-radius:12px;padding:16px;box-shadow:0 2px 12px rgba(0,0,0,.18);font-size:15px}
+.an-panel .muted{color:#4a4d50;font-size:14px}
+.an-panel .cab{margin:22px 0 10px;padding:8px 12px;font-size:16px}
+.an-panel .cab:first-child,.an-panel .muted+div .cab:first-child{margin-top:8px}
+.an-panel input,.an-panel select,.an-panel textarea{background:#fff;border-color:#9a9ea2;color:#1d1f21}
+.an-panel .anam .an-chips label,.an-panel .anam .an-scale label{background:#f4f5f6;border-color:#9a9ea2;color:#1d1f21}
+.an-panel .anam .an-chips label:has(input:checked){background:#2e3133;color:#fff;border-color:#2e3133}
+.an-panel .an-res th,.an-panel .an-res td{border-bottom:1px solid #e3e5e7;padding:8px 6px}
+.an-panel .bloque{background:#f4f5f6}
 </style>
 </head>
 <body>
@@ -1069,10 +1079,10 @@ const anFecha=iso=>{try{return fechaLocal(new Date(iso))}catch(e){return""}};
 // Cliente: rellena y guarda su ficha (Perfil → Anamnesis)
 function tabAnamnesis(){
   const a=S.perfil.anamnesis||{};
-  $("#sub").innerHTML=`${anAntigua(a)}
+  $("#sub").innerHTML=`<div class="an-panel">${anAntigua(a)}
     <p class="muted">Los campos con <span class="an-req">*</span> son obligatorios. Puedes guardar y completarla más tarde.${a.actualizada?" Última actualización: "+anFecha(a.actualizada)+".":""}</p>
     <div id="anBox"></div>
-    <div class="row" style="margin-top:10px"><button class="gold" id="guardarA">Guardar anamnesis</button></div><div class="msg" id="m"></div>`;
+    <div class="row" style="margin-top:10px"><button class="gold" id="guardarA">Guardar anamnesis</button></div><div class="msg" id="m"></div></div>`;
   const form=anForm($("#anBox"),ANAM_CLI,a);
   $("#guardarA").onclick=async()=>{
     const v=anCollect(form);
@@ -1098,19 +1108,19 @@ function tabAnamnesis(){
 // Entrenador: ve las respuestas y rellena la valoración inicial
 function anRespuestasEntrenador(c){
   const a=c.anamnesis;
-  if(!a){$("#sub").innerHTML=`<p class="muted">Todavía no ha rellenado la anamnesis.</p>`;return}
+  if(!a){$("#sub").innerHTML=`<div class="an-panel"><p class="muted">Todavía no ha rellenado la anamnesis.</p></div>`;return}
   const aviso=anAviso(a);
   const nueva=Object.keys(a).some(k=>!ANAM_OLD.some(([o])=>o===k)&&!["consent","valoracion","actualizada"].includes(k));
-  $("#sub").innerHTML=`${aviso?`<div class="an-alert on">${esc(aviso)}</div>`:""}
+  $("#sub").innerHTML=`<div class="an-panel">${aviso?`<div class="an-alert on">${esc(aviso)}</div>`:""}
     ${a.actualizada?`<p class="muted">Actualizada el ${anFecha(a.actualizada)}</p>`:""}
     ${nueva?anResumenHTML(a,ANAM_CLI):`<p class="muted">Todavía no ha rellenado la ficha nueva.</p>`}
-    ${anAntigua(a)}`;
+    ${anAntigua(a)}</div>`;
 }
 function anValoracionEntrenador(c){
   const a=c.anamnesis||{},val=a.valoracion||{};
-  $("#sub").innerHTML=`<p class="muted">A rellenar en la primera sesión. El entrenado no ve este bloque.${val.fecha?" Última actualización: "+anFecha(val.fecha)+".":""}</p>
+  $("#sub").innerHTML=`<div class="an-panel"><p class="muted">A rellenar en la primera sesión. El entrenado no ve este bloque.${val.fecha?" Última actualización: "+anFecha(val.fecha)+".":""}</p>
     <div id="anVal"></div>
-    <div class="row" style="margin-top:10px"><button class="gold" id="guardarV">Guardar valoración</button></div><div class="msg" id="mv"></div>`;
+    <div class="row" style="margin-top:10px"><button class="gold" id="guardarV">Guardar valoración</button></div><div class="msg" id="mv"></div></div>`;
   const form=anForm($("#anVal"),ANAM_VAL,val,false);
   $("#guardarV").onclick=async()=>{
     try{
