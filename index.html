@@ -317,6 +317,10 @@ html.oscuro .stat{background:rgba(43,49,55,.55)}
 .dia-sum[data-arr]{touch-action:none;cursor:grab}
 .dia-sum.arrastrando{opacity:.5}
 .cal-d.destino{outline:2px solid var(--acento);background:rgba(255,255,255,.95)}
+
+/* ---- Arrastre de sesiones: sin selección de texto ni arrastre nativo ---- */
+.dia-sum{-webkit-user-select:none;user-select:none;-webkit-user-drag:none}
+.dia-sum[data-arr]{touch-action:none;cursor:grab}
 </style>
 </head>
 <body>
@@ -1230,14 +1234,13 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false){
   const ref=pendFut||ultimo;
   let mes=new Date((ref?ref.d:hoy).getFullYear(),(ref?ref.d:hoy).getMonth(),1);
   let diaSel=ref?isoLocal(ref.d):hoyIso;
-  let moverId=null;
   const porDia=new Map();
   conF.forEach(({s,d})=>{const k=isoLocal(d);porDia.set(k,[...(porDia.get(k)||[]),s])});
   const sinFecha=todas.filter(s=>!parseFecha(s.fecha));
   const tarjeta=(s,abierta)=>`<details class="card sesion${hecho(s)?" hecha":""}"${abierta?" open":""}><summary class="dia-sum" data-arr="${s.id}">${badgeFecha(s)}<h3>${nombreEntreno(s)}</h3></summary>
       ${sesionHTML(s,true)}
       <div class="row"><button data-save="${s.id}">${admin?"Guardar cambios":"Guardar registro"}</button>${admin?`<button class="sec" data-ed="${s.id}">Editar</button><button class="danger" data-del="${s.id}">Borrar</button>`:""}<span class="muted" data-st="${s.id}"></span></div>
-      <div class="row mover"><label>Mover a otro día <input type="date" data-mover-in="${s.id}"></label><button class="sec" data-mover="${s.id}">Mover</button><button class="sec" data-elegir="${s.id}">Elegir día en el calendario</button></div></details>`;
+      <div class="row mover"><label>Mover a otro día <input type="date" data-mover-in="${s.id}"></label><button class="sec" data-mover="${s.id}">Mover</button></div></details>`;
   const moverA=async(id,val)=>{
     const [ny,nm,nd]=val.split("-");
     const txt=`${nd}/${nm}/${ny}`;
@@ -1270,7 +1273,6 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false){
     const proxTxt=pendFut?String(pendFut.d.getDate()).padStart(2,"0")+"/"+String(pendFut.d.getMonth()+1).padStart(2,"0"):"—";
     const cont=$(host);
     cont.innerHTML=`
-      ${moverId?`<div class="cal-aviso card">Toca el día del calendario donde quieres mover la sesión. <button class="sec" data-cancelar>Cancelar</button></div>`:""}
       <div class="resumen"><div><b>${pend}</b><small>pendientes</small></div><div><b>${hechas}</b><small>completadas</small></div><div><b>${proxTxt}</b><small>próximo entreno</small></div></div>
       <div class="cal-wrap card">
         <div class="cal-head"><button class="sec" data-prev>‹</button><b>${MESES_CAL[mo]} ${y}</b><button class="sec" data-next>›</button></div>
@@ -1281,16 +1283,8 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false){
       ${sinFecha.length?`<details class="card"><summary><b>Sin fecha (${sinFecha.length})</b></summary>${sinFecha.map(s=>tarjeta(s,false)).join("")}</details>`:""}`;
     cont.querySelector("[data-prev]").onclick=()=>{mes=new Date(y,mo-1,1);pintar()};
     cont.querySelector("[data-next]").onclick=()=>{mes=new Date(y,mo+1,1);pintar()};
-    cont.querySelectorAll("[data-dia]").forEach(b=>b.onclick=()=>{
-      if(moverId){const id=moverId; moverId=null; moverA(id,b.dataset.dia); return}
-      diaSel=b.dataset.dia; pintar();
-    });
-    cont.querySelectorAll("[data-elegir]").forEach(b=>b.onclick=()=>{
-      moverId=b.dataset.elegir; pintar();
-      const cal=cont.querySelector(".cal-wrap"); if(cal) cal.scrollIntoView({behavior:"smooth",block:"center"});
-    });
-    const canc=cont.querySelector("[data-cancelar]");
-    if(canc) canc.onclick=()=>{moverId=null; pintar()};
+    cont.querySelectorAll("[data-dia]").forEach(b=>b.onclick=()=>{diaSel=b.dataset.dia;pintar()});
+
     cont.querySelectorAll("[data-save]").forEach(b=>b.onclick=async()=>{
       const id=b.dataset.save, st=cont.querySelector(`[data-st="${id}"]`);
       try{
@@ -1309,7 +1303,11 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false){
     // Arrastrar la cabecera de una sesión hasta el día del calendario
     cont.querySelectorAll("[data-arr]").forEach(el=>{
       el.addEventListener("click",ev=>{if(el.dataset.movido){ev.preventDefault();ev.stopPropagation()}});
+      el.addEventListener("dragstart",ev=>ev.preventDefault());
       el.addEventListener("pointerdown",e=>{
+        if(e.button!==undefined&&e.button!==0) return;
+        try{el.setPointerCapture(e.pointerId)}catch(err){}
+        e.preventDefault();
         const id=el.dataset.arr, x0=e.clientX, y0=e.clientY;
         let mov=false;
         const diaBajo=ev=>{const b=document.elementFromPoint(ev.clientX,ev.clientY);return b&&b.closest?b.closest(".cal-d[data-dia]"):null};
