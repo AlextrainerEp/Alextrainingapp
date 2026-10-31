@@ -37,6 +37,9 @@ main{max-width:980px;margin:0 auto;padding:calc(150px + min(80vw,600px)*0.37 + 1
 .burbuja audio{width:100%;max-width:260px}
 .chat-caja{margin-top:10px}
 .chat-caja textarea{width:100%}
+.acc{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.acc button{padding:4px 8px;font-size:13px}
+.edit-txt{width:100%}
 .card.difuminada{background:rgba(255,255,255,.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 .perfil-btn{display:flex;flex-direction:column;align-items:center;line-height:1.15;padding:4px 10px;background:#ddd;color:#1d1f21}
 .perfil-btn small{font-size:11px;font-weight:400;opacity:.8}
@@ -699,17 +702,44 @@ async function urlAudio(path){
   const j=await r.json();
   return j.signedURL?SB_URL+"/storage/v1"+j.signedURL:"";
 }
+let grabacion=null;
+// Graba con el botón dado: el primer toque empieza, el segundo para y entrega el audio a alParar
+function grabarAudio(btn,alParar){
+  if(grabacion&&grabacion.state==="recording"){grabacion.stop();return}
+  if(!btn.dataset.txt) btn.dataset.txt=btn.textContent;
+  navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
+    const trozos=[]; const rec=new MediaRecorder(stream); grabacion=rec;
+    rec.ondataavailable=e=>{if(e.data&&e.data.size) trozos.push(e.data)};
+    rec.onstop=()=>{
+      stream.getTracks().forEach(t=>t.stop());
+      btn.textContent=btn.dataset.txt;
+      alParar(new Blob(trozos,{type:rec.mimeType||"audio/webm"}));
+    };
+    rec.start();
+    btn.textContent="⏹ Parar y guardar";
+  }).catch(e=>alert("No se pudo usar el micrófono: "+e.message));
+}
+async function borrarAudio(path){
+  await fetch(`${SB_URL}/storage/v1/object/audios/${path}`,{method:"DELETE",headers:{apikey:SB_KEY,Authorization:"Bearer "+S.access}});
+}
 async function tabMensajes(clienteId,esAdmin){
   const ms=await db("GET","mensajes",`?cliente_id=eq.${clienteId}&order=created_at.asc&select=*`);
+  const porId=new Map(ms.map(m=>[m.id,m]));
   const urls=await Promise.all(ms.map(m=>m.audio_path?urlAudio(m.audio_path):""));
   const burbujas=ms.map((m,i)=>{
     const mio=esAdmin?m.de_admin:!m.de_admin;
+    const puedeBorrar=mio||esAdmin;
     const quien=m.de_admin?"Entrenador":"Entrenado";
     const hora=new Date(m.created_at).toLocaleString("es-ES",{dateStyle:"short",timeStyle:"short"});
     const cuerpo=m.audio_path
       ? (urls[i]?`<audio controls preload="none" src="${urls[i]}"></audio>`:`<span class="muted">Audio no disponible</span>`)
-      : `<div>${esc(m.texto||"")}</div>`;
-    return `<div class="burbuja ${mio?"mia":"suya"}"><small>${quien} · ${hora}</small>${cuerpo}</div>`;
+      : `<div class="txt">${esc(m.texto||"")}</div>`;
+    const acc=(mio||puedeBorrar)?`<div class="acc">
+        ${mio&&m.audio_path?`<button data-regrabar="${m.id}">Regrabar audio</button>`:""}
+        ${mio&&!m.audio_path?`<button data-editar="${m.id}">Editar texto</button>`:""}
+        ${puedeBorrar?`<button class="danger" data-borrar="${m.id}">Borrar</button>`:""}
+      </div>`:"";
+    return `<div class="burbuja ${mio?"mia":"suya"}"><small>${quien} · ${hora}</small>${cuerpo}${acc}</div>`;
   }).join("");
   $("#tab").innerHTML=`
     <div class="chat" id="chat">${burbujas||'<p class="muted">Todavía no hay mensajes. Escribe o envía un audio.</p>'}</div>
@@ -732,28 +762,52 @@ async function tabMensajes(clienteId,esAdmin){
     if(!t) return;
     try{await insertar({texto:t})}catch(e){msg("#mm",e.message,false)}
   };
-
-  let rec=null, trozos=[], stream=null;
-  $("#grabar").onclick=async()=>{
-    if(rec&&rec.state==="recording"){rec.stop();return}
+  $("#grabar").onclick=ev=>grabarAudio(ev.currentTarget,async blob=>{
     try{
-      stream=await navigator.mediaDevices.getUserMedia({audio:true});
-      trozos=[]; rec=new MediaRecorder(stream);
-      rec.ondataavailable=e=>{if(e.data&&e.data.size) trozos.push(e.data)};
-      rec.onstop=async()=>{
-        stream.getTracks().forEach(t=>t.stop());
-        const blob=new Blob(trozos,{type:rec.mimeType||"audio/webm"});
-        try{
-          msg("#mm","Subiendo audio…",true);
-          const path=await subirAudio(blob,clienteId);
-          await insertar({audio_path:path});
-        }catch(e){msg("#mm",e.message,false)}
-      };
-      rec.start();
-      $("#grabar").textContent="⏹ Parar y enviar";
-      msg("#mm","Grabando…",true);
-    }catch(e){msg("#mm","No se pudo usar el micrófono: "+e.message,false)}
-  };
+      msg("#mm","Subiendo audio…",true);
+      const path=await subirAudio(blob,clienteId);
+      await insertar({audio_path:path});
+    }catch(e){msg("#mm",e.message,false)}
+  });
+
+  document.querySelectorAll("[data-borrar]").forEach(btn=>btn.onclick=async()=>{
+    const m=porId.get(btn.dataset.borrar);
+    if(!confirm(m.audio_path?"¿Borrar este audio?":"¿Borrar este mensaje?")) return;
+    try{
+      await db("DELETE","mensajes",`?id=eq.${m.id}`,null,"return=minimal");
+      if(m.audio_path) await borrarAudio(m.audio_path);
+      tabMensajes(clienteId,esAdmin);
+    }catch(e){msg("#mm",e.message,false)}
+  });
+
+  document.querySelectorAll("[data-editar]").forEach(btn=>btn.onclick=()=>{
+    const m=porId.get(btn.dataset.editar);
+    const burb=btn.closest(".burbuja");
+    burb.querySelector(".txt").outerHTML=`<textarea class="edit-txt" rows="3">${esc(m.texto||"")}</textarea>`;
+    btn.outerHTML=`<button class="gold" data-guardar="${m.id}">Guardar</button> <button data-cancelar>Cancelar</button>`;
+    burb.querySelector("[data-guardar]").onclick=async()=>{
+      const t=burb.querySelector(".edit-txt").value.trim();
+      if(!t) return;
+      try{
+        await db("PATCH","mensajes",`?id=eq.${m.id}`,{texto:t},"return=minimal");
+        tabMensajes(clienteId,esAdmin);
+      }catch(e){msg("#mm",e.message,false)}
+    };
+    burb.querySelector("[data-cancelar]").onclick=()=>tabMensajes(clienteId,esAdmin);
+  });
+
+  document.querySelectorAll("[data-regrabar]").forEach(btn=>btn.onclick=()=>{
+    const m=porId.get(btn.dataset.regrabar);
+    grabarAudio(btn,async blob=>{
+      try{
+        msg("#mm","Subiendo audio nuevo…",true);
+        const nuevo=await subirAudio(blob,clienteId);
+        await db("PATCH","mensajes",`?id=eq.${m.id}`,{audio_path:nuevo},"return=minimal");
+        await borrarAudio(m.audio_path);
+        tabMensajes(clienteId,esAdmin);
+      }catch(e){msg("#mm",e.message,false)}
+    });
+  });
 }
 function tabMensajesCliente(){return tabMensajes(S.user.id,false)}
 
