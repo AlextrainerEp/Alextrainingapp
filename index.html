@@ -321,6 +321,9 @@ html.oscuro .stat{background:rgba(43,49,55,.55)}
 /* ---- Arrastre de sesiones: sin selección de texto ni arrastre nativo ---- */
 .dia-sum{-webkit-user-select:none;user-select:none;-webkit-user-drag:none}
 .dia-sum[data-arr]{touch-action:none;cursor:grab}
+
+/* ---- Calendario fijo arriba para poder arrastrar sesiones desde la lista (móvil y ordenador) ---- */
+.cal-wrap{position:sticky;top:6px;z-index:20;box-shadow:0 4px 12px rgba(0,0,0,.18)}
 </style>
 </head>
 <body>
