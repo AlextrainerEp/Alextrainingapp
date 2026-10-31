@@ -219,6 +219,9 @@ main.cli{padding-top:calc(min(80vw,600px)*0.37 + 90px)}
 body.cli .fondo{position:absolute;top:var(--hdr,64px);bottom:0;left:0;right:0;background-position:center 12px}
 /* Tarjetas de entrenamientos: más opacas para poder leerlas sobre el logo */
 body.cli .card{background:rgba(255,255,255,.85);backdrop-filter:none;-webkit-backdrop-filter:none}
+.cal-chip{display:block;width:100%;font-size:10px;line-height:1.2;padding:1px 3px;margin-top:2px;background:#f4f5f6;color:#1d1f21;border:1px solid #9a9ea2;border-radius:3px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.cal-chip.ok{background:#e4f2e4}
+.cal-mas{display:block;font-size:10px;color:#333}
 </style>
 </head>
 <body>
@@ -993,8 +996,10 @@ async function tabCalendario(clienteId,puedeMover,host="#tab"){
         ${celdas.map(d=>{
           if(!d) return `<div class="cal-d vacio"></div>`;
           const k=isoLocal(d), lista=porDia.get(k)||[];
-          const hechas=lista.filter(hecho).length;
-          return `<div class="cal-d${k===isoLocal(hoy)?" hoy":""}${lista.length?" tiene":""}"><span class="cal-num">${d.getDate()}</span>${lista.length?`<span class="cal-n${hechas===lista.length?" ok":""}">${lista.length}</span>`:""}</div>`;
+          // Dentro de la casilla: nombre abreviado de cada sesión (máximo 2) y el total si hay más
+          const corto=t=>String(t||"Sesión").replace(/Día\s*/i,"D").replace(/Microciclo\s*/i,"M").replace(/\s*·\s*/g,"·");
+          const chips=lista.slice(0,2).map(s=>`<button class="cal-chip${hecho(s)?" ok":""}" data-ses="${s.id}" title="${esc(s.titulo||"Sesión")}">${esc(corto(s.titulo))}</button>`).join("");
+          return `<div class="cal-d${k===isoLocal(hoy)?" hoy":""}${lista.length?" tiene":""}"><span class="cal-num">${d.getDate()}</span>${chips}${lista.length>2?`<span class="cal-mas">+${lista.length-2}</span>`:""}</div>`;
         }).join("")}
       </div>
       <div class="cal-lista">${delMes.length?delMes.map(({s,d})=>fila(s,`<b>${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}</b> ${esc(s.titulo||"Sesión")}`)).join(""):'<p class="muted">No hay sesiones este mes.</p>'}</div>
