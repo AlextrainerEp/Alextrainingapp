@@ -26,9 +26,9 @@ main{max-width:980px;margin:0 auto;padding:calc(150px + min(80vw,600px)*0.37 + 1
 .dia-sum::-webkit-details-marker{display:none}
 .dia-sum h3{display:inline;margin:0}
 /* Caja de la lista de entrenados: más difuminada */
-.card.ficha{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none;padding:14px}
+.card.ficha{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none;padding:0}
 /* Ficha del entrenado y su panel: sin fondo, solo se ven las pestañas y el contenido */
-#tab > .card,#tab details.card,#tab .card.sesion{background:rgba(255,255,255,.35);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);box-shadow:none}
+.card.ficha,#tab > .card,#tab details.card,#tab .card.sesion{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}
 .chat{display:flex;flex-direction:column;gap:8px;max-height:55vh;overflow:auto;padding:6px 2px}
 .burbuja{max-width:85%;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.7)}
 .burbuja.mia{align-self:flex-end;background:rgba(217,221,224,.95)}
@@ -69,7 +69,7 @@ th,td{border-bottom:1px solid #eee;padding:6px;text-align:left;vertical-align:to
 .msg.ok{display:block;background:#e8f5e9;color:#2e7d32}
 .muted{color:#666;font-size:13px}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:12px 0}
-.stat{background:rgba(255,255,255,.45);border-radius:10px;padding:10px;text-align:center}
+.stat{background:#f5f5f5;border-radius:10px;padding:10px;text-align:center}
 .stat b{display:block;font-size:22px}
 .avatar{width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid #D9DDE0}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -130,6 +130,46 @@ textarea{font-size:14px;width:100%;margin:4px 0 8px}
 .cab{background:#2e3133;color:#D9DDE0;padding:6px 10px;border-radius:8px;margin:12px 0 4px;font-size:15px;font-weight:700}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);overflow:auto;padding:16px;z-index:50}
 .modal-card{max-width:980px;margin:0 auto;background:#fff;border-radius:12px;padding:18px}
+/* Anamnesis */
+.anam [hidden]{display:none!important}
+.anam .an-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0 14px}
+.anam .an-f{margin:6px 0 4px;min-width:0}
+.anam .an-q{margin:4px 0 6px;font-weight:600}
+.an-req{color:#c0392b}
+.anam .an-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+.anam .an-chips label{display:inline-flex;align-items:center;gap:6px;border:1px solid #bbb;border-radius:999px;padding:5px 12px 5px 9px;background:rgba(255,255,255,.75);cursor:pointer;font-size:14px}
+.anam .an-chips label:has(input:checked){background:#D9DDE0;border-color:#2e3133;font-weight:600}
+.anam .an-chips input{margin:0}
+.anam .an-scale{display:flex;flex-wrap:wrap;gap:4px}
+.anam .an-scale label{position:relative;width:34px;height:34px;display:grid;place-items:center;border:1px solid #bbb;border-radius:6px;background:rgba(255,255,255,.75);cursor:pointer;font-size:14px}
+.anam .an-scale input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer;width:100%;height:100%}
+.anam .an-scale label:has(input:checked){background:#2e3133;color:#fff;border-color:#2e3133}
+.an-ends{display:flex;justify-content:space-between;max-width:380px;font-size:12px;color:#555;margin:2px 0 10px}
+.anam .an-cond{border-left:3px solid #2e3133;padding-left:12px;margin:0 0 8px}
+.anam .an-otro{max-width:420px}
+.an-f.miss .an-q,.an-f.miss>label{color:#c0392b}
+.an-f.miss input[type=text],.an-f.miss input[type=date],.an-f.miss input[type=tel],.an-f.miss textarea,.an-f.miss select{border-color:#c0392b}
+.an-alert{background:#fff4e5;color:#8a4b12;border-left:4px solid #e67e22;padding:8px 12px;border-radius:6px;margin:6px 0 12px;font-size:14px}
+.an-alert.on{font-weight:600}
+.an-res th{width:45%;font-weight:500;color:#444}
+.an-tests td:first-child{width:50%}
+.an-tests input{margin:0;padding:6px}
+.an-pair{display:flex;gap:10px;flex-wrap:wrap}
+.an-pair label{display:flex;align-items:center;gap:6px;color:#444}
+.an-pair input{width:80px}
+/* Panel de lectura de la anamnesis: fondo blanco casi opaco para que no se mezcle con el logo */
+.an-panel{background:#ffffff;color:#111;position:relative;z-index:1;border:1px solid #d0d3d6;border-radius:12px;padding:16px;box-shadow:0 2px 12px rgba(0,0,0,.18);font-size:15px}
+.an-panel .muted{color:#333;font-size:14px}
+.an-panel label,.an-panel .an-q{color:#111}
+#tab:has(.an-panel)>.tabs,.card.ficha:has(.an-panel)>.tabs,.card.ficha:has(.an-panel)>.row{background:#ffffff;border-radius:10px;padding:6px;border:1px solid #d0d3d6}
+.an-panel .an-tests td{background:#fff;color:#111;padding:8px 6px}
+.an-panel .cab{margin:22px 0 10px;padding:8px 12px;font-size:16px}
+.an-panel .cab:first-child,.an-panel .muted+div .cab:first-child{margin-top:8px}
+.an-panel input,.an-panel select,.an-panel textarea{background:#fff;border-color:#9a9ea2;color:#1d1f21}
+.an-panel .anam .an-chips label,.an-panel .anam .an-scale label{background:#f4f5f6;border-color:#9a9ea2;color:#1d1f21}
+.an-panel .anam .an-chips label:has(input:checked){background:#2e3133;color:#fff;border-color:#2e3133}
+.an-panel .an-res th,.an-panel .an-res td{border-bottom:1px solid #e3e5e7;padding:8px 6px}
+.an-panel .bloque{background:#f4f5f6}
 </style>
 </head>
 <body>
@@ -139,7 +179,6 @@ textarea{font-size:14px;width:100%;margin:4px 0 8px}
 <script>
 const SB_URL="https://xnqksbpwsqdgngaskbpx.supabase.co";
 const SB_KEY="sb_publishable_3cFWXykjHyxsdo65c2CZkA_8dM6U-HF";
-const ANAM=[["objetivo","Objetivo"],["experiencia","Experiencia deportiva"],["lesiones","Lesiones"],["salud","Salud (enfermedades relevantes)"],["medicacion","Medicación"],["disponibilidad","Disponibilidad horaria"],["observaciones","Observaciones"]];
 
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -619,7 +658,7 @@ async function fichaCliente(id){
   const ses=await db("GET","sesiones",`?cliente_id=eq.${id}&order=created_at.desc&select=*`);
   shell(`<button class="sec" id="volver">← Clientes</button>
     <div class="card ficha"><div class="row" style="align-items:center;gap:12px">${c.foto?`<img class="avatar" style="width:90px;height:90px" src="${c.foto}" alt="">`:`<span class="muted">Sin foto</span>`}<h2 style="margin:0">${esc(c.nombre||"Sin nombre")}</h2></div>
-    <div class="tabs"><button id="ta" class="on">Entrenamientos</button><button id="tb">Anamnesis</button><button id="tc">Historial</button><button id="td">Mensajes</button><button id="te">Valoración</button><button id="tf">Pestañas</button></div>
+    <div class="tabs"><button id="ta" class="on">Entrenamientos</button><button id="tb">Anamnesis</button><button id="tc">Historial</button><button id="td">Mensajes</button></div>
     <div id="tab"></div></div>`);
   $("#volver").onclick=listaClientes;
 
@@ -677,35 +716,10 @@ async function fichaCliente(id){
       catch(err){alert(err.message)}
     });
   };
-  const verAnam=()=>{
-    $("#tab").innerHTML=c.anamnesis
-      ? ANAM.map(([k,l])=>`<p><b>${l}:</b> ${esc(c.anamnesis[k]||"–")}</p>`).join("")
-      : `<p class="muted">Todavía no ha rellenado la anamnesis.</p>`;
-  };
+  const verAnam=()=>subTabs([["Respuestas",()=>anRespuestasEntrenador(c)],["Valoración inicial",()=>anValoracionEntrenador(c)]]);
   const verHist=()=>{$("#tab").innerHTML=tabHistorial(ses)};
   const verMsgs=()=>tabMensajes(id,true);
-  const verVal=()=>{
-    $("#tab").innerHTML=`<label>Valoración inicial (la verá el entrenado en su perfil)<textarea id="valTxt" rows="10">${esc(c.valoracion||"")}</textarea></label>
-      <div class="row" style="margin-top:10px"><button class="gold" id="valGuardar">Guardar valoración</button><span class="msg" id="valMsg"></span></div>`;
-    $("#valGuardar").onclick=async()=>{
-      const t=$("#valTxt").value;
-      try{await db("PATCH","perfiles",`?id=eq.${id}`,{valoracion:t},"return=minimal");c.valoracion=t;msg("#valMsg","Guardado ✓",true)}
-      catch(e){msg("#valMsg",e.message,false)}
-    };
-  };
-  const TODAS_PESTANAS=[["entrenos","Mis entrenamientos"],["historial","Historial"],["mensajes","Entrenador (mensajes)"],["valoracion","Valoración inicial"],["anamnesis","Anamnesis"]];
-  const verPest=()=>{
-    const oc=c.ocultas||[];
-    $("#tab").innerHTML=`<p class="muted">Marca las pestañas que el entrenado puede ver. Las desmarcadas quedan ocultas para él.</p>`+
-      TODAS_PESTANAS.map(([k,l])=>`<label style="display:block;margin:8px 0"><input type="checkbox" data-vis="${k}" ${oc.includes(k)?"":"checked"}> ${l}</label>`).join("")+
-      `<span class="msg" id="visMsg"></span>`;
-    document.querySelectorAll("[data-vis]").forEach(cb=>cb.onchange=async()=>{
-      const ocultas=[...document.querySelectorAll("[data-vis]")].filter(x=>!x.checked).map(x=>x.dataset.vis);
-      try{await db("PATCH","perfiles",`?id=eq.${id}`,{ocultas},"return=minimal");c.ocultas=ocultas;msg("#visMsg","Guardado ✓",true)}
-      catch(e){msg("#visMsg",e.message,false)}
-    });
-  };
-  pestanas(["ta","tb","tc","td","te","tf"],[verEntrenos,verAnam,verHist,verMsgs,verVal,verPest]);
+  pestanas(["ta","tb","tc","td"],[verEntrenos,verAnam,verHist,verMsgs]);
   verEntrenos();
 }
 
@@ -839,34 +853,16 @@ function subTabs(lista){
   lista[0][1]();
 }
 function tabEntrenosCliente(){subTabs([["Mi entrenamiento",tabEntrenos],["Historial",tabHistorialCliente]])}
-function tabPerfilCliente(){
-  const lista=[];
-  if(!pestanaOculta("valoracion")) lista.push(["Valoración inicial",tabValoracionCliente]);
-  if(!pestanaOculta("anamnesis")) lista.push(["Anamnesis",tabAnamnesis]);
-  if(!lista.length){$("#tab").innerHTML='<p class="muted">No hay secciones disponibles.</p>';return}
-  subTabs(lista);
-}
-function tabValoracionCliente(){
-  $("#sub").innerHTML=`<label>Valoración inicial<textarea id="valC" rows="12">${esc(S.perfil.valoracion||"")}</textarea></label>
-    <div class="row" style="margin-top:10px"><button class="gold" id="valCGuardar">Guardar valoración</button><span class="msg" id="valCMsg"></span></div>`;
-  $("#valCGuardar").onclick=async()=>{
-    const t=$("#valC").value;
-    try{
-      await db("PATCH","perfiles",`?id=eq.${S.user.id}`,{valoracion:t},"return=minimal");
-      S.perfil.valoracion=t;msg("#valCMsg","Guardado ✓",true);
-    }catch(e){msg("#valCMsg",e.message,false)}
-  };
-}
-const pestanaOculta=k=>(S.perfil.ocultas||[]).includes(k);
+function tabPerfilCliente(){subTabs([["Foto y contraseña",tabPerfil],["Anamnesis",tabAnamnesis]])}
 function panelCliente(tab){
-  const todas=[["entrenos","c1","Mis entrenamientos",tabEntrenos],["historial","c2","Historial",tabHistorialCliente],["mensajes","c3","Entrenador",tabMensajesCliente]].filter(t=>!pestanaOculta(t[0]));
-  shell(`<div class="tabs">${todas.map(t=>`<button id="${t[1]}">${t[2]}</button>`).join("")}</div><div id="tab"></div>`);
-  pestanas(todas.map(t=>t[1]),todas.map(t=>t[3]));
-  // "perfil", "anamnesis" y "valoracion" se abren desde el nombre de la cabecera
-  if(tab==="perfil"||tab==="anamnesis"||tab==="valoracion"){tabPerfilCliente();return}
-  let idx=todas.findIndex(t=>t[0]===tab); if(idx<0) idx=0;
-  todas.forEach((t,i)=>$("#"+t[1]).classList.toggle("on",i===idx));
-  if(todas.length) todas[idx][3](); else $("#tab").innerHTML='<p class="muted">No hay pestañas visibles. Consulta con tu entrenador.</p>';
+  shell(`<div class="tabs"><button id="c1">Mis entrenamientos</button><button id="c2">Historial</button><button id="c3">Entrenador</button></div><div id="tab"></div>`);
+  const fns=[tabEntrenos,tabHistorialCliente,tabMensajesCliente];
+  pestanas(["c1","c2","c3"],fns);
+  // "perfil" y "anamnesis" se abren desde el nombre de la cabecera: ninguna pestaña queda marcada
+  if(tab==="perfil"||tab==="anamnesis"){tabPerfilCliente();return}
+  const idx=tab==="historial"?1:tab==="mensajes"?2:0;
+  ["c1","c2","c3"].forEach((x,i)=>$("#"+x).classList.toggle("on",i===idx));
+  fns[idx]();
 }
 async function tabEntrenos(){
   // Solo las sesiones pendientes: las completadas pasan al historial
@@ -889,21 +885,257 @@ async function tabEntrenos(){
     }catch(e){st.textContent="Error: "+e.message}
   });
 }
+/* ---------- Anamnesis ---------- */
+// Preguntas de la ficha antigua: se siguen mostrando si un cliente ya las tenía rellenas
+const ANAM_OLD=[["objetivo","Objetivo"],["experiencia","Experiencia deportiva"],["lesiones","Lesiones"],["salud","Salud (enfermedades relevantes)"],["medicacion","Medicación"],["disponibilidad","Disponibilidad horaria"],["observaciones","Observaciones"]];
+const AN_CONSENT="Acepto el tratamiento de mis datos";
+const ANAM_CLI=[
+ {n:"Datos personales",f:[
+  {row:[{k:"nacimiento",t:"date",l:"Fecha de nacimiento",req:1},{k:"dni",t:"text",l:"DNI",req:1},{k:"telefono",t:"tel",l:"Teléfono",req:1}]},
+  {k:"sexo",t:"radio",l:"Sexo",req:1,o:["Hombre","Mujer"]},
+  {row:[{k:"direccion",t:"text",l:"Dirección de las sesiones"},{k:"profesion",t:"text",l:"Profesión"}]},
+  {k:"emergencia",t:"text",l:"Contacto de emergencia (nombre y teléfono)"},
+  {k:"origen",t:"radio",l:"¿Cómo has conocido Alex Training Lab?",req:1,o:["Búsqueda en Google","Redes sociales","Anuncio en redes sociales","Ha oído hablar de nosotros","Recomendación de otro cliente"],otro:1}
+ ]},
+ {n:"Historial de actividad física",f:[
+  {k:"act_actual",t:"radio",l:"¿En la actualidad practicas algún deporte o actividad física?",req:1,o:["Sí","No"]},
+  {when:"act_actual=Sí",f:[
+   {k:"act_tipo",t:"text",l:"¿Qué tipo de deporte o actividad física realizas?"},
+   {k:"act_tiempo",t:"text",l:"¿Cuánto tiempo llevas practicándola de forma continuada y con qué frecuencia?"},
+   {k:"act_detalle",t:"area",l:"¿Cómo la realizas? (duración, volumen, intensidad, ejercicios, descansos…)"}
+  ]},
+  {k:"act_pasada",t:"radio",l:"¿Has practicado en el pasado algún deporte o actividad que no hagas ahora?",req:1,o:["Sí","No"]},
+  {when:"act_pasada=Sí",f:[
+   {k:"pas_tipo",t:"text",l:"¿Qué deporte o actividad física practicabas?"},
+   {row:[{k:"pas_sin",t:"text",l:"¿Cuánto tiempo llevas sin practicarla?"},{k:"pas_tiempo",t:"text",l:"¿Durante cuánto tiempo y con qué frecuencia?"}]},
+   {k:"pas_detalle",t:"area",l:"¿Cómo la realizabas? (duración, volumen, intensidad, ejercicios, descansos…)"}
+  ]},
+  {k:"fuerza_exp",t:"radio",l:"Experiencia con entrenamiento de fuerza",o:["Ninguna","Menos de 6 meses","6 meses a 2 años","Más de 2 años"]},
+  {k:"entrenador_previo",t:"area",l:"¿Has tenido entrenador antes? ¿Qué funcionó y qué no?"}
+ ]},
+ {n:"Objetivos",f:[
+  {k:"objetivos",t:"checks",l:"¿Cuál o cuáles son tus principales objetivos?",req:1,o:["Rendimiento deportivo","Salud","Pérdida de peso","Ganancia de masa muscular","Recuperación de lesiones","Aumento de la condición física","Preparación de pruebas físicas"],otro:1},
+  {k:"obj_desc",t:"area",l:"Describe los objetivos principales y secundarios que quieres conseguir"}
+ ]},
+ {n:"Salud",f:[
+  {k:"patologias",t:"checks",l:"¿Has tenido o tienes alguna de estas patologías?",o:["Operación reciente","Hipertensión arterial","Hipotensión arterial","Cardiopatía","Desvanecimientos, mareos","Diabetes","Colesterol alto","Convulsiones","Neumopatía","Ataque al corazón","Respiración entrecortada en reposo o con esfuerzo leve","Dolores torácicos","Palpitaciones o taquicardia","Calambres musculares frecuentes","Dolor o malestar en pecho, mandíbula, brazos u otras zonas","Fatiga inusual con actividades normales"],otro:1},
+  {t:"alert"},
+  {k:"medicacion_actual",t:"area",l:"Medicación actual o diagnósticos relevantes"},
+  {k:"fuma",t:"radio",l:"¿Fumas?",req:1,o:["Sí","No"]},
+  {when:"fuma=Sí",f:[{k:"fuma_cant",t:"text",l:"¿Cuánto al día?"}]},
+  {row:[{k:"sueno_h",t:"select",l:"¿Cuántas horas duermes al día?",req:1,o:["0","1","2","3","4","5","6","7","8","9","10","Más de 10"]},{k:"alcohol",t:"select",l:"¿Consumes alcohol?",o:["No","Sí","Fin de semana","Diario"]}]},
+  {k:"sueno_cal",t:"radio",l:"¿Cómo es la calidad de tu sueño?",req:1,o:["Mala","Regular","Buena"],otro:1},
+  {k:"estres",t:"scale",l:"Nivel de estrés habitual",n:10,s:1,ends:["Bajo","Muy alto"]}
+ ]},
+ {n:"Historial de lesiones",f:[
+  {k:"les_actual",t:"radio",l:"¿Padeces o has padecido recientemente alguna lesión?",req:1,o:["Sí","No"]},
+  {when:"les_actual=Sí",f:[
+   {row:[{k:"les_que",t:"text",l:"¿De qué lesión se trata?"},{k:"les_cuando",t:"text",l:"¿Hace cuánto te lesionaste?"}]},
+   {k:"les_fase",t:"radio",l:"¿En qué fase de la lesión te encuentras?",o:["Fase aguda","Fase preoperatoria","Fase postoperatoria","Recuperación funcional","Readaptación deportiva"],otro:1},
+   {row:[{k:"les_trat_act",t:"radio",l:"¿Recibes tratamiento actualmente?",o:["Sí","No"]},{k:"les_trat_pas",t:"radio",l:"¿Lo has recibido en el pasado?",o:["Sí","No"]}]},
+   {k:"les_trat_tipo",t:"text",l:"Tipo y frecuencia del tratamiento"},
+   {k:"les_detalle",t:"area",l:"Aspectos importantes de la lesión"},
+   {k:"dolor",t:"scale",l:"Intensidad del dolor habitual",n:11,s:0,ends:["Sin dolor","Máximo"]}
+  ]},
+  {k:"les_pasado",t:"radio",l:"¿Has tenido lesiones en el pasado?",req:1,o:["Sí","No"]},
+  {when:"les_pasado=Sí",f:[
+   {k:"les_pas_cuales",t:"area",l:"¿Cuáles?"},
+   {k:"les_pas_molesta",t:"radio",l:"¿Alguna puede darte problemas o molestias al hacer actividad física ahora?",o:["Sí","No"]},
+   {when:"les_pas_molesta=Sí",f:[{k:"les_pas_detalle",t:"area",l:"¿Cuáles y qué problemas te pueden ocasionar?"}]}
+  ]}
+ ]},
+ {n:"Estilo de vida",f:[
+  {k:"trabajo",t:"radio",l:"Tipo de trabajo",o:["Sedentario","De pie","Físicamente exigente","Turnos o viajes"]},
+  {row:[{k:"sentado",t:"text",l:"Horas sentado al día"},{k:"pasos",t:"text",l:"Pasos diarios aproximados"}]}
+ ]},
+ {n:"Declaración y consentimiento",f:[
+  {t:"p",h:"Declaro que la información facilitada es veraz y que comunicaré cualquier cambio en mi estado de salud. Entiendo que el ejercicio físico conlleva riesgos y que debo avisar al entrenador si noto dolor, mareo o malestar durante las sesiones."},
+  {t:"p",h:"Autorizo el tratamiento de mis datos personales, incluidos los de salud, con la única finalidad de diseñar y supervisar mi programa de entrenamiento. No se cederán a terceros salvo obligación legal. Puedo pedir en cualquier momento el acceso, la rectificación o la supresión de mis datos."},
+  {k:"consentimientos",t:"checks",l:"Consentimientos",req:1,o:[AN_CONSENT,"Acepto fotos o vídeos de técnica para mi seguimiento"]}
+ ]}
+];
+// Bloque que rellena el entrenador en la primera sesión
+const ANAM_VAL=[
+ {n:"Valoración inicial",f:[
+  {row:[{k:"peso",t:"text",l:"Peso (kg)"},{k:"altura",t:"text",l:"Altura (cm)"},{k:"cintura",t:"text",l:"Cintura (cm)"}]},
+  {row:[{k:"cadera",t:"text",l:"Cadera (cm)"},{k:"fc_reposo",t:"text",l:"FC en reposo (ppm)"},{k:"tension",t:"text",l:"Tensión arterial"}]},
+  {t:"tests",rows:[
+   ["Sentadilla con brazos arriba (compensaciones)","t_sentadilla"],
+   ["Flexiones máximas (o inclinadas)","t_flexiones"],
+   ["Plancha frontal (s)","t_plancha"],
+   ["Sentarse y levantarse de silla en 30 s","t_silla"],
+   ["Fuerza de agarre con dinamómetro (kg, mejor de 3)",["agarre_dcha","Dcha."],["agarre_izda","Izda."]],
+   ["Movilidad de tobillo, rodilla a la pared (cm)",["tobillo_dcho","Dcho."],["tobillo_izdo","Izdo."]],
+   ["Movilidad de hombro","t_hombro"],
+   ["Test cardiovascular (6 min marcha o escalón)","t_cardio"]
+  ]},
+  {k:"observaciones_val",t:"area",l:"Observaciones y prioridades para el programa"}
+ ]}
+];
+
+function anLab(fd){return esc(fd.l)+(fd.req?' <span class="an-req">*</span>':"")}
+function anField(fd){
+  if(fd.row) return `<div class="an-row">${fd.row.map(anField).join("")}</div>`;
+  if(fd.when) return `<div class="an-cond" data-when="${esc(fd.when)}">${fd.f.map(anField).join("")}</div>`;
+  switch(fd.t){
+    case "select":
+      return `<div class="an-f" data-k="${fd.k}"><label>${anLab(fd)}<select name="${fd.k}"><option value="">Elige una opción</option>${fd.o.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join("")}</select></label></div>`;
+    case "text":case "date":case "tel":
+      return `<div class="an-f" data-k="${fd.k}"><label>${anLab(fd)}<input type="${fd.t}" name="${fd.k}" autocomplete="off"></label></div>`;
+    case "area":
+      return `<div class="an-f" data-k="${fd.k}"><label>${anLab(fd)}<textarea name="${fd.k}" rows="2"></textarea></label></div>`;
+    case "radio":case "checks":case "scale":{
+      const opts=fd.t==="scale"?Array.from({length:fd.n},(_,i)=>String(fd.s+i)):fd.o.slice();
+      if(fd.otro) opts.push("Otro");
+      const type=fd.t==="checks"?"checkbox":"radio";
+      return `<div class="an-f" data-k="${fd.k}"><div class="an-q">${anLab(fd)}</div>
+        <div class="${fd.t==="scale"?"an-scale":"an-chips"}">${opts.map(o=>`<label><input type="${type}" name="${fd.k}" value="${esc(o)}"${fd.t==="scale"?` aria-label="${esc(o)}"`:""}>${esc(o)}</label>`).join("")}</div>
+        ${fd.t==="scale"?`<div class="an-ends"><span>${esc(fd.ends[0])}</span><span>${esc(fd.ends[1])}</span></div>`:""}
+        ${fd.otro?`<div class="an-otro" data-when="${fd.k}=Otro"><input type="text" name="${fd.k}_otro" placeholder="Especifica"></div>`:""}</div>`;
+    }
+    case "alert": return `<div class="an-alert"></div>`;
+    case "p": return `<p class="muted">${esc(fd.h)}</p>`;
+    case "tests":
+      return `<div class="ses"><table class="an-tests">${fd.rows.map(r=>`<tr><td>${esc(r[0])}</td><td>${typeof r[1]==="string"
+        ?`<input type="text" name="${r[1]}" aria-label="${esc(r[0])}">`
+        :`<div class="an-pair">${r.slice(1).map(x=>`<label>${esc(x[1])} <input type="text" name="${x[0]}" aria-label="${esc(r[0]+" "+x[1])}"></label>`).join("")}</div>`}</td></tr>`).join("")}</table></div>`;
+  }
+  return "";
+}
+function anCollect(form){
+  const v={};
+  form.querySelectorAll("[name]").forEach(c=>{
+    if(c.type==="checkbox"){v[c.name]=v[c.name]||[];if(c.checked)v[c.name].push(c.value)}
+    else if(c.type==="radio"){if(!(c.name in v))v[c.name]="";if(c.checked)v[c.name]=c.value}
+    else v[c.name]=c.value.trim();
+  });
+  return v;
+}
+function anApply(form,v){
+  form.querySelectorAll("[name]").forEach(c=>{
+    const x=v[c.name];
+    if(c.type==="checkbox")c.checked=Array.isArray(x)&&x.includes(c.value);
+    else if(c.type==="radio")c.checked=x===c.value;
+    else c.value=x??"";
+  });
+}
+const anVacio=x=>x==null||x===""||(Array.isArray(x)&&!x.length);
+function anCumple(when,v){const [k,val]=when.split("=");const x=v[k];return Array.isArray(x)?x.includes(val):x===val}
+function anAviso(v){
+  const n=(v.patologias||[]).length;
+  return n?`Ha marcado ${n} ${n===1?"patología":"patologías"}: pedir valoración o autorización médica antes de la primera sesión.`:"";
+}
+function anRefrescar(form){
+  const v=anCollect(form);
+  form.querySelectorAll("[data-when]").forEach(el=>{el.hidden=!anCumple(el.dataset.when,v)});
+  const al=form.querySelector(".an-alert");
+  if(al){const n=(v.patologias||[]).length;al.hidden=!n;al.classList.toggle("on",n>0);al.textContent=n?`Has marcado ${n} ${n===1?"patología":"patologías"}. Antes de empezar, tu entrenador te pedirá una valoración médica.`:""}
+  form.querySelectorAll(".an-f.miss").forEach(f=>{if(!anVacio(v[f.dataset.k]))f.classList.remove("miss")});
+}
+function anFaltan(form,lista){
+  const v=anCollect(form);let n=0;
+  (function rec(fs){fs.forEach(fd=>{
+    if(fd.row)return rec(fd.row);
+    if(fd.when)return rec(fd.f);
+    if(!fd.req)return;
+    const el=form.querySelector(`.an-f[data-k="${fd.k}"]`);
+    if(!el||el.closest("[data-when][hidden]"))return;
+    const m=anVacio(v[fd.k]);el.classList.toggle("miss",m);if(m)n++;
+  })})(lista.flatMap(s=>s.f));
+  return n;
+}
+function anForm(cont,lista,vals,numerar=true){
+  cont.innerHTML=`<form class="anam" novalidate>${lista.map((s,i)=>`<div class="cab">${numerar?(i+1)+". ":""}${esc(s.n)}</div>${s.f.map(anField).join("")}`).join("")}</form>`;
+  const form=cont.querySelector("form");
+  anApply(form,vals||{});anRefrescar(form);
+  form.addEventListener("input",()=>anRefrescar(form));
+  form.addEventListener("change",()=>anRefrescar(form));
+  form.addEventListener("submit",e=>e.preventDefault());
+  return form;
+}
+function anTexto(v,k){
+  let x=v[k];
+  const otro=o=>o==="Otro"&&v[k+"_otro"]?"Otro: "+v[k+"_otro"]:o;
+  return Array.isArray(x)?x.map(otro).join(", "):otro(x);
+}
+function anResumenHTML(v,lista,numerar=true){
+  return lista.map((s,i)=>{
+    let filas="";
+    (function rec(fs){fs.forEach(fd=>{
+      if(fd.row)return rec(fd.row);
+      if(fd.when){if(anCumple(fd.when,v))rec(fd.f);return}
+      if(fd.t==="tests")fd.rows.forEach(r=>{
+        const val=typeof r[1]==="string"?v[r[1]]:r.slice(1).filter(x=>v[x[0]]).map(x=>x[1]+" "+v[x[0]]).join(" · ");
+        if(!anVacio(val))filas+=`<tr><th>${esc(r[0])}</th><td>${esc(val)}</td></tr>`;
+      });
+      else if(fd.k){const val=anTexto(v,fd.k);if(!anVacio(val))filas+=`<tr><th>${esc(fd.l)}</th><td>${esc(val).replace(/\n/g,"<br>")}</td></tr>`}
+    })})(s.f);
+    return filas?`<div class="cab">${numerar?(i+1)+". ":""}${esc(s.n)}</div><div class="ses"><table class="an-res">${filas}</table></div>`:"";
+  }).join("");
+}
+function anAntigua(a){
+  const filas=ANAM_OLD.filter(([k])=>a&&a[k]).map(([k,l])=>`<p><b>${l}:</b> ${esc(a[k])}</p>`).join("");
+  return filas?`<details class="bloque"><summary><b>Respuestas de la ficha anterior</b></summary>${filas}</details>`:"";
+}
+const anFecha=iso=>{try{return fechaLocal(new Date(iso))}catch(e){return""}};
+
+// Cliente: rellena y guarda su ficha (Perfil → Anamnesis)
 function tabAnamnesis(){
   const a=S.perfil.anamnesis||{};
-  $("#sub").innerHTML=`${ANAM.map(([k,l])=>`<label>${l}<textarea data-a="${k}">${esc(a[k]||"")}</textarea></label>`).join("")}
-    <label><input type="checkbox" id="cons" ${a.consent?"checked":""}> Acepto que mis datos de salud se usen solo para preparar mi entrenamiento.</label>
-    <div class="row" style="margin-top:10px"><button class="gold" id="guardarA">Guardar anamnesis</button><span class="msg" id="m"></span></div>`;
+  $("#sub").innerHTML=`<div class="an-panel">${anAntigua(a)}
+    <p class="muted">Los campos con <span class="an-req">*</span> son obligatorios. Puedes guardar y completarla más tarde.${a.actualizada?" Última actualización: "+anFecha(a.actualizada)+".":""}</p>
+    <div id="anBox"></div>
+    <div class="row" style="margin-top:10px"><button class="gold" id="guardarA">Guardar anamnesis</button></div><div class="msg" id="m"></div></div>`;
+  const form=anForm($("#anBox"),ANAM_CLI,a);
   $("#guardarA").onclick=async()=>{
-    if(!$("#cons").checked) return msg("#m","Debes aceptar el consentimiento para guardar.",false);
-    const data={consent:true};
-    document.querySelectorAll("[data-a]").forEach(t=>data[t.dataset.a]=t.value.trim());
+    const v=anCollect(form);
+    const faltan=anFaltan(form,ANAM_CLI);
+    if(!(v.consentimientos||[]).includes(AN_CONSENT)){
+      form.querySelector('.an-f[data-k="consentimientos"]').scrollIntoView({behavior:"smooth",block:"center"});
+      return msg("#m","Para guardar tienes que aceptar el tratamiento de tus datos (último bloque).",false);
+    }
     try{
+      // Se conserva lo que haya guardado el entrenador (valoración) y las respuestas antiguas
+      const [fresca]=await db("GET","perfiles",`?id=eq.${S.user.id}&select=anamnesis`);
+      const previa=(fresca&&fresca.anamnesis)||{};
+      const data={...v,consent:true,actualizada:new Date().toISOString()};
+      ANAM_OLD.forEach(([k])=>{if(previa[k])data[k]=previa[k]});
+      if(previa.valoracion)data.valoracion=previa.valoracion;
       await db("PATCH","perfiles",`?id=eq.${S.user.id}`,{anamnesis:data},"return=minimal");
-      S.perfil.anamnesis=data;msg("#m","Guardado ✓",true);
+      S.perfil.anamnesis=data;
+      msg("#m",faltan?`Guardado ✓ · Te faltan ${faltan} campos obligatorios, marcados en rojo.`:"Guardado ✓",true);
     }catch(e){msg("#m",e.message,false)}
   };
 }
+
+// Entrenador: ve las respuestas y rellena la valoración inicial
+function anRespuestasEntrenador(c){
+  const a=c.anamnesis;
+  if(!a){$("#sub").innerHTML=`<div class="an-panel"><p class="muted">Todavía no ha rellenado la anamnesis.</p></div>`;return}
+  const aviso=anAviso(a);
+  const nueva=Object.keys(a).some(k=>!ANAM_OLD.some(([o])=>o===k)&&!["consent","valoracion","actualizada"].includes(k));
+  $("#sub").innerHTML=`<div class="an-panel">${aviso?`<div class="an-alert on">${esc(aviso)}</div>`:""}
+    ${a.actualizada?`<p class="muted">Actualizada el ${anFecha(a.actualizada)}</p>`:""}
+    ${nueva?anResumenHTML(a,ANAM_CLI):`<p class="muted">Todavía no ha rellenado la ficha nueva.</p>`}
+    ${anAntigua(a)}</div>`;
+}
+function anValoracionEntrenador(c){
+  const a=c.anamnesis||{},val=a.valoracion||{};
+  $("#sub").innerHTML=`<div class="an-panel"><p class="muted">A rellenar en la primera sesión. El entrenado no ve este bloque.${val.fecha?" Última actualización: "+anFecha(val.fecha)+".":""}</p>
+    <div id="anVal"></div>
+    <div class="row" style="margin-top:10px"><button class="gold" id="guardarV">Guardar valoración</button></div><div class="msg" id="mv"></div></div>`;
+  const form=anForm($("#anVal"),ANAM_VAL,val,false);
+  $("#guardarV").onclick=async()=>{
+    try{
+      const [fresca]=await db("GET","perfiles",`?id=eq.${c.id}&select=anamnesis`);
+      const data={...((fresca&&fresca.anamnesis)||{}),valoracion:{...anCollect(form),fecha:new Date().toISOString()}};
+      const r=await db("PATCH","perfiles",`?id=eq.${c.id}`,{anamnesis:data},"return=representation");
+      if(!r||!r.length) throw new Error("No se ha guardado: la base de datos no deja al entrenador modificar la ficha de un entrenado. Hay que añadir ese permiso en Supabase.");
+      c.anamnesis=data;msg("#mv","Valoración guardada ✓",true);
+    }catch(e){msg("#mv",e.message,false)}
+  };
+}
+
 function tabPerfil(){
   const p=S.perfil;
   $("#sub").innerHTML=`<div class="row">${p.foto?`<img class="avatar" style="width:90px;height:90px" src="${p.foto}" alt="">`:`<span class="muted">Sin foto</span>`}
