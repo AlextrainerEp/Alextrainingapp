@@ -230,6 +230,17 @@ body.cli details.card.sesion{padding:8px 12px;margin-bottom:8px}
 body.cli details.card.sesion .dia-sum{padding:0}
 body.cli details.card.sesion .dia-sum h3{font-size:15px;margin:0;line-height:1.3}
 body.cli details.card.sesion .muted{font-size:12px}
+/* Diseño: color de acento y tarjetas de entrenos con fecha destacada */
+:root{--acento:#b8860b}
+body.cli .cli-nav button.on,body.cli .tabs button.on{background:var(--acento);color:#fff}
+body.cli details.card.sesion{border-left:6px solid #9a9ea2;padding-left:12px}
+body.cli details.card.sesion.hecha{border-left-color:#3c8d4a}
+body.cli details.card.sesion summary{display:flex;align-items:center;list-style:none;cursor:pointer}
+body.cli details.card.sesion summary::-webkit-details-marker{display:none}
+.fecha-badge{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;min-width:52px;margin-right:12px;padding:5px 6px;background:var(--acento);color:#fff;border-radius:8px;line-height:1}
+.fecha-badge b{font-size:20px}
+.fecha-badge small{font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+.cal-d.tiene .cal-chip{border-color:var(--acento)}
 </style>
 </head>
 <body>
@@ -922,6 +933,16 @@ async function tabMensajes(clienteId,esAdmin){
 }
 function tabMensajesCliente(){return tabMensajes(S.user.id,false)}
 
+// Nombre que ve el entrenado: el día de la semana (el título interno sigue guardado)
+const DIAS_NOMBRE=["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+const DIAS_CORTO=["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+function nombreEntreno(s){const d=parseFecha(s.fecha);return d?`Entreno ${DIAS_NOMBRE[d.getDay()]}`:"Entreno"}
+function diaCorto(s){const d=parseFecha(s.fecha);return d?DIAS_CORTO[d.getDay()]:"Entreno"}
+function badgeFecha(s){
+  const d=parseFecha(s.fecha);
+  return `<span class="fecha-badge">${d?`<b>${d.getDate()}</b><small>${MESES_CAL[d.getMonth()].slice(0,3)}</small>`:"<small>—</small>"}</span>`;
+}
+
 /* ---------- Calendario de entrenamientos ---------- */
 const DIAS_SEM=["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
 const MESES_CAL=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
@@ -1046,11 +1067,11 @@ async function tabCalendario(clienteId,puedeMover,host="#tab"){
           const k=isoLocal(d), lista=porDia.get(k)||[];
           // Dentro de la casilla: nombre abreviado de cada sesión (máximo 2) y el total si hay más
           const corto=t=>String(t||"Sesión").replace(/Día\s*/i,"D").replace(/Microciclo\s*/i,"M").replace(/\s*·\s*/g,"·");
-          const chips=lista.slice(0,2).map(s=>`<button class="cal-chip${hecho(s)?" ok":""}" data-ses="${s.id}" title="${esc(s.titulo||"Sesión")}">${esc(corto(s.titulo))}</button>`).join("");
+          const chips=lista.slice(0,2).map(s=>`<button class="cal-chip${hecho(s)?" ok":""}" data-ses="${s.id}" title="${esc(s.titulo||"Sesión")}">${esc(diaCorto(s))}</button>`).join("");
           return `<div data-dia="${k}" class="cal-d${k===isoLocal(hoy)?" hoy":""}${lista.length?" tiene":""}"><span class="cal-num">${d.getDate()}</span>${chips}${lista.length>2?`<span class="cal-mas">+${lista.length-2}</span>`:""}</div>`;
         }).join("")}
       </div>
-      <div class="cal-lista">${delMes.length?delMes.map(({s,d})=>fila(s,`<b>${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}</b> ${esc(s.titulo||"Sesión")}`)).join(""):'<p class="muted">No hay sesiones este mes.</p>'}</div>
+      <div class="cal-lista">${delMes.length?delMes.map(({s,d})=>fila(s,`<b>${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}</b> ${nombreEntreno(s)}`)).join(""):'<p class="muted">No hay sesiones este mes.</p>'}</div>
       ${sinFecha.length?`<details class="cal-sin"><summary>Sin fecha (${sinFecha.length})</summary>${sinFecha.map(s=>fila(s,esc(s.titulo||"Sesión"))).join("")}</details>`:""}
       <div id="calDet"></div>`;
     $("#calPrev").onclick=()=>{mes=new Date(mes.getFullYear(),mes.getMonth()-1,1);pintar()};
@@ -1115,7 +1136,7 @@ async function tabEntrenos(host="#tab"){
   // Solo las sesiones pendientes: las completadas pasan al historial
   const ses=(await db("GET","sesiones",`?cliente_id=eq.${S.user.id}&order=created_at.desc&select=*`)).filter(s=>!hecho(s));
   $(host).innerHTML=ses.length
-    ? ses.map(s=>`<details class="card sesion"><summary class="dia-sum"><h3>${tituloSesion(s)}</h3></summary>
+    ? ses.map(s=>`<details class="card sesion${hecho(s)?" hecha":""}"><summary class="dia-sum">${badgeFecha(s)}<h3>${nombreEntreno(s)}</h3></summary>
         ${sesionHTML(s,true)}
         <div class="row"><button data-save="${s.id}">Guardar registro</button><span class="muted" data-st="${s.id}"></span></div></details>`).join("")
     : `<p class="muted">No tienes entrenamientos pendientes. Los completados están en el Historial.</p>`;
