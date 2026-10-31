@@ -312,6 +312,11 @@ html.oscuro .stat{background:rgba(43,49,55,.55)}
 @media (min-width:601px){
   body.cli .stats{margin-top:36px}
 }
+
+/* ---- Arrastrar sesiones al calendario ---- */
+.dia-sum[data-arr]{touch-action:none;cursor:grab}
+.dia-sum.arrastrando{opacity:.5}
+.cal-d.destino{outline:2px solid var(--acento);background:rgba(255,255,255,.95)}
 </style>
 </head>
 <body>
@@ -1228,10 +1233,24 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false){
   const porDia=new Map();
   conF.forEach(({s,d})=>{const k=isoLocal(d);porDia.set(k,[...(porDia.get(k)||[]),s])});
   const sinFecha=todas.filter(s=>!parseFecha(s.fecha));
-  const tarjeta=(s,abierta)=>`<details class="card sesion${hecho(s)?" hecha":""}"${abierta?" open":""}><summary class="dia-sum">${badgeFecha(s)}<h3>${nombreEntreno(s)}</h3></summary>
+  const tarjeta=(s,abierta)=>`<details class="card sesion${hecho(s)?" hecha":""}"${abierta?" open":""}><summary class="dia-sum" data-arr="${s.id}">${badgeFecha(s)}<h3>${nombreEntreno(s)}</h3></summary>
       ${sesionHTML(s,true)}
       <div class="row"><button data-save="${s.id}">${admin?"Guardar cambios":"Guardar registro"}</button>${admin?`<button class="sec" data-ed="${s.id}">Editar</button><button class="danger" data-del="${s.id}">Borrar</button>`:""}<span class="muted" data-st="${s.id}"></span></div>
       <div class="row mover"><label>Mover a otro día <input type="date" data-mover-in="${s.id}"></label><button class="sec" data-mover="${s.id}">Mover</button></div></details>`;
+  const moverA=async(id,val)=>{
+    const [ny,nm,nd]=val.split("-");
+    const txt=`${nd}/${nm}/${ny}`;
+    const st=$(host)&&$(host).querySelector(`[data-st="${id}"]`);
+    try{
+      await db("PATCH","sesiones",`?id=eq.${id}`,{fecha:txt},"return=minimal");
+      const s=todas.find(x=>x.id===id);
+      if(s) s.fecha=txt;
+      conF.length=0; todas.forEach(t=>{const dd=parseFecha(t.fecha); if(dd) conF.push({s:t,d:dd})});
+      porDia.clear(); conF.forEach(({s:t,d})=>{const k=isoLocal(d);porDia.set(k,[...(porDia.get(k)||[]),t])});
+      sinFecha.length=0; todas.forEach(t=>{if(!parseFecha(t.fecha)) sinFecha.push(t)});
+      diaSel=val; mes=new Date(+ny,+nm-1,1); pintar();
+    }catch(e){if(st) st.textContent="Error: "+e.message; else alert(e.message)}
+  };
   const pintar=()=>{
     const y=mes.getFullYear(), mo=mes.getMonth();
     const primer=(new Date(y,mo,1).getDay()+6)%7;
@@ -1271,20 +1290,38 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false){
         else st.textContent="Guardado ✓";
       }catch(e){st.textContent="Error: "+e.message}
     });
-    cont.querySelectorAll("[data-mover]").forEach(b=>b.onclick=async()=>{
+    cont.querySelectorAll("[data-mover]").forEach(b=>b.onclick=()=>{
       const id=b.dataset.mover, val=cont.querySelector(`[data-mover-in="${id}"]`).value;
-      const st=cont.querySelector(`[data-st="${id}"]`);
-      if(!val){st.textContent="Elige una fecha";return}
-      const [ny,nm,nd]=val.split("-");
-      const txt=`${nd}/${nm}/${ny}`;
-      try{
-        await db("PATCH","sesiones",`?id=eq.${id}`,{fecha:txt},"return=minimal");
-        const s=todas.find(x=>x.id===id);
-        if(s){s.fecha=txt; const d=parseFecha(txt); conF.length=0; todas.forEach(t=>{const dd=parseFecha(t.fecha); if(dd) conF.push({s:t,d:dd})});}
-        porDia.clear(); conF.forEach(({s:t,d})=>{const k=isoLocal(d);porDia.set(k,[...(porDia.get(k)||[]),t])});
-        sinFecha.length=0; todas.forEach(t=>{if(!parseFecha(t.fecha)) sinFecha.push(t)});
-        diaSel=val; mes=new Date(+ny,+nm-1,1); pintar();
-      }catch(e){st.textContent="Error: "+e.message}
+      if(!val){cont.querySelector(`[data-st="${id}"]`).textContent="Elige una fecha";return}
+      moverA(id,val);
+    });
+    // Arrastrar la cabecera de una sesión hasta el día del calendario
+    cont.querySelectorAll("[data-arr]").forEach(el=>{
+      el.addEventListener("click",ev=>{if(el.dataset.movido){ev.preventDefault();ev.stopPropagation()}});
+      el.addEventListener("pointerdown",e=>{
+        const id=el.dataset.arr, x0=e.clientX, y0=e.clientY;
+        let mov=false;
+        const diaBajo=ev=>{const b=document.elementFromPoint(ev.clientX,ev.clientY);return b&&b.closest?b.closest(".cal-d[data-dia]"):null};
+        const mover=ev=>{
+          if(!mov){ if(Math.hypot(ev.clientX-x0,ev.clientY-y0)<10) return; mov=true; el.classList.add("arrastrando"); }
+          cont.querySelectorAll(".cal-d.destino").forEach(c=>c.classList.remove("destino"));
+          const c=diaBajo(ev); if(c) c.classList.add("destino");
+        };
+        const soltar=ev=>{
+          window.removeEventListener("pointermove",mover);
+          window.removeEventListener("pointerup",soltar);
+          window.removeEventListener("pointercancel",soltar);
+          el.classList.remove("arrastrando");
+          cont.querySelectorAll(".cal-d.destino").forEach(c=>c.classList.remove("destino"));
+          if(!mov) return;
+          el.dataset.movido="1"; setTimeout(()=>delete el.dataset.movido,400);
+          const c=diaBajo(ev);
+          if(c) moverA(id,c.dataset.dia);
+        };
+        window.addEventListener("pointermove",mover);
+        window.addEventListener("pointerup",soltar);
+        window.addEventListener("pointercancel",soltar);
+      });
     });
     if(admin){
       cont.querySelectorAll("[data-ed]").forEach(b=>b.onclick=()=>{
