@@ -148,7 +148,7 @@ textarea{font-size:14px;width:100%;margin:4px 0 8px}
 .anam .an-cond{border-left:3px solid #2e3133;padding-left:12px;margin:0 0 8px}
 .anam .an-otro{max-width:420px}
 .an-f.miss .an-q,.an-f.miss>label{color:#c0392b}
-.an-f.miss input[type=text],.an-f.miss input[type=date],.an-f.miss input[type=tel],.an-f.miss textarea{border-color:#c0392b}
+.an-f.miss input[type=text],.an-f.miss input[type=date],.an-f.miss input[type=tel],.an-f.miss textarea,.an-f.miss select{border-color:#c0392b}
 .an-alert{background:#fff4e5;color:#8a4b12;border-left:4px solid #e67e22;padding:8px 12px;border-radius:6px;margin:6px 0 12px;font-size:14px}
 .an-alert.on{font-weight:600}
 .an-res th{width:45%;font-weight:500;color:#444}
@@ -910,7 +910,7 @@ const ANAM_CLI=[
   {k:"medicacion_actual",t:"area",l:"Medicación actual o diagnósticos relevantes"},
   {k:"fuma",t:"radio",l:"¿Fumas?",req:1,o:["Sí","No"]},
   {when:"fuma=Sí",f:[{k:"fuma_cant",t:"text",l:"¿Cuánto al día?"}]},
-  {row:[{k:"sueno_h",t:"text",l:"¿Cuántas horas duermes al día?",req:1},{k:"alcohol",t:"text",l:"Alcohol (frecuencia)"}]},
+  {row:[{k:"sueno_h",t:"select",l:"¿Cuántas horas duermes al día?",req:1,o:["0","1","2","3","4","5","6","7","8","9","10","Más de 10"]},{k:"alcohol",t:"select",l:"¿Consumes alcohol?",o:["No","Sí","Fin de semana","Diario"]}]},
   {k:"sueno_cal",t:"radio",l:"¿Cómo es la calidad de tu sueño?",req:1,o:["Mala","Regular","Buena"],otro:1},
   {k:"estres",t:"scale",l:"Nivel de estrés habitual",n:10,s:1,ends:["Bajo","Muy alto"]}
  ]},
@@ -931,11 +931,9 @@ const ANAM_CLI=[
    {when:"les_pas_molesta=Sí",f:[{k:"les_pas_detalle",t:"area",l:"¿Cuáles y qué problemas te pueden ocasionar?"}]}
   ]}
  ]},
- {n:"Estilo de vida y alimentación",f:[
+ {n:"Estilo de vida",f:[
   {k:"trabajo",t:"radio",l:"Tipo de trabajo",o:["Sedentario","De pie","Físicamente exigente","Turnos o viajes"]},
-  {row:[{k:"sentado",t:"text",l:"Horas sentado al día"},{k:"pasos",t:"text",l:"Pasos diarios aproximados"}]},
-  {row:[{k:"comidas",t:"text",l:"Comidas al día y horarios"},{k:"agua",t:"text",l:"Agua al día"}]},
-  {row:[{k:"dieta",t:"text",l:"Tipo de dieta o preferencias"},{k:"nutricionista",t:"text",l:"¿Te sigue algún nutricionista?"}]}
+  {row:[{k:"sentado",t:"text",l:"Horas sentado al día"},{k:"pasos",t:"text",l:"Pasos diarios aproximados"}]}
  ]},
  {n:"Declaración y consentimiento",f:[
   {t:"p",h:"Declaro que la información facilitada es veraz y que comunicaré cualquier cambio en mi estado de salud. Entiendo que el ejercicio físico conlleva riesgos y que debo avisar al entrenador si noto dolor, mareo o malestar durante las sesiones."},
@@ -967,6 +965,8 @@ function anField(fd){
   if(fd.row) return `<div class="an-row">${fd.row.map(anField).join("")}</div>`;
   if(fd.when) return `<div class="an-cond" data-when="${esc(fd.when)}">${fd.f.map(anField).join("")}</div>`;
   switch(fd.t){
+    case "select":
+      return `<div class="an-f" data-k="${fd.k}"><label>${anLab(fd)}<select name="${fd.k}"><option value="">Elige una opción</option>${fd.o.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join("")}</select></label></div>`;
     case "text":case "date":case "tel":
       return `<div class="an-f" data-k="${fd.k}"><label>${anLab(fd)}<input type="${fd.t}" name="${fd.k}" autocomplete="off"></label></div>`;
     case "area":
@@ -1016,7 +1016,7 @@ function anRefrescar(form){
   const v=anCollect(form);
   form.querySelectorAll("[data-when]").forEach(el=>{el.hidden=!anCumple(el.dataset.when,v)});
   const al=form.querySelector(".an-alert");
-  if(al){const n=(v.patologias||[]).length;al.classList.toggle("on",n>0);al.textContent=n?`Has marcado ${n} ${n===1?"patología":"patologías"}. Antes de empezar, tu entrenador te pedirá una valoración médica.`:"Si marcas alguna patología, tu entrenador te pedirá una valoración médica antes de empezar."}
+  if(al){const n=(v.patologias||[]).length;al.hidden=!n;al.classList.toggle("on",n>0);al.textContent=n?`Has marcado ${n} ${n===1?"patología":"patologías"}. Antes de empezar, tu entrenador te pedirá una valoración médica.`:""}
   form.querySelectorAll(".an-f.miss").forEach(f=>{if(!anVacio(v[f.dataset.k]))f.classList.remove("miss")});
 }
 function anFaltan(form,lista){
