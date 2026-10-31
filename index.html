@@ -177,6 +177,16 @@ textarea{font-size:14px;width:100%;margin:4px 0 8px}
 .avatar-ini{display:inline-flex;align-items:center;justify-content:center;background:#D9DDE0;color:#1d1f21;font-weight:600;font-size:22px}
 .an-panel{background:rgba(255,255,255,.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1px solid rgba(208,211,214,.6);box-shadow:0 2px 8px rgba(0,0,0,.06)}
 #tab:has(.an-panel)>.tabs{background:rgba(255,255,255,.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1px solid rgba(208,211,214,.6)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-dh{font-size:12px;text-align:center;color:#333;font-weight:600;padding:2px 0}
+.cal-d{min-height:64px;background:rgba(255,255,255,.45);border:1px solid rgba(208,211,214,.6);border-radius:8px;padding:4px;font-size:12px;overflow:hidden}
+.cal-d.vacio{background:transparent;border:0}
+.cal-d.hoy{border-color:#2e3133}
+.cal-num{display:block;color:#333;margin-bottom:2px}
+.cal-ses{display:block;width:100%;text-align:left;font-size:11px;padding:2px 4px;margin:2px 0;background:#f4f5f6;color:#1d1f21;border:1px solid #9a9ea2;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-ses.ok{background:#e4f2e4}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin:8px 0}
+.cal-det{margin-top:12px;padding-top:10px;border-top:1px solid #d0d3d6}
 </style>
 </head>
 <body>
@@ -665,7 +675,7 @@ async function fichaCliente(id){
   const ses=await db("GET","sesiones",`?cliente_id=eq.${id}&order=created_at.desc&select=*`);
   shell(`<button class="sec" id="volver">← Clientes</button>
     <div class="card ficha"><div class="row" style="align-items:center;gap:12px">${c.foto?`<img class="avatar" style="width:90px;height:90px" src="${c.foto}" alt="">`:`<span class="muted">Sin foto</span>`}<h2 style="margin:0">${esc(c.nombre||"Sin nombre")}</h2></div>
-    <div class="tabs"><button id="ta" class="on">Entrenamientos</button><button id="tb">Anamnesis</button><button id="tc">Historial</button><button id="td">Mensajes</button></div>
+    <div class="tabs"><button id="ta" class="on">Entrenamientos</button><button id="te">Calendario</button><button id="tb">Anamnesis</button><button id="tc">Historial</button><button id="td">Mensajes</button></div>
     <div id="tab"></div></div>`);
   $("#volver").onclick=listaClientes;
 
@@ -726,7 +736,7 @@ async function fichaCliente(id){
   const verAnam=()=>subTabs([["Respuestas",()=>anRespuestasEntrenador(c)],["Valoración inicial",()=>anValoracionEntrenador(c)],["Ver valoración",()=>anValoracionVer(c)]]);
   const verHist=()=>{$("#tab").innerHTML=tabHistorial(ses)};
   const verMsgs=()=>tabMensajes(id,true);
-  pestanas(["ta","tb","tc","td"],[verEntrenos,verAnam,verHist,verMsgs]);
+  pestanas(["ta","te","tb","tc","td"],[verEntrenos,()=>tabCalendario(c.id,true),verAnam,verHist,verMsgs]);
   verEntrenos();
 }
 
@@ -853,6 +863,78 @@ async function tabMensajes(clienteId,esAdmin){
 }
 function tabMensajesCliente(){return tabMensajes(S.user.id,false)}
 
+/* ---------- Calendario de entrenamientos ---------- */
+const DIAS_SEM=["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+const MESES_CAL=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+// Acepta "dd/mm/aaaa" (formato de la app) o "aaaa-mm-dd"; si no, la sesión queda "sin fecha"
+function parseFecha(txt){
+  const s=String(txt||"").trim();
+  let m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(m) return new Date(+m[3],+m[2]-1,+m[1]);
+  m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(m) return new Date(+m[1],+m[2]-1,+m[3]);
+  return null;
+}
+const isoLocal=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+// Calendario mensual. puedeMover: el entrenador y el cliente pueden cambiar la fecha de una sesión
+async function tabCalendario(clienteId,puedeMover){
+  $("#tab").innerHTML='<div id="cal" class="an-panel"></div>';
+  const ses=await db("GET","sesiones",`?cliente_id=eq.${clienteId}&select=*`);
+  const hoy=new Date();
+  let mes=new Date(hoy.getFullYear(),hoy.getMonth(),1);
+  const chip=s=>`<button class="cal-ses${hecho(s)?" ok":""}" data-ses="${s.id}">${esc(s.titulo||"Sesión")}</button>`;
+  const detalle=id=>{
+    const s=ses.find(x=>x.id===id); if(!s) return;
+    const d=parseFecha(s.fecha);
+    $("#calDet").innerHTML=`<div class="cal-det"><h3>${esc(s.titulo||"Sesión")}</h3>
+      <p class="muted">Fecha actual: ${esc(s.fecha||"sin fecha")}${hecho(s)?" · completada":""}</p>
+      ${puedeMover?`<div class="row"><input type="date" id="calFe" value="${d?isoLocal(d):""}"><button class="gold" id="calMover">Mover a esta fecha</button><button class="sec" id="calCerrar">Cerrar</button></div><div class="msg" id="calMsg"></div>`:""}</div>`;
+    if(!puedeMover) return;
+    $("#calCerrar").onclick=()=>{$("#calDet").innerHTML=""};
+    $("#calMover").onclick=async()=>{
+      const v=$("#calFe").value;
+      if(!v) return msg("#calMsg","Elige una fecha",false);
+      const [y,m,dd]=v.split("-");
+      const txt=`${dd}/${m}/${y}`;
+      try{
+        await db("PATCH","sesiones",`?id=eq.${id}`,{fecha:txt},"return=minimal");
+        s.fecha=txt; pintar();
+      }catch(e){msg("#calMsg",e.message,false)}
+    };
+  };
+  const pintar=()=>{
+    const primero=(mes.getDay()+6)%7;
+    const ultimo=new Date(mes.getFullYear(),mes.getMonth()+1,0).getDate();
+    const celdas=[];
+    for(let i=0;i<primero;i++) celdas.push(null);
+    for(let d=1;d<=ultimo;d++) celdas.push(new Date(mes.getFullYear(),mes.getMonth(),d));
+    while(celdas.length%7) celdas.push(null);
+    const porDia=new Map(), sinFecha=[];
+    ses.forEach(s=>{
+      const d=parseFecha(s.fecha);
+      if(!d){sinFecha.push(s);return}
+      const k=isoLocal(d);
+      if(!porDia.has(k)) porDia.set(k,[]);
+      porDia.get(k).push(s);
+    });
+    $("#cal").innerHTML=`
+      <div class="cal-head"><button class="sec" id="calPrev">‹</button><b>${MESES_CAL[mes.getMonth()]} ${mes.getFullYear()}</b><button class="sec" id="calNext">›</button></div>
+      <div class="cal-grid">${DIAS_SEM.map(d=>`<div class="cal-dh">${d}</div>`).join("")}
+        ${celdas.map(d=>{
+          if(!d) return `<div class="cal-d vacio"></div>`;
+          const k=isoLocal(d);
+          return `<div class="cal-d${k===isoLocal(hoy)?" hoy":""}"><span class="cal-num">${d.getDate()}</span>${(porDia.get(k)||[]).map(chip).join("")}</div>`;
+        }).join("")}
+      </div>
+      ${sinFecha.length?`<details class="bloque"><summary><b>Sin fecha (${sinFecha.length})</b></summary>${sinFecha.map(chip).join("")}</details>`:""}
+      <div id="calDet"></div>`;
+    $("#calPrev").onclick=()=>{mes=new Date(mes.getFullYear(),mes.getMonth()-1,1);pintar()};
+    $("#calNext").onclick=()=>{mes=new Date(mes.getFullYear(),mes.getMonth()+1,1);pintar()};
+    document.querySelectorAll("[data-ses]").forEach(b=>b.onclick=()=>detalle(b.dataset.ses));
+  };
+  pintar();
+}
+
 /* ---------- Panel del cliente ---------- */
 function subTabs(lista,ini=0){
   $("#tab").innerHTML=`<div class="tabs">${lista.map((n,i)=>`<button id="sb${i}" class="${i===ini?"on":""}">${n[0]}</button>`).join("")}</div><div id="sub"></div>`;
@@ -891,10 +973,10 @@ async function panelCliente(tab){
     tabPerfil(); return;
   }
   const val=await valoracionVisible();
-  const lista=[["Mis entrenamientos",tabEntrenos],["Historial",tabHistorialCliente]];
+  const lista=[["Mis entrenamientos",tabEntrenos],["Calendario",()=>tabCalendario(S.user.id,true)],["Historial",tabHistorialCliente]];
   if(val) lista.push(["Valoración inicial",()=>tabValoracionCliente(val)]);
   lista.push(["Anamnesis",()=>anamnesisCliente()]);
-  const claves={entrenamientos:"Mis entrenamientos",historial:"Historial",valoracion:"Valoración inicial",anamnesis:"Anamnesis"};
+  const claves={entrenamientos:"Mis entrenamientos",calendario:"Calendario",historial:"Historial",valoracion:"Valoración inicial",anamnesis:"Anamnesis"};
   const p=S.perfil||{};
   const av=p.foto?`<img class="avatar" src="${p.foto}" alt="">`:`<span class="avatar avatar-ini">${esc((p.nombre||"?")[0].toUpperCase())}</span>`;
   shell(`<div class="cli-top"><button class="avatar-btn" id="ir-perfil-av" title="Foto y contraseña">${av}</button><div class="tabs" id="ctabs"></div></div><div id="tab"></div>`);
