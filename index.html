@@ -324,6 +324,9 @@ html.oscuro .stat{background:rgba(43,49,55,.55)}
 
 /* ---- Calendario fijo arriba para poder arrastrar sesiones desde la lista (móvil y ordenador) ---- */
 .cal-wrap{position:sticky;top:6px;z-index:20;box-shadow:0 4px 12px rgba(0,0,0,.18)}
+
+/* ---- Pantalla de acceso: sin el logo de fondo, así no se superpone con el logo de login ---- */
+body:not(.cli) .fondo{background-image:none}
 </style>
 </head>
 <body>
@@ -1270,7 +1273,8 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false){
       const k=isoLocal(new Date(y,mo,d));
       const lista=porDia.get(k)||[];
       const todasHechas=lista.length&&lista.every(hecho);
-      celdas.push(`<button type="button" class="cal-d cal-dia${k===hoyIso?" hoy":""}${lista.length?" tiene":""}${k===diaSel?" sel":""}" data-dia="${k}"><span class="cal-num">${d}</span>${lista.length?`<span class="cal-punto${todasHechas?" ok":""}"></span>`:""}</button>`);
+      const chips=lista.slice(0,2).map(t=>`<button type="button" class="cal-chip${hecho(t)?" ok":""}" data-chip="${t.id}" title="${esc(t.titulo||"Sesión")}">${esc(diaCorto(t))}</button>`).join("");
+      celdas.push(`<div class="cal-d cal-dia${k===hoyIso?" hoy":""}${lista.length?" tiene":""}${k===diaSel?" sel":""}" data-dia="${k}"><span class="cal-num">${d}</span>${chips}${lista.length>2?`<span class="cal-mas">+${lista.length-2}</span>`:""}</div>`);
     }
     const delDia=porDia.get(diaSel)||[];
     const [ay,am,ad]=diaSel.split("-");
@@ -1309,11 +1313,11 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false){
       moverA(id,val);
     });
     // Arrastrar la cabecera de una sesión hasta el día del calendario (mismo sistema que la versión publicada)
-    cont.querySelectorAll("[data-arr]").forEach(el=>{
+    cont.querySelectorAll("[data-arr],[data-chip]").forEach(el=>{
       el.addEventListener("click",ev=>{if(arrastrado){ev.preventDefault();ev.stopPropagation()}});
       el.addEventListener("pointerdown",e=>{
         if(e.button!==undefined&&e.button!==0) return;
-        const id=el.dataset.arr, x0=e.clientX, y0=e.clientY;
+        const id=el.dataset.arr||el.dataset.chip, x0=e.clientX, y0=e.clientY;
         let moviendo=false;
         const celdaBajo=ev=>{const b=document.elementFromPoint(ev.clientX,ev.clientY);return b&&b.closest?b.closest(".cal-d[data-dia]"):null};
         const mover=ev=>{
