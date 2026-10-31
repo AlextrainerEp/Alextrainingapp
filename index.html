@@ -299,6 +299,24 @@ button.cal-d{font:inherit;color:#1d1f21;cursor:pointer;text-align:left;padding:4
   main.cli{padding-top:calc(min(70vw,460px)*0.37 + 150px)}
   .cal-d{min-height:40px}
 }
+
+/* ---- Cuadros del Historial del entrenado: más abajo y translúcidos ---- */
+body.cli .stats.cli-stats{margin-top:28px}
+body.cli .cli-stats .stat{background:rgba(245,245,245,.5);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+@media (max-width:600px){body.cli .stats.cli-stats{margin-top:44px}}
+html.oscuro .cli-stats .stat{background:rgba(43,49,55,.5)}
+
+/* ---- Cuadros de estadísticas: más abajo en ordenador y translúcidos ---- */
+.stat{background:rgba(245,245,245,.55)}
+html.oscuro .stat{background:rgba(43,49,55,.55)}
+@media (min-width:601px){
+  body.cli .stats{margin-top:36px}
+}
+
+/* ---- Dorado más fuerte en móvil (todo lo que usa --acento) ---- */
+@media (max-width:600px){
+  :root{--acento:#a06a00}
+}
 </style>
 </head>
 <body>
@@ -778,7 +796,7 @@ function tabHistorial(ses,cliente=false){
   const stats=cliente
     ? `<div class="stat">Sesiones planificadas<b>${ses.length}</b></div><div class="stat">Sesiones completadas<b>${hechos.length}</b></div><div class="stat">RPE medio<b>${e.rpe}</b></div><div class="stat">Racha<b>${rachaSemanas(hechos)} sem.</b></div>`
     : `<div class="stat">Realizados<b>${e.sesiones}</b></div><div class="stat">RPE medio<b>${e.rpe}</b></div><div class="stat">RIR medio<b>${e.rir}</b></div><div class="stat">Reps totales<b>${e.reps}</b></div>`;
-  return `<div class="stats">${stats}</div>
+  return `<div class="stats${cliente?" cli-stats":""}">${stats}</div>
     ${cliente?'<div id="hist-prog"></div>':""}
     ${hechos.length
       ? hechos.map(s=>`<details class="card"><summary><b>${tituloSesion(s)}</b></summary>
