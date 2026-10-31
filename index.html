@@ -279,6 +279,26 @@ body.cli .frase{font-size:19px}
 body.cli .frase b{font-size:19px}
 html.oscuro .stat{color:#d4a72c}
 .cal-fila{touch-action:none;cursor:grab}
+
+/* ---- Entrenamientos unificados y móvil ---- */
+button.cal-d{font:inherit;color:#1d1f21;cursor:pointer;text-align:left;padding:4px}
+.cal-dia .cal-num{display:block;text-align:center}
+.cal-punto{display:block;width:7px;height:7px;border-radius:50%;background:var(--acento);margin:3px auto 0}
+.cal-punto.ok{background:#3c8d4a}
+.cal-d.sel{outline:2px solid var(--acento);background:rgba(255,255,255,.95)}
+.cal-d.tiene .cal-num{font-weight:700}
+.dia-tit{margin:18px 0 8px}
+.mover{margin-top:10px;align-items:flex-end}
+.mover input[type=date]{width:auto}
+@media (max-width:600px){
+  body.cli header{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px}
+  body.cli header .cli-nav{grid-column:1/-1;order:9;flex:none;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  body.cli .cli-nav button{font-size:13px;padding:8px 4px;line-height:1.2}
+  body.cli .frase,body.cli .frase b{font-size:15px}
+  body.cli .frase .autor{font-size:13px}
+  main.cli{padding-top:calc(min(70vw,460px)*0.37 + 150px)}
+  .cal-d{min-height:40px}
+}
 </style>
 </head>
 <body>
@@ -1212,6 +1232,82 @@ async function tabCalendario(clienteId,puedeMover,host="#tab"){
   pintar();
 }
 
+
+/* ---------- Entrenamientos del cliente: calendario + día seleccionado ---------- */
+async function tabEntrenosCal(host="#sub"){
+  const todas=await db("GET","sesiones",`?cliente_id=eq.${S.user.id}&order=created_at.desc&select=*`);
+  const hoy=new Date(), hoyIso=isoLocal(hoy);
+  const conF=todas.map(s=>({s,d:parseFecha(s.fecha)})).filter(x=>x.d);
+  const pendFut=conF.filter(x=>!hecho(x.s)&&isoLocal(x.d)>=hoyIso).sort((a,b)=>a.d-b.d)[0];
+  const ultimo=[...conF].sort((a,b)=>b.d-a.d)[0];
+  const ref=pendFut||ultimo;
+  let mes=new Date((ref?ref.d:hoy).getFullYear(),(ref?ref.d:hoy).getMonth(),1);
+  let diaSel=ref?isoLocal(ref.d):hoyIso;
+  const porDia=new Map();
+  conF.forEach(({s,d})=>{const k=isoLocal(d);porDia.set(k,[...(porDia.get(k)||[]),s])});
+  const sinFecha=todas.filter(s=>!parseFecha(s.fecha));
+  const tarjeta=(s,abierta)=>`<details class="card sesion${hecho(s)?" hecha":""}"${abierta?" open":""}><summary class="dia-sum">${badgeFecha(s)}<h3>${nombreEntreno(s)}</h3></summary>
+      ${sesionHTML(s,true)}
+      <div class="row"><button data-save="${s.id}">Guardar registro</button><span class="muted" data-st="${s.id}"></span></div>
+      <div class="row mover"><label>Mover a otro día <input type="date" data-mover-in="${s.id}"></label><button class="sec" data-mover="${s.id}">Mover</button></div></details>`;
+  const pintar=()=>{
+    const y=mes.getFullYear(), mo=mes.getMonth();
+    const primer=(new Date(y,mo,1).getDay()+6)%7;
+    const dias=new Date(y,mo+1,0).getDate();
+    const celdas=[];
+    for(let i=0;i<primer;i++) celdas.push('<div class="cal-d vacio"></div>');
+    for(let d=1;d<=dias;d++){
+      const k=isoLocal(new Date(y,mo,d));
+      const lista=porDia.get(k)||[];
+      const todasHechas=lista.length&&lista.every(hecho);
+      celdas.push(`<button type="button" class="cal-d cal-dia${k===hoyIso?" hoy":""}${lista.length?" tiene":""}${k===diaSel?" sel":""}" data-dia="${k}"><span class="cal-num">${d}</span>${lista.length?`<span class="cal-punto${todasHechas?" ok":""}"></span>`:""}</button>`);
+    }
+    const delDia=porDia.get(diaSel)||[];
+    const [ay,am,ad]=diaSel.split("-");
+    const pend=todas.filter(s=>!hecho(s)).length, hechas=todas.length-pend;
+    const proxTxt=pendFut?String(pendFut.d.getDate()).padStart(2,"0")+"/"+String(pendFut.d.getMonth()+1).padStart(2,"0"):"—";
+    const cont=$(host);
+    cont.innerHTML=`
+      <div class="resumen"><div><b>${pend}</b><small>pendientes</small></div><div><b>${hechas}</b><small>completadas</small></div><div><b>${proxTxt}</b><small>próximo entreno</small></div></div>
+      <div class="cal-wrap card">
+        <div class="cal-head"><button class="sec" data-prev>‹</button><b>${MESES_CAL[mo]} ${y}</b><button class="sec" data-next>›</button></div>
+        <div class="cal-grid">${DIAS_SEM.map(d=>`<div class="cal-dh">${d}</div>`).join("")}${celdas.join("")}</div>
+      </div>
+      <h2 class="dia-tit">${+ad} de ${MESES_CAL[+am-1]}</h2>
+      ${delDia.length?delDia.map(s=>tarjeta(s,delDia.length===1)).join(""):'<p class="muted">Día sin entrenamiento. Toca otro día del calendario.</p>'}
+      ${sinFecha.length?`<details class="card"><summary><b>Sin fecha (${sinFecha.length})</b></summary>${sinFecha.map(s=>tarjeta(s,false)).join("")}</details>`:""}`;
+    cont.querySelector("[data-prev]").onclick=()=>{mes=new Date(y,mo-1,1);pintar()};
+    cont.querySelector("[data-next]").onclick=()=>{mes=new Date(y,mo+1,1);pintar()};
+    cont.querySelectorAll("[data-dia]").forEach(b=>b.onclick=()=>{diaSel=b.dataset.dia;pintar()});
+    cont.querySelectorAll("[data-save]").forEach(b=>b.onclick=async()=>{
+      const id=b.dataset.save, st=cont.querySelector(`[data-st="${id}"]`);
+      try{
+        const reg=leerRegistro(b.closest(".card"));
+        await db("PATCH","sesiones",`?id=eq.${id}`,{registro:reg},"return=minimal");
+        const s=todas.find(x=>x.id===id); if(s) s.registro=reg;
+        if(hecho({registro:reg})){st.textContent="Completado ✓ · pasa al historial";setTimeout(()=>tabEntrenosCal(host),1000)}
+        else st.textContent="Guardado ✓";
+      }catch(e){st.textContent="Error: "+e.message}
+    });
+    cont.querySelectorAll("[data-mover]").forEach(b=>b.onclick=async()=>{
+      const id=b.dataset.mover, val=cont.querySelector(`[data-mover-in="${id}"]`).value;
+      const st=cont.querySelector(`[data-st="${id}"]`);
+      if(!val){st.textContent="Elige una fecha";return}
+      const [ny,nm,nd]=val.split("-");
+      const txt=`${nd}/${nm}/${ny}`;
+      try{
+        await db("PATCH","sesiones",`?id=eq.${id}`,{fecha:txt},"return=minimal");
+        const s=todas.find(x=>x.id===id);
+        if(s){s.fecha=txt; const d=parseFecha(txt); conF.length=0; todas.forEach(t=>{const dd=parseFecha(t.fecha); if(dd) conF.push({s:t,d:dd})});}
+        porDia.clear(); conF.forEach(({s:t,d})=>{const k=isoLocal(d);porDia.set(k,[...(porDia.get(k)||[]),t])});
+        sinFecha.length=0; todas.forEach(t=>{if(!parseFecha(t.fecha)) sinFecha.push(t)});
+        diaSel=val; mes=new Date(+ny,+nm-1,1); pintar();
+      }catch(e){st.textContent="Error: "+e.message}
+    });
+  };
+  pintar();
+}
+
 /* ---------- Panel del cliente ---------- */
 function subTabs(lista,ini=0){
   $("#tab").innerHTML=`<div class="tabs">${lista.map((n,i)=>`<button id="sb${i}" class="${i===ini?"on":""}">${n[0]}</button>`).join("")}</div><div id="sub"></div>`;
@@ -1247,12 +1343,12 @@ function anamnesisCliente(){
 async function panelCliente(tab,sub){
   // Todo el panel del cliente está en su perfil; el menú va en la barra superior
   const val=await valoracionVisible();
-  const lista=[["Mis entrenamientos",()=>tabEntrenos("#sub")],["Calendario",()=>tabCalendario(S.user.id,true,"#sub")],["Historial",()=>tabHistorialCliente("#sub")]];
+  const lista=[["Entrenamientos",()=>tabEntrenosCal("#sub")],["Historial",()=>tabHistorialCliente("#sub")]];
   if(val) lista.push(["Valoración inicial",()=>tabValoracionCliente(val,"#sub")]);
   lista.push(["Mensajes",()=>tabMensajes(S.user.id,false,"#sub")],["Anamnesis",anamnesisCliente],["Foto y contraseña",tabPerfil]);
-  const claves={entrenamientos:"Mis entrenamientos",calendario:"Calendario",historial:"Historial",valoracion:"Valoración inicial",mensajes:"Mensajes",anamnesis:"Anamnesis",perfil:"Foto y contraseña"};
+  const claves={entrenamientos:"Entrenamientos",calendario:"Entrenamientos",historial:"Historial",valoracion:"Valoración inicial",mensajes:"Mensajes",anamnesis:"Anamnesis",perfil:"Foto y contraseña"};
   const key=tab==="perfil"?(sub||"perfil"):(tab||"entrenamientos");
-  const iconos={"Mis entrenamientos":"🏋️","Calendario":"📅","Historial":"🕘","Valoración inicial":"📋","Mensajes":"💬","Anamnesis":"📝","Foto y contraseña":"👤"};
+  const iconos={"Entrenamientos":"🏋️","Historial":"🕘","Valoración inicial":"📋","Mensajes":"💬","Anamnesis":"📝","Foto y contraseña":"👤"};
   shell(`<div id="tab"><div id="sub"></div></div>`);
   let idx=lista.findIndex(n=>n[0]===claves[key]);
   if(idx<0) idx=0;
