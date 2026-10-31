@@ -188,8 +188,8 @@ textarea{font-size:14px;width:100%;margin:4px 0 8px}
 .cal-head{display:flex;align-items:center;justify-content:space-between;margin:8px 0}
 .cal-det{margin-top:12px;padding-top:10px;border-top:1px solid #d0d3d6}
 /* Cliente: logo de fondo más abajo y menú en la barra superior */
-body.cli .frase{top:calc(12px + min(80vw,600px)*0.37 + 10px)}
-main.cli{padding-top:calc(min(80vw,600px)*0.37 + 90px)}
+body.cli .frase{top:calc(36px + min(80vw,600px)*0.37 + 8px)}
+main.cli{padding-top:calc(min(80vw,600px)*0.37 + 100px)}
 .lista-cli{max-width:640px;margin:0 auto;max-height:calc(100vh - var(--hdr,64px) - 48px);overflow:auto}
 .nombre-cli{font-weight:700;color:#D9DDE0;white-space:nowrap}
 .cli-nav{display:flex;gap:6px;flex-wrap:wrap;flex:1;justify-content:center}
@@ -210,13 +210,13 @@ main.cli{padding-top:calc(min(80vw,600px)*0.37 + 90px)}
 .cal-sin{margin-top:8px;font-size:13px}
 .cal-sin summary{cursor:pointer}
 .cal-sin .cal-fila{margin-top:4px}
-.ent-lista{max-width:420px;margin:0;padding:12px}
+.ent-lista{max-width:420px;margin:0 0 0 auto;padding:12px}
 .ent-tit{font-size:16px;margin:2px 0 8px;color:#111}
 .ent-abrir{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:rgba(255,255,255,.7);color:#111;border:1px solid #c5c9cc;border-radius:8px;padding:5px 10px;margin-bottom:4px;font-size:14px;cursor:pointer}
 .ent-av{width:28px;height:28px;border-radius:50%;object-fit:cover;flex:0 0 auto}
 .ent-ini{display:inline-flex;align-items:center;justify-content:center;background:#D9DDE0;font-weight:600;font-size:13px}
 /* Vista de entrenador y entrenado: logo centrado bajo la cabecera, frase debajo del logo */
-body.cli .fondo{position:absolute;top:var(--hdr,64px);bottom:0;left:0;right:0;background-position:center 12px}
+body.cli .fondo{position:absolute;top:var(--hdr,64px);bottom:0;left:0;right:0;background-position:center 36px}
 /* Tarjetas de entrenamientos: más opacas para poder leerlas sobre el logo */
 body.cli .card{background:rgba(255,255,255,.85);backdrop-filter:none;-webkit-backdrop-filter:none}
 .cal-chip{display:block;width:100%;font-size:10px;line-height:1.2;padding:1px 3px;margin-top:2px;background:#f4f5f6;color:#1d1f21;border:1px solid #9a9ea2;border-radius:3px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
@@ -367,7 +367,7 @@ function shell(inner,ficha){
   const cab=fotoCab?`<button class="foto-hdr" id="ir-foto" title="${ficha?"Perfil del entrenado":"Mi perfil"}"><img src="${fotoCab}" alt=""></button>`:`<img class="logo" src="logo-alex.png" alt="" onerror="this.remove()">`;
   let centro;
   if(ficha) centro=`<span class="nombre-cli">${esc(ficha.nombre||"Sin nombre")}</span>`;
-  else if(p.rol==="admin") centro=`<span class="t">Panel del entrenador</span>${p.nombre?`<span>${esc(p.nombre)}</span>`:""}`;
+  else if(p.rol==="admin") centro=`<span class="t">Panel del entrenador</span>`;
   else centro=`<button class="sec perfil-btn" id="ir-perfil"><span>${esc(p.nombre||"Mi perfil")}</span><small>Perfil</small></button>`;
   const nav=vistaCliente?'<nav class="cli-nav" id="cnav"></nav>':"";
   $("#app").innerHTML=`<header>${cab}${centro}${nav}<button class="sec" id="salir">Salir</button></header><main class="${vistaCliente?"cli":"adm"}">${inner}</main>`;
