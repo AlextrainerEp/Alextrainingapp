@@ -721,7 +721,7 @@ async function fichaCliente(id){
       catch(err){alert(err.message)}
     });
   };
-  const verAnam=()=>subTabs([["Respuestas",()=>anRespuestasEntrenador(c)],["Valoración inicial",()=>anValoracionEntrenador(c)]]);
+  const verAnam=()=>subTabs([["Respuestas",()=>anRespuestasEntrenador(c)],["Valoración inicial",()=>anValoracionEntrenador(c)],["Ver valoración",()=>anValoracionVer(c)]]);
   const verHist=()=>{$("#tab").innerHTML=tabHistorial(ses)};
   const verMsgs=()=>tabMensajes(id,true);
   pestanas(["ta","tb","tc","td"],[verEntrenos,verAnam,verHist,verMsgs]);
@@ -852,10 +852,10 @@ async function tabMensajes(clienteId,esAdmin){
 function tabMensajesCliente(){return tabMensajes(S.user.id,false)}
 
 /* ---------- Panel del cliente ---------- */
-function subTabs(lista){
-  $("#tab").innerHTML=`<div class="tabs">${lista.map((n,i)=>`<button id="sb${i}" class="${i?"":"on"}">${n[0]}</button>`).join("")}</div><div id="sub"></div>`;
+function subTabs(lista,ini=0){
+  $("#tab").innerHTML=`<div class="tabs">${lista.map((n,i)=>`<button id="sb${i}" class="${i===ini?"on":""}">${n[0]}</button>`).join("")}</div><div id="sub"></div>`;
   pestanas(lista.map((_,i)=>"sb"+i),lista.map(n=>n[1]));
-  lista[0][1]();
+  lista[ini][1]();
 }
 function tabEntrenosCliente(){subTabs([["Mi entrenamiento",tabEntrenos],["Historial",tabHistorialCliente]])}
 function tabPerfilCliente(){subTabs([["Foto y contraseña",tabPerfil],["Anamnesis",tabAnamnesis]])}
@@ -865,14 +865,25 @@ async function valoracionVisible(){
     return (r&&r[0])||null;
   }catch(e){return null}
 }
-// Valoración inicial: solo lectura, y solo llega aquí si el entrenador la ha hecho visible
-function tabValoracionCliente(v){
-  const d=v.datos||{};
+// Pinta los datos de una valoración (solo lectura)
+function valoracionHTML(datos){
+  const d=datos||{};
   const filas=Object.keys(d).map(k=>{
     const val=typeof d[k]==="object"?JSON.stringify(d[k]):String(d[k]);
     return `<p><b>${esc(k)}:</b> ${esc(val)}</p>`;
   }).join("");
-  $("#tab").innerHTML=`<div class="an-panel"><p class="muted">Valoración hecha por tu entrenador${v.actualizada?" · "+anFecha(v.actualizada):""}. Solo lectura.</p>${filas||'<p class="muted">Sin datos todavía.</p>'}</div>`;
+  return filas||'<p class="muted">Sin datos todavía.</p>';
+}
+// Valoración inicial del cliente: solo lectura, y solo llega aquí si está visible
+function tabValoracionCliente(v){
+  $("#tab").innerHTML=`<div class="an-panel"><p class="muted">Valoración hecha por tu entrenador${v.actualizada?" · "+anFecha(v.actualizada):""}. Solo lectura.</p>${valoracionHTML(v.datos)}</div>`;
+}
+// Anamnesis del cliente: Respuestas (solo lectura) y Rellenar (formulario editable)
+function anamnesisCliente(){
+  const a=S.perfil.anamnesis||{};
+  const llena=Object.keys(a).some(k=>!["consent","actualizada","valoracion"].includes(k));
+  const respuestas=()=>{$("#sub").innerHTML=`<div class="an-panel">${llena?anResumenHTML(a,ANAM_CLI)+anAntigua(a):'<p class="muted">Todavía no has rellenado la anamnesis. Pulsa Rellenar.</p>'}${a.actualizada?`<p class="muted">Última actualización: ${anFecha(a.actualizada)}</p>`:""}</div>`};
+  subTabs([["Respuestas",respuestas],["Rellenar",tabAnamnesis]],llena?0:1);
 }
 async function panelCliente(tab){
   // Perfil (foto y contraseña): página propia con Volver
@@ -884,7 +895,7 @@ async function panelCliente(tab){
   const val=await valoracionVisible();
   const lista=[["Mis entrenamientos",tabEntrenos],["Historial",tabHistorialCliente]];
   if(val) lista.push(["Valoración inicial",()=>tabValoracionCliente(val)]);
-  lista.push(["Anamnesis",()=>{$("#tab").innerHTML='<div id="sub"></div>';tabAnamnesis()}]);
+  lista.push(["Anamnesis",()=>anamnesisCliente()]);
   const claves={entrenamientos:"Mis entrenamientos",historial:"Historial",valoracion:"Valoración inicial",anamnesis:"Anamnesis"};
   const p=S.perfil||{};
   const av=p.foto?`<img class="avatar" src="${p.foto}" alt="">`:`<span class="avatar avatar-ini">${esc((p.nombre||"?")[0].toUpperCase())}</span>`;
@@ -1154,21 +1165,27 @@ function anRespuestasEntrenador(c){
     ${nueva?anResumenHTML(a,ANAM_CLI):`<p class="muted">Todavía no ha rellenado la ficha nueva.</p>`}
     ${anAntigua(a)}</div>`;
 }
-function anValoracionEntrenador(c){
-  const a=c.anamnesis||{},val=a.valoracion||{};
-  $("#sub").innerHTML=`<div class="an-panel"><p class="muted">A rellenar en la primera sesión. El entrenado no ve este bloque.${val.fecha?" Última actualización: "+anFecha(val.fecha)+".":""}</p>
+async function anValoracionEntrenador(c){
+  const [fila]=await db("GET","valoraciones",`?cliente_id=eq.${c.id}&select=datos,visible,actualizada`);
+  const val=(fila&&fila.datos)||{};
+  $("#sub").innerHTML=`<div class="an-panel"><p class="muted">A rellenar en la primera sesión.${fila&&fila.actualizada?" Última actualización: "+anFecha(fila.actualizada)+".":""}</p>
+    <label class="row"><input type="checkbox" id="vis" ${fila&&fila.visible?"checked":""}> Mostrar al cliente</label>
     <div id="anVal"></div>
     <div class="row" style="margin-top:10px"><button class="gold" id="guardarV">Guardar valoración</button></div><div class="msg" id="mv"></div></div>`;
   const form=anForm($("#anVal"),ANAM_VAL,val,false);
   $("#guardarV").onclick=async()=>{
     try{
-      const [fresca]=await db("GET","perfiles",`?id=eq.${c.id}&select=anamnesis`);
-      const data={...((fresca&&fresca.anamnesis)||{}),valoracion:{...anCollect(form),fecha:new Date().toISOString()}};
-      const r=await db("PATCH","perfiles",`?id=eq.${c.id}`,{anamnesis:data},"return=representation");
-      if(!r||!r.length) throw new Error("No se ha guardado: la base de datos no deja al entrenador modificar la ficha de un entrenado. Hay que añadir ese permiso en Supabase.");
-      c.anamnesis=data;msg("#mv","Valoración guardada ✓",true);
+      const datos=anCollect(form);
+      await db("POST","valoraciones","?on_conflict=cliente_id",{cliente_id:c.id,datos,visible:$("#vis").checked,actualizada:new Date().toISOString()},"resolution=merge-duplicates,return=minimal");
+      msg("#mv","Valoración guardada ✓",true);
     }catch(e){msg("#mv",e.message,false)}
   };
+}
+// Entrenador: vista de solo lectura de la valoración ya cumplimentada
+async function anValoracionVer(c){
+  const [fila]=await db("GET","valoraciones",`?cliente_id=eq.${c.id}&select=datos,visible,actualizada`);
+  if(!fila){$("#sub").innerHTML=`<div class="an-panel"><p class="muted">Todavía no hay valoración inicial.</p></div>`;return}
+  $("#sub").innerHTML=`<div class="an-panel"><p class="muted">${fila.visible?"Visible para el cliente":"Oculta para el cliente"}${fila.actualizada?" · Actualizada el "+anFecha(fila.actualizada):""}</p>${valoracionHTML(fila.datos)}</div>`;
 }
 
 function tabPerfil(){
