@@ -158,8 +158,11 @@ textarea{font-size:14px;width:100%;margin:4px 0 8px}
 .an-pair label{display:flex;align-items:center;gap:6px;color:#444}
 .an-pair input{width:80px}
 /* Panel de lectura de la anamnesis: fondo blanco casi opaco para que no se mezcle con el logo */
-.an-panel{background:rgba(255,255,255,.95);color:#1d1f21;border-radius:12px;padding:16px;box-shadow:0 2px 12px rgba(0,0,0,.18);font-size:15px}
-.an-panel .muted{color:#4a4d50;font-size:14px}
+.an-panel{background:#ffffff;color:#111;position:relative;z-index:1;border:1px solid #d0d3d6;border-radius:12px;padding:16px;box-shadow:0 2px 12px rgba(0,0,0,.18);font-size:15px}
+.an-panel .muted{color:#333;font-size:14px}
+.an-panel label,.an-panel .an-q{color:#111}
+#tab:has(.an-panel)>.tabs,.card.ficha:has(.an-panel)>.tabs,.card.ficha:has(.an-panel)>.row{background:#ffffff;border-radius:10px;padding:6px;border:1px solid #d0d3d6}
+.an-panel .an-tests td{background:#fff;color:#111;padding:8px 6px}
 .an-panel .cab{margin:22px 0 10px;padding:8px 12px;font-size:16px}
 .an-panel .cab:first-child,.an-panel .muted+div .cab:first-child{margin-top:8px}
 .an-panel input,.an-panel select,.an-panel textarea{background:#fff;border-color:#9a9ea2;color:#1d1f21}
