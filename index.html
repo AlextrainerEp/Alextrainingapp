@@ -26,6 +26,9 @@ main{max-width:980px;margin:0 auto;padding:calc(150px + min(80vw,600px)*0.37 + 1
 .dia-sum::-webkit-details-marker{display:none}
 .dia-sum h3{display:inline;margin:0}
 /* Caja de la lista de entrenados: más difuminada */
+.card.ficha{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none;padding:0}
+/* Ficha del entrenado y su panel: sin fondo, solo se ven las pestañas y el contenido */
+.card.ficha,#tab > .card,#tab details.card,#tab .card.sesion{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}
 .card.difuminada{background:rgba(255,255,255,.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 .perfil-btn{display:flex;flex-direction:column;align-items:center;line-height:1.15;padding:4px 10px;background:#ddd;color:#1d1f21}
 .perfil-btn small{font-size:11px;font-weight:400;opacity:.8}
@@ -604,7 +607,7 @@ async function fichaCliente(id){
   const [c]=await db("GET","perfiles",`?id=eq.${id}&select=*`);
   const ses=await db("GET","sesiones",`?cliente_id=eq.${id}&order=created_at.desc&select=*`);
   shell(`<button class="sec" id="volver">← Clientes</button>
-    <div class="card"><h2>${esc(c.nombre||"Sin nombre")}</h2>
+    <div class="card ficha"><div class="row" style="align-items:center;gap:12px">${c.foto?`<img class="avatar" style="width:90px;height:90px" src="${c.foto}" alt="">`:`<span class="muted">Sin foto</span>`}<h2 style="margin:0">${esc(c.nombre||"Sin nombre")}</h2></div>
     <div class="tabs"><button id="ta" class="on">Entrenamientos</button><button id="tb">Anamnesis</button><button id="tc">Historial</button></div>
     <div id="tab"></div></div>`);
   $("#volver").onclick=listaClientes;
