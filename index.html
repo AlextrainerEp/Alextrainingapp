@@ -276,7 +276,7 @@ function pantallaRegistro(){
     try{
       const nombre=$("#rn").value.trim();
       const j=await auth("signup",{email:$("#re").value.trim(),password:$("#rp").value,data:{nombre}});
-      if(j.access_token){S={access:j.access_token,refresh:j.refresh_token};await cargarPerfil();guardarSesion();panelCliente("anamnesis");}
+      if(j.access_token){S={access:j.access_token,refresh:j.refresh_token};await cargarPerfil();guardarSesion();panelCliente("perfil","anamnesis");}
       else msg("#m","Cuenta creada. Revisa tu correo para confirmarla y luego entra.",true);
     }catch(e){msg("#m",e.message,false)}
   };
@@ -655,9 +655,9 @@ function tabHistorial(ses,cliente=false){
           <div style="margin-top:10px">${sesionHTML(s,false)}</div></details>`).join("")
       : '<p class="muted">Todavía no hay entrenamientos realizados. Aparecerán aquí cuando se guarde el registro.</p>'}`;
 }
-async function tabHistorialCliente(){
+async function tabHistorialCliente(host="#tab"){
   const ses=await db("GET","sesiones",`?cliente_id=eq.${S.user.id}&order=created_at.desc&select=*`);
-  $("#tab").innerHTML=tabHistorial(ses,true);
+  $(host).innerHTML=tabHistorial(ses,true);
 }
 
 /* ---------- Panel del entrenador ---------- */
@@ -877,8 +877,8 @@ function parseFecha(txt){
 }
 const isoLocal=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 // Calendario mensual. puedeMover: el entrenador y el cliente pueden cambiar la fecha de una sesión
-async function tabCalendario(clienteId,puedeMover){
-  $("#tab").innerHTML='<div id="cal" class="an-panel"></div>';
+async function tabCalendario(clienteId,puedeMover,host="#tab"){
+  $(host).innerHTML='<div id="cal" class="an-panel"></div>';
   const ses=await db("GET","sesiones",`?cliente_id=eq.${clienteId}&select=*`);
   const hoy=new Date();
   let mes=new Date(hoy.getFullYear(),hoy.getMonth(),1);
@@ -955,39 +955,39 @@ function valoracionHTML(datos){
   return anResumenHTML(datos||{},ANAM_VAL,false);
 }
 // Valoración inicial del cliente: solo lectura, y solo llega aquí si está visible
-function tabValoracionCliente(v){
-  $("#tab").innerHTML=`<div class="an-panel"><p class="muted">Valoración hecha por tu entrenador${v.actualizada?" · "+anFecha(v.actualizada):""}. Solo lectura.</p>${valoracionHTML(v.datos)}</div>`;
+function tabValoracionCliente(v,host="#tab"){
+  $(host).innerHTML=`<div class="an-panel"><p class="muted">Valoración hecha por tu entrenador${v.actualizada?" · "+anFecha(v.actualizada):""}. Solo lectura.</p>${valoracionHTML(v.datos)}</div>`;
 }
-// Anamnesis del cliente: Respuestas (solo lectura) y Rellenar (formulario editable)
+// Anamnesis del cliente (dentro de su perfil): respuestas en solo lectura y botón para rellenar o editar
 function anamnesisCliente(){
   const a=S.perfil.anamnesis||{};
   const llena=Object.keys(a).some(k=>!["consent","actualizada","valoracion"].includes(k));
-  const respuestas=()=>{$("#sub").innerHTML=`<div class="an-panel">${llena?anResumenHTML(a,ANAM_CLI)+anAntigua(a):'<p class="muted">Todavía no has rellenado la anamnesis. Pulsa Rellenar.</p>'}${a.actualizada?`<p class="muted">Última actualización: ${anFecha(a.actualizada)}</p>`:""}</div>`};
-  subTabs([["Respuestas",respuestas],["Rellenar",tabAnamnesis]],llena?0:1);
+  $("#sub").innerHTML=`<div class="an-panel">${llena?anResumenHTML(a,ANAM_CLI)+anAntigua(a):'<p class="muted">Todavía no has rellenado la anamnesis.</p>'}
+    ${a.actualizada?`<p class="muted">Última actualización: ${anFecha(a.actualizada)}</p>`:""}
+    <div class="row" style="margin-top:10px"><button class="gold" id="anEditar">${llena?"Editar anamnesis":"Rellenar anamnesis"}</button></div></div>`;
+  $("#anEditar").onclick=()=>tabAnamnesis();
 }
-async function panelCliente(tab){
-  // Perfil (foto y contraseña): página propia con Volver
-  if(tab==="perfil"){
-    shell(`<button class="sec" id="volverA">← Volver</button><div id="tab"><div id="sub"></div></div>`);
-    $("#volverA").onclick=()=>panelCliente();
-    tabPerfil(); return;
-  }
+async function panelCliente(tab,sub){
   const val=await valoracionVisible();
-  const lista=[["Mis entrenamientos",tabEntrenos],["Calendario",()=>tabCalendario(S.user.id,true)],["Historial",tabHistorialCliente]];
-  if(val) lista.push(["Valoración inicial",()=>tabValoracionCliente(val)]);
-  lista.push(["Anamnesis",()=>anamnesisCliente()]);
-  const claves={entrenamientos:"Mis entrenamientos",calendario:"Calendario",historial:"Historial",valoracion:"Valoración inicial",anamnesis:"Anamnesis"};
   const p=S.perfil||{};
   const av=p.foto?`<img class="avatar" src="${p.foto}" alt="">`:`<span class="avatar avatar-ini">${esc((p.nombre||"?")[0].toUpperCase())}</span>`;
-  shell(`<div class="cli-top"><button class="avatar-btn" id="ir-perfil-av" title="Foto y contraseña">${av}</button><div class="tabs" id="ctabs"></div></div><div id="tab"></div>`);
-  const ids=lista.map((_,i)=>"c"+i);
-  $("#ctabs").innerHTML=lista.map((n,i)=>`<button id="${ids[i]}">${n[0]}</button>`).join("");
-  pestanas(ids,lista.map(n=>n[1]));
+  if(tab==="perfil"){
+    // Perfil del cliente: foto y contraseña, calendario, historial, valoración y anamnesis
+    const lista=[["Foto y contraseña",tabPerfil],["Calendario",()=>tabCalendario(S.user.id,true,"#sub")],["Historial",()=>tabHistorialCliente("#sub")]];
+    if(val) lista.push(["Valoración inicial",()=>tabValoracionCliente(val,"#sub")]);
+    lista.push(["Anamnesis",anamnesisCliente]);
+    const claves={perfil:"Foto y contraseña",calendario:"Calendario",historial:"Historial",valoracion:"Valoración inicial",anamnesis:"Anamnesis"};
+    shell(`<button class="sec" id="volverA">← Volver</button><div id="tab"></div>`);
+    $("#volverA").onclick=()=>panelCliente();
+    let idx=lista.findIndex(n=>n[0]===claves[sub||"perfil"]);
+    if(idx<0) idx=0;
+    subTabs(lista,idx);
+    return;
+  }
+  // Vista principal: Mis entrenamientos. El resto de pestañas está en el perfil.
+  shell(`<div class="cli-top"><button class="avatar-btn" id="ir-perfil-av" title="Mi perfil">${av}</button><div class="tabs"><button class="on">Mis entrenamientos</button></div></div><div id="tab"></div>`);
   $("#ir-perfil-av").onclick=()=>panelCliente("perfil");
-  let idx=lista.findIndex(n=>n[0]===claves[tab]);
-  if(idx<0) idx=0;
-  ids.forEach((x,i)=>$("#"+x).classList.toggle("on",i===idx));
-  lista[idx][1]();
+  tabEntrenos();
 }
 async function tabEntrenos(){
   // Solo las sesiones pendientes: las completadas pasan al historial
@@ -1229,7 +1229,7 @@ function tabAnamnesis(){
       await db("PATCH","perfiles",`?id=eq.${S.user.id}`,{anamnesis:data},"return=minimal");
       S.perfil.anamnesis=data;
       msg("#m",faltan?`Guardado ✓ · Te faltan ${faltan} campos obligatorios, marcados en rojo.`:"Guardado ✓",true);
-      if(!faltan) setTimeout(()=>panelCliente(),900);
+      if(!faltan) setTimeout(()=>panelCliente("perfil","anamnesis"),900);
     }catch(e){msg("#m",e.message,false)}
   };
 }
