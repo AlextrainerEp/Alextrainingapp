@@ -855,15 +855,11 @@ function subTabs(lista){
 function tabEntrenosCliente(){subTabs([["Mi entrenamiento",tabEntrenos],["Historial",tabHistorialCliente]])}
 function tabPerfilCliente(){subTabs([["Foto y contraseña",tabPerfil],["Anamnesis",tabAnamnesis]])}
 function panelCliente(tab){
-  // Anamnesis (desde el nombre de la cabecera): página propia, solo el formulario, con Volver
-  if(tab==="perfil"||tab==="anamnesis"){
-    shell(`<button class="sec" id="volverA">← Volver</button><div id="tab"><div id="sub"></div></div>`);
-    $("#volverA").onclick=()=>panelCliente();
-    tabAnamnesis(); return;
-  }
   shell(`<div class="tabs"><button id="c1">Mis entrenamientos</button><button id="c2">Historial</button><button id="c3">Entrenador</button></div><div id="tab"></div>`);
   const fns=[tabEntrenos,tabHistorialCliente,tabMensajesCliente];
   pestanas(["c1","c2","c3"],fns);
+  // "perfil" y "anamnesis" se abren desde el nombre de la cabecera: ninguna pestaña queda marcada
+  if(tab==="perfil"||tab==="anamnesis"){tabPerfilCliente();return}
   const idx=tab==="historial"?1:tab==="mensajes"?2:0;
   ["c1","c2","c3"].forEach((x,i)=>$("#"+x).classList.toggle("on",i===idx));
   fns[idx]();
@@ -1108,7 +1104,6 @@ function tabAnamnesis(){
       await db("PATCH","perfiles",`?id=eq.${S.user.id}`,{anamnesis:data},"return=minimal");
       S.perfil.anamnesis=data;
       msg("#m",faltan?`Guardado ✓ · Te faltan ${faltan} campos obligatorios, marcados en rojo.`:"Guardado ✓",true);
-      if(!faltan) setTimeout(()=>panelCliente(),900);
     }catch(e){msg("#m",e.message,false)}
   };
 }
