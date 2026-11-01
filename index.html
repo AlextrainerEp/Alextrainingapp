@@ -332,6 +332,9 @@ body:not(.cli) .fondo{background-size:min(70vw,460px) auto;background-repeat:no-
 /* ---- Pantalla de acceso: la frase va justo debajo del logo de fondo y el formulario debajo de la frase ---- */
 body:not(.cli) .frase{top:calc(36px + min(70vw,460px)*0.37 + 8px)}
 body:not(.cli) .login{margin-top:calc(36px + min(70vw,460px)*0.37 + 115px)}
+
+/* ---- Acceso del entrenado ---- */
+.acceso-box select,.acceso-box input[type=date]{width:auto}
 </style>
 </head>
 <body>
@@ -491,7 +494,19 @@ function entrar(){
     shell(`<div id="tab"></div>`);
     $("#cnav").innerHTML='<button id="ent">Entrenados</button>';
     $("#ent").onclick=listaClientes;
-  } else panelCliente("entrenamientos");
+  } else if(!accesoActivo(S.perfil)) pantallaCaducado();
+  else panelCliente("entrenamientos");
+}
+function accesoActivo(p){
+  return !p.acceso_hasta || new Date(p.acceso_hasta)>new Date();
+}
+function pantallaCaducado(){
+  const p=S.perfil;
+  $("#app").innerHTML=`<div class="login card">
+    <h2>Tu acceso ha caducado</h2>
+    <p class="muted">${p.acceso_hasta?"Caducó el "+fechaLocal(new Date(p.acceso_hasta))+".":""} Para seguir entrenando, contacta con tu entrenador y renueva por pago o con un bono.</p>
+    <button class="sec" id="sal">Salir</button></div>`;
+  $("#sal").onclick=salir;
 }
 function pestanas(ids,fns){
   ids.forEach((id,i)=>{$("#"+id).onclick=()=>{ids.forEach(x=>$("#"+x).classList.remove("on"));$("#"+id).classList.add("on");fns[i]()}});
@@ -932,10 +947,12 @@ async function fichaCliente(id){
 
   const verEntrenos=()=>{
     $("#tab").innerHTML=`
+      ${accesoHTML(c)}
       <div class="row"><label>Subir hoja de Excel <input type="file" id="xls" accept=".xlsx,.xls,.csv"></label></div>
       <div class="msg" id="m"></div>
       <div id="sub"></div>`;
     tabEntrenosCal("#sub",id,true);
+    enlazarAcceso(c);
     $("#xls").onchange=async ev=>{
       const f=ev.target.files[0];if(!f)return;
       try{
@@ -1366,6 +1383,45 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false){
     }
   };
   pintar();
+}
+
+/* ---------- Acceso del entrenado: prueba, pago o bono ---------- */
+function accesoHTML(c){
+  const hasta=c.acceso_hasta?new Date(c.acceso_hasta):null;
+  const activo=accesoActivo(c);
+  const opt=(v,t)=>`<option value="${v}"${c.plan===v?" selected":""}>${t}</option>`;
+  return `<div class="card acceso-box"><h3>Acceso del entrenado</h3>
+    <p class="muted">${hasta?`Plan: ${esc(c.plan||"—")} · ${activo?"activo hasta":"caducó el"} ${fechaLocal(hasta)}`:"Sin límite de acceso"}</p>
+    <div class="row">
+      <label>Plan <select id="acPlan"><option value="">—</option>${opt("prueba","Prueba")}${opt("pago","Pago")}${opt("bono","Bono")}</select></label>
+      <label>Acceso hasta <input type="date" id="acHasta" value="${hasta?isoLocal(hasta):""}"></label>
+    </div>
+    <div class="row">
+      <button class="sec" id="acPrueba">Dar 7 días de prueba</button>
+      <button class="gold" id="acGuardar">Guardar acceso</button>
+      <button class="sec" id="acSin">Quitar límite</button>
+    </div>
+    <div class="msg" id="acMsg"></div></div>`;
+}
+function enlazarAcceso(c){
+  const guardar=async(plan,fechaIso)=>{
+    try{
+      const acceso_hasta=fechaIso?new Date(fechaIso+"T23:59:59").toISOString():null;
+      await db("PATCH","perfiles",`?id=eq.${c.id}`,{plan:plan||null,acceso_hasta},"return=minimal");
+      c.plan=plan||null; c.acceso_hasta=acceso_hasta;
+      fichaCliente(c.id);
+    }catch(e){msg("#acMsg",e.message,false)}
+  };
+  $("#acPrueba").onclick=()=>{
+    const f=new Date(Date.now()+7*86400000);
+    guardar("prueba",isoLocal(f));
+  };
+  $("#acGuardar").onclick=()=>{
+    const f=$("#acHasta").value;
+    if(!f){msg("#acMsg","Elige una fecha de caducidad",false);return}
+    guardar($("#acPlan").value,f);
+  };
+  $("#acSin").onclick=()=>guardar($("#acPlan").value,null);
 }
 
 /* ---------- Panel del cliente ---------- */
