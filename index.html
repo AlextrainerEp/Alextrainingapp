@@ -953,7 +953,7 @@ async function fichaCliente(id){
       }catch(err){msg("#m",err.message,false)}
     };
   };
-  const verAnam=()=>subTabs([["Respuestas",()=>anRespuestasEntrenador(c)],["Valoración inicial",()=>anValoracionEntrenador(c)],["Ver valoración",()=>anValoracionVer(c)]]);
+  const verAnam=()=>subTabs([["Respuesta Anamnesis",()=>anRespuestasEntrenador(c)],["Respuesta Valoración Inicial",()=>anValoracionEntrenador(c)]]);
   const verHist=()=>{$("#tab").innerHTML=tabHistorial(ses)};
   const verMsgs=()=>tabMensajes(id,true);
   pestanas(["ta","tb","tc","td"],[verEntrenos,verAnam,verHist,verMsgs]);
@@ -1417,11 +1417,11 @@ async function panelCliente(tab,sub){
   // Todo el panel del cliente está en su perfil; el menú va en la barra superior
   const val=await valoracionVisible();
   const lista=[["Entrenamientos",()=>tabEntrenosCal("#sub")],["Historial",()=>tabHistorialCliente("#sub")]];
-  if(val) lista.push(["Valoración inicial",()=>tabValoracionCliente(val,"#sub")]);
+  if(val) lista.push(["Respuesta Valoración Inicial",()=>tabValoracionCliente(val,"#sub")]);
   lista.push(["Mensajes",()=>tabMensajes(S.user.id,false,"#sub")],["Anamnesis",anamnesisCliente],["Foto y contraseña",tabPerfil]);
-  const claves={entrenamientos:"Entrenamientos",calendario:"Entrenamientos",historial:"Historial",valoracion:"Valoración inicial",mensajes:"Mensajes",anamnesis:"Anamnesis",perfil:"Foto y contraseña"};
+  const claves={entrenamientos:"Entrenamientos",calendario:"Entrenamientos",historial:"Historial",valoracion:"Respuesta Valoración Inicial",mensajes:"Mensajes",anamnesis:"Anamnesis",perfil:"Foto y contraseña"};
   const key=tab==="perfil"?(sub||"perfil"):(tab||"entrenamientos");
-  const iconos={"Entrenamientos":"🏋️","Historial":"🕘","Valoración inicial":"📋","Mensajes":"💬","Anamnesis":"📝","Foto y contraseña":"👤"};
+  const iconos={"Entrenamientos":"🏋️","Historial":"🕘","Respuesta Valoración Inicial":"📋","Mensajes":"💬","Anamnesis":"📝","Foto y contraseña":"👤"};
   shell(`<div id="tab"><div id="sub"></div></div>`);
   let idx=lista.findIndex(n=>n[0]===claves[key]);
   if(idx<0) idx=0;
