@@ -338,6 +338,15 @@ body:not(.cli) .login{margin-top:calc(36px + min(70vw,460px)*0.37 + 115px)}
 
 /* ---- Valoración inicial: campos numéricos y clasificación de prensión ---- */
 .grip-res{margin:6px 0 10px;font-size:14px}
+.an-scroll{overflow-x:auto;max-width:100%;margin:4px 0 8px}
+.an-grid{width:100%;border-collapse:collapse;font-size:13px}
+.an-grid th,.an-grid td{padding:3px 4px;border-bottom:1px solid rgba(128,128,128,.2);text-align:left;vertical-align:middle}
+.an-grid th{font-size:12px;font-weight:600;color:var(--acento)}
+.an-grid th:not(:first-child),.an-grid td:not(:first-child){text-align:center;white-space:nowrap}
+.an-grid input[type=radio]{margin:0;width:15px;height:15px;vertical-align:middle}
+.an-grid input[type=number],.an-grid input[type=text],.an-grid input[type=date]{width:66px;padding:2px 4px;font-size:12px;border:1px solid rgba(128,128,128,.35);border-radius:4px;background:transparent;color:inherit}
+.an-reg input[type=date]{width:112px}
+.an-reg input[type=text]{width:84px}
 </style>
 </head>
 <body>
@@ -1585,38 +1594,26 @@ const ANAM_CLI=[
  ]}
 ];
 // Bloque que rellena el entrenador en la primera sesión
+const REG_COLS=[["fecha","Fecha","date"],["pi","Prensión I","num"],["pd","Prensión D","num"],["glob","Globet 8 kg","num"],["flex","Flexiones 10","num"]];
+const REG_EX=[1,2,3,4,5];
 const ANAM_VAL=[
- {n:"Movilidad",f:[
-  {row:[{k:"tobillo_i",t:"num",l:"Dorsiflexión tobillo izquierda (cm)"},{k:"tobillo_d",t:"num",l:"Dorsiflexión tobillo derecha (cm)"}]},
-  {row:[{k:"hombro_i",t:"num",l:"Movilidad hombro izquierda (cm)"},{k:"hombro_d",t:"num",l:"Movilidad hombro derecha (cm)"}]}
+ {n:"Movilidad",f:[{t:"pares",cols:["Izquierda (cm)","Derecha (cm)"],rows:[["Dorsiflexión tobillo","tobillo_i","tobillo_d"],["Movilidad hombro","hombro_i","hombro_d"]]}]},
+ {n:"Estabilidad",f:[
+  {t:"grid",o:["Positivo","Negativo"],rows:[["Trendelenburg izquierda","trend_i"],["Trendelenburg derecha","trend_d"]]},
+  {t:"grid",o:["Sí","No"],rows:[["Rotary: báscula cadera","rot_bascula"],["Rotary: arquea lumbar","rot_arquea"],["Rotary: retrae escápulas","rot_escapulas"]]}
  ]},
- {n:"Estabilidad y control",f:[
-  {row:[{k:"trend_i",t:"radio",l:"Trendelenburg izquierda",o:["Positivo","Negativo"]},{k:"trend_d",t:"radio",l:"Trendelenburg derecha",o:["Positivo","Negativo"]}]},
-  {k:"rot_bascula",t:"radio",l:"Rotary stability: báscula cadera",o:["Sí","No"]},
-  {k:"rot_arquea",t:"radio",l:"Rotary stability: arquea lumbar",o:["Sí","No"]},
-  {k:"rot_escapulas",t:"radio",l:"Rotary stability: retrae escápulas",o:["Sí","No"]}
- ]},
- {n:"Sentadilla overhead",f:[
-  {k:"va_rot_cadera",t:"radio",l:"Vista anterior: rota externamente cadera",o:["Sí","No"]},
-  {k:"va_prona_tobillo",t:"radio",l:"Vista anterior: prona tobillo",o:["Sí","No"]},
-  {k:"va_valgo_rodillas",t:"radio",l:"Vista anterior: valgo de rodillas",o:["Sí","No"]},
-  {k:"vl_inclina_torso",t:"radio",l:"Vista lateral: inclina torso",o:["Sí","No"]},
-  {k:"vl_flexion_lumbar",t:"radio",l:"Vista lateral: flexión lumbar",o:["Sí","No"]},
-  {k:"vl_extiende_hombro",t:"radio",l:"Vista lateral: extiende hombro",o:["Sí","No"]},
-  {k:"vp_prona_tobillo",t:"radio",l:"Vista posterior: prona tobillo",o:["Sí","No"]},
-  {k:"vp_bascula_cadera",t:"radio",l:"Vista posterior: báscula cadera",o:["Sí","No"]}
- ]},
- {n:"Sentadilla a una pierna y salto",f:[
-  {row:[{k:"sl_valgo_i",t:"radio",l:"Single leg squat: valgo izquierda",o:["Sí","No"]},{k:"sl_valgo_d",t:"radio",l:"Single leg squat: valgo derecha",o:["Sí","No"]}]},
-  {k:"dj_valgo",t:"radio",l:"Drop jump: valgo",o:["Sí","No"]}
- ]},
- {n:"Fuerza",f:[
+ {n:"Sentadilla overhead",f:[{t:"grid",o:["Sí","No"],rows:[
+  ["Anterior: rota ext. cadera","va_rot_cadera"],["Anterior: prona tobillo","va_prona_tobillo"],["Anterior: valgo rodillas","va_valgo_rodillas"],
+  ["Lateral: inclina torso","vl_inclina_torso"],["Lateral: flexión lumbar","vl_flexion_lumbar"],["Lateral: extiende hombro","vl_extiende_hombro"],
+  ["Posterior: prona tobillo","vp_prona_tobillo"],["Posterior: báscula cadera","vp_bascula_cadera"]]}]},
+ {n:"Sentadilla a una pierna y salto",f:[{t:"grid",o:["Sí","No"],rows:[["Single leg squat: valgo izq.","sl_valgo_i"],["Single leg squat: valgo der.","sl_valgo_d"],["Drop jump: valgo","dj_valgo"]]}]},
+ {n:"Fuerza y progresión",f:[
   {row:[{k:"edad",t:"num",l:"Edad (años)"},{k:"sexo",t:"radio",l:"Sexo",o:["Hombre","Mujer"]}]},
-  {row:[{k:"agarre_i",t:"num",l:"Prensión manual izquierda (kg)"},{k:"agarre_d",t:"num",l:"Prensión manual derecha (kg)"}]},
+  {t:"registro"},
   {t:"grip"}
  ]},
  {n:"Observaciones",f:[
-  {k:"observaciones_val",t:"area",l:"Observaciones y prioridades para el programa"}
+  {k:"observaciones_val",t:"area",l:"Observaciones y prioridades"}
  ]}
 ];
 
@@ -1642,6 +1639,20 @@ function anField(fd){
     }
     case "num":
       return `<div class="an-f" data-k="${fd.k}"><label>${anLab(fd)}<input type="number" inputmode="decimal" step="any" name="${fd.k}" autocomplete="off"></label></div>`;
+    case "grid":
+      return `<div class="an-scroll"><table class="an-grid"><thead><tr><th></th>${fd.o.map(o=>`<th>${esc(o)}</th>`).join("")}</tr></thead><tbody>${fd.rows.map(([l,k])=>`<tr><td>${esc(l)}</td>${fd.o.map(o=>`<td><input type="radio" name="${k}" value="${esc(o)}" aria-label="${esc(l+": "+o)}"></td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+    case "pares":
+      return `<div class="an-scroll"><table class="an-grid"><thead><tr><th></th>${fd.cols.map(c=>`<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>${fd.rows.map(([l,a,b])=>`<tr><td>${esc(l)}</td><td><input type="number" inputmode="decimal" step="any" name="${a}" aria-label="${esc(l+" izquierda")}"></td><td><input type="number" inputmode="decimal" step="any" name="${b}" aria-label="${esc(l+" derecha")}"></td></tr>`).join("")}</tbody></table></div>`;
+    case "registro":{
+      const inp=(name,t,lab)=>`<input type="${t}"${t==="num"?' inputmode="decimal" step="any"':""} name="${name}" aria-label="${esc(lab)}">`;
+      const tipo=t=>t==="num"?"number":t;
+      const head=`<tr><th>Nº</th>${REG_COLS.map(c=>`<th>${c[1]}</th>`).join("")}${REG_EX.map(j=>`<th><input type="text" name="ex${j}" placeholder="Ejercicio ${j}" aria-label="Nombre del ejercicio ${j}"></th>`).join("")}</tr>`;
+      let body="";
+      for(let i=0;i<=12;i++){
+        body+=`<tr><td>${i?i:"Ini."}</td>${REG_COLS.map(c=>`<td>${inp(`r${i}_${c[0]}`,tipo(c[2]),c[1]+" "+(i?"fila "+i:"inicial"))}</td>`).join("")}${REG_EX.map(j=>`<td>${inp(`r${i}_e${j}`,"text",`Ejercicio ${j} fila ${i}`)}</td>`).join("")}</tr>`;
+      }
+      return `<div class="an-scroll"><table class="an-grid an-reg"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+    }
     case "grip":
       return `<div class="an-f grip-res muted"></div>`;
     case "alert": return `<div class="an-alert"></div>`;
@@ -1690,7 +1701,7 @@ function gripTexto(v){
     const c=x<fila[2]?"Baja":x>fila[3]?"Alta":"Media";
     return `${nombre}: ${String(x).replace(".",",")} kg → ${c}`;
   };
-  return `Rango ${fila[0]}-${fila[1]} años · ${mano("Izquierda",v.agarre_i)} · ${mano("Derecha",v.agarre_d)}`;
+  return `Rango ${fila[0]}-${fila[1]} años · ${mano("Izquierda",v.r0_pi)} · ${mano("Derecha",v.r0_pd)}`;
 }
 function anRefrescar(form){
   const v=anCollect(form);
@@ -1737,6 +1748,12 @@ function anResumenHTML(v,lista,numerar=true){
         const val=typeof r[1]==="string"?v[r[1]]:r.slice(1).filter(x=>v[x[0]]).map(x=>x[1]+" "+v[x[0]]).join(" · ");
         if(!anVacio(val))filas+=`<tr><th>${esc(r[0])}</th><td>${esc(val)}</td></tr>`;
       });
+      else if(fd.t==="grid")fd.rows.forEach(([l,k])=>{if(!anVacio(v[k]))filas+=`<tr><th>${esc(l)}</th><td>${esc(v[k])}</td></tr>`});
+      else if(fd.t==="pares")fd.rows.forEach(([l,a,b])=>{if(!anVacio(v[a])||!anVacio(v[b]))filas+=`<tr><th>${esc(l)}</th><td>Izq. ${esc(v[a]||"–")} · Der. ${esc(v[b]||"–")}</td></tr>`});
+      else if(fd.t==="registro"){for(let i=0;i<=12;i++){
+        const partes=[...REG_COLS.map(c=>[c[1],v[`r${i}_${c[0]}`]]),...REG_EX.map(j=>[v["ex"+j]||"Ejercicio "+j,v[`r${i}_e${j}`]])].filter(x=>!anVacio(x[1])).map(x=>x[0]+": "+x[1]);
+        if(partes.length)filas+=`<tr><th>${i?"Fila "+i:"Inicial"}</th><td>${esc(partes.join(" · "))}</td></tr>`;
+      }}
       else if(fd.k){const val=anTexto(v,fd.k);if(!anVacio(val))filas+=`<tr><th>${esc(fd.l)}</th><td>${esc(val).replace(/\n/g,"<br>")}</td></tr>`}
     })})(s.f);
     return filas?`<div class="cab">${numerar?(i+1)+". ":""}${esc(s.n)}</div><div class="ses"><table class="an-res">${filas}</table></div>`:"";
