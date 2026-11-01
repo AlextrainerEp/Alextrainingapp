@@ -409,6 +409,21 @@ body:not(.cli) .login{margin-top:calc(36px + min(70vw,460px)*0.37 + 115px)}
 .an-addcol{margin:6px 0 2px}
 .an-addcol button{font-size:13px;padding:4px 10px}
 .badge-msg{display:none;margin-left:6px;background:#e53935;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;line-height:16px;vertical-align:middle}
+/* ---- Ajuste de espacios en móvil (solo pantallas estrechas) ---- */
+@media (max-width:600px){
+  body.cli header{gap:10px;padding-top:10px;padding-bottom:10px}
+  body.cli header .cli-nav{gap:8px}
+  body.cli .cli-nav button{min-height:44px;padding:8px 6px;font-size:14px;border-radius:8px}
+  body.cli .chat{gap:12px;padding:8px 4px}
+  body.cli .burbuja{max-width:88%;padding:10px 12px;border-radius:14px}
+  body.cli .burbuja small{margin-bottom:6px;font-size:13px}
+  body.cli .acc{gap:8px;margin-top:8px}
+  body.cli .acc button{min-height:36px;padding:6px 10px;font-size:14px}
+  body.cli .chat-caja{margin-top:14px}
+  body.cli .chat-caja .row{gap:8px;margin-top:8px}
+  body.cli .chat-caja textarea{font-size:16px;padding:10px;border-radius:10px}
+  body.cli .chat-caja .row button{min-height:44px;flex:1}
+}
 </style>
 </head>
 <body>
