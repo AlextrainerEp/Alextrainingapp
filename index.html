@@ -408,6 +408,7 @@ body:not(.cli) .login{margin-top:calc(36px + min(70vw,460px)*0.37 + 115px)}
 .an-reg .rm{border:0;background:none;color:inherit;cursor:pointer;padding:0 0 0 3px;font-size:14px}
 .an-addcol{margin:6px 0 2px}
 .an-addcol button{font-size:13px;padding:4px 10px}
+.badge-msg{display:none;margin-left:6px;background:#e53935;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;line-height:16px;vertical-align:middle}
 </style>
 </head>
 <body>
@@ -1006,16 +1007,17 @@ async function listaClientes(){
   shell(`<div id="tab"><div class="an-panel ent-lista">
     <h2 class="ent-tit">Entrenados (${cs.length})</h2>
     ${cs.length?"":`<p class="muted">Todavía no hay entrenados. Se registran ellos desde la pantalla de inicio.</p>`}
-    ${cs.map(c=>`<button class="ent-abrir" data-c="${c.id}">${c.foto?`<img class="ent-av" src="${c.foto}" alt="">`:`<span class="ent-av ent-ini">${esc((c.nombre||"?")[0].toUpperCase())}</span>`}<span>${esc(c.nombre||"Sin nombre")}</span></button>`).join("")}
+    ${cs.map(c=>`<button class="ent-abrir" data-c="${c.id}">${c.foto?`<img class="ent-av" src="${c.foto}" alt="">`:`<span class="ent-av ent-ini">${esc((c.nombre||"?")[0].toUpperCase())}</span>`}<span>${esc(c.nombre||"Sin nombre")}</span><span class="badge-msg" data-bc="${c.id}"></span></button>`).join("")}
   </div></div>`);
   $("#cnav").innerHTML='<button class="on">Entrenados</button>';
   document.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>fichaCliente(b.dataset.c));
+  refrescarBadges();
 }
 async function fichaCliente(id){
   const [c]=await db("GET","perfiles",`?id=eq.${id}&select=*`);
   const ses=await db("GET","sesiones",`?cliente_id=eq.${id}&order=created_at.desc&select=*`);
   shell(`<div id="tab"></div>`,c);
-  $("#cnav").innerHTML=`<button id="volver">← Clientes</button><button id="ta" class="on">Entrenamientos</button><button id="tb">Anamnesis</button><button id="tc">Historial</button><button id="td">Mensajes</button>`;
+  $("#cnav").innerHTML=`<button id="volver">← Clientes</button><button id="ta" class="on">Entrenamientos</button><button id="tb">Anamnesis</button><button id="tc">Historial</button><button id="td">Mensajes<span class="badge-msg" data-bc="${id}"></span></button>`;
   $("#volver").onclick=listaClientes;
 
   const verEntrenos=()=>{
@@ -1048,6 +1050,7 @@ async function fichaCliente(id){
   const verMsgs=()=>tabMensajes(id,true);
   pestanas(["ta","tb","tc","td"],[verEntrenos,verAnam,verHist,verMsgs]);
   verEntrenos();
+  refrescarBadges();
 }
 
 
@@ -1114,6 +1117,8 @@ async function tabMensajes(clienteId,esAdmin,host="#tab"){
       <div class="msg" id="mm"></div>
     </div>`;
   const chat=$("#chat"); if(chat) chat.scrollTop=chat.scrollHeight;
+  await marcarLeidos(clienteId,esAdmin);
+  refrescarBadges();
 
   const insertar=async(datos)=>{
     await db("POST","mensajes","",{cliente_id:clienteId,de_admin:!!esAdmin,...datos},"return=minimal");
@@ -1172,6 +1177,38 @@ async function tabMensajes(clienteId,esAdmin,host="#tab"){
   });
 }
 function tabMensajesCliente(){return tabMensajes(S.user.id,false,"#sub")}
+
+/* ---------- Contador de mensajes sin leer ---------- */
+async function sinLeer(){
+  const esAdmin=S.perfil.rol==="admin";
+  const q=esAdmin
+    ? "?de_admin=eq.false&leido=eq.false&select=id,cliente_id"
+    : `?cliente_id=eq.${S.user.id}&de_admin=eq.true&leido=eq.false&select=id,cliente_id`;
+  return (await db("GET","mensajes",q))||[];
+}
+// Marca como leídos los mensajes de la otra parte en esta conversación
+async function marcarLeidos(clienteId,esAdmin){
+  try{
+    await db("PATCH","mensajes",`?cliente_id=eq.${clienteId}&de_admin=eq.${!esAdmin}&leido=eq.false`,{leido:true},"return=minimal");
+  }catch(e){}
+}
+// Cliente: un globo en "Mensajes". Entrenador: un globo por cada cliente.
+async function refrescarBadges(){
+  if(!S||!S.perfil||!document.querySelector(".badge-msg")) return;
+  try{
+    const pend=await sinLeer();
+    const pon=(el,n)=>{el.textContent=n||"";el.style.display=n?"inline-block":"none"};
+    if(S.perfil.rol==="admin"){
+      const porCliente={};
+      pend.forEach(m=>{porCliente[m.cliente_id]=(porCliente[m.cliente_id]||0)+1});
+      document.querySelectorAll(".badge-msg[data-bc]").forEach(el=>pon(el,porCliente[el.dataset.bc]));
+    }else{
+      document.querySelectorAll(".badge-msg:not([data-bc])").forEach(el=>pon(el,pend.length));
+    }
+  }catch(e){}
+}
+// Refresco cada 30 s (sin Realtime)
+setInterval(refrescarBadges,30000);
 
 // Nombre que ve el entrenado: el día de la semana (el título interno sigue guardado)
 const DIAS_NOMBRE=["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
@@ -1570,8 +1607,9 @@ async function panelCliente(tab,sub){
   let idx=lista.findIndex(n=>n[0]===claves[key]);
   if(idx<0) idx=0;
   const ids=lista.map((_,i)=>"cn"+i);
-  $("#cnav").innerHTML=lista.map((n,i)=>`<button id="${ids[i]}" class="${i===idx?"on":""}"><span class="ico">${iconos[n[0]]||""}</span>${n[0]}</button>`).join("");
+  $("#cnav").innerHTML=lista.map((n,i)=>`<button id="${ids[i]}" class="${i===idx?"on":""}"><span class="ico">${iconos[n[0]]||""}</span>${n[0]}${n[0]==="Mensajes"?'<span class="badge-msg"></span>':""}</button>`).join("");
   pestanas(ids,lista.map(n=>n[1]));
+  refrescarBadges();
   if(err) $("#tab").insertAdjacentHTML("afterbegin",`<div class="an-panel"><p class="muted">No se pudo cargar tu valoración (${esc(err)}). Avísale a tu entrenador.</p></div>`);
   lista[idx][1]();
 }
