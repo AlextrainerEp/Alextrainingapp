@@ -577,6 +577,11 @@ function shell(inner,ficha){
   const ifo=$("#ir-foto"); if(ifo&&!ficha) ifo.onclick=()=>panelCliente();
   const ip=$("#ir-perfil"); if(ip) ip.onclick=()=>panelCliente("perfil");
   ajustarCabecera();
+  // La fila de menú se añade después de crear la cabecera: vuelve a medirla cuando cambie de tamaño
+  const hdr=document.querySelector("header");
+  if(hdr&&window.ResizeObserver){
+    (window._hro||(window._hro=new ResizeObserver(()=>ajustarCabecera()))).observe(hdr);
+  }
 }
 function entrar(){
   if(S.perfil.rol==="admin"){
