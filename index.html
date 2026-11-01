@@ -376,6 +376,26 @@ body:not(.cli) .login{margin-top:calc(36px + min(70vw,460px)*0.37 + 115px)}
 .fms-vid{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:4px 0}
 .vidup{display:inline-block;padding:6px 10px;border:1px dashed var(--acento);border-radius:8px;cursor:pointer;font-size:13px}
 .fv-msg{font-size:13px}
+.fms-card{background:rgba(255,255,255,.35);border:1px solid rgba(128,128,128,.25);border-radius:12px;margin:8px 0;padding:0 12px}
+.fms-card summary{display:flex;gap:10px;align-items:center;padding:12px 0;cursor:pointer;list-style:none}
+.fms-card summary::-webkit-details-marker{display:none}
+.fms-num{width:30px;height:30px;border-radius:50%;background:var(--acento);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;flex:none}
+.fms-nombre{font-weight:600;flex:1;min-width:0}
+.fms-sum{font-size:13px;font-weight:700;color:var(--acento);white-space:nowrap}
+.fms-body{padding:0 0 14px}
+.fms-body ol{padding-left:20px}
+.fms-pts-box{display:grid;gap:6px;margin:8px 0}
+.fms-pt{display:flex;gap:8px;align-items:flex-start;font-size:14px}
+.fms-row{display:grid;gap:8px;margin:10px 0}
+.fms-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.fms-lbl{font-size:13px;font-weight:700;min-width:84px}
+.fms-chips-row{display:inline-flex;gap:6px;flex-wrap:wrap}
+.fms-chip{position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:44px;height:44px;border-radius:10px;cursor:pointer;color:#fff;font-weight:700;font-size:16px;opacity:.4;transition:opacity .15s,transform .15s}
+.fms-chip input{position:absolute;opacity:0;pointer-events:none;margin:0}
+.fms-chip:has(input:checked){opacity:1;transform:scale(1.08);box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.fms-chip.fms-v3{background:#2e7d32}.fms-chip.fms-v2{background:#8a6508}.fms-chip.fms-v1{background:#c46a1b}.fms-chip.fms-v0{background:#b3261e}
+.fms-chip:focus-within{outline:2px solid var(--acento);outline-offset:2px}
+.fms-final .fms-chip{min-width:34px;height:34px;font-size:14px}
 .fms-final{margin-top:14px;border-top:2px solid var(--acento);padding-top:8px}
 .fms-final h4{margin:4px 0}
 .fms-lbl{font-size:13px;margin-right:2px}
@@ -1777,20 +1797,22 @@ function anField(fd){
     case "num":
       return `<div class="an-f" data-k="${fd.k}"><label>${anLab(fd)}<input type="number" inputmode="decimal" step="any" name="${fd.k}" autocomplete="off"></label></div>`;
     case "fms":
-      return `<div class="fms-wrap"><iframe class="fms-iframe" src="${FMS_VIDEO}" loading="lazy" allowfullscreen title="Vídeo explicativo de la batería FMS"></iframe>${FMS.map((t,i)=>`<div class="fms-b">
-        <details class="fms-ficha"><summary><b>${i+1}. ${esc(t.n)}</b>${t.lado?' <span class="fms-tag">Derecha / izquierda</span>':""}</summary>
-          <p><b>Para qué sirve:</b> ${esc(t.para)}</p>
-          <p><b>Material:</b> ${esc(t.material)}</p>
-          <p><b>Ejecución:</b></p><ol>${t.pasos.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>
-          <p><b>Puntuación:</b></p><ul class="fms-pts">${t.pts.map((x,j)=>`<li><span class="fms-n fms-v${3-j}">${3-j}</span><span>${esc(x)}</span></li>`).join("")}</ul>
-          <iframe class="fms-iframe" src="https://www.youtube-nocookie.com/embed/${t.video}" loading="lazy" allowfullscreen title="Vídeo: ${esc(t.n)}"></iframe>
-        </details>
-        ${anAdminMode?`<div class="fms-row">${t.lado?`<span class="fms-lbl">Derecha</span>${fmsSc("fms_"+t.id+"_d")}<span class="fms-lbl">Izquierda</span>${fmsSc("fms_"+t.id+"_i")}`:`<span class="fms-lbl">Puntuación</span>${fmsSc("fms_"+t.id+"_d")}`}</div>`:""}
-        <div class="fms-vid" data-fv="${t.id}"></div>
-      </div>`).join("")}
-      ${anAdminMode?`<div class="fms-final"><h4>Resumen general <span class="muted">(solo entrenador)</span></h4>
-        <p class="muted">Puntúa después de revisar los vídeos. El cliente no ve esta columna.</p>
-        <table class="an-grid"><thead><tr><th>Test</th><th>Derecha</th><th>Izquierda</th></tr></thead><tbody>${FMS.map(t=>`<tr><td>${esc(t.n)}</td><td>${fmsSc("fin_"+t.id+"_d")}</td><td>${t.lado?fmsSc("fin_"+t.id+"_i"):"–"}</td></tr>`).join("")}</tbody></table></div>`:""}</div>`;
+      return `<div class="fms-wrap"><iframe class="fms-iframe" src="${FMS_VIDEO}" loading="lazy" allowfullscreen title="Vídeo explicativo de la batería FMS"></iframe>
+        ${FMS.map((t,i)=>`<details class="fms-card">
+          <summary><span class="fms-num">${i+1}</span><span class="fms-nombre">${esc(t.n)}</span><span class="fms-sum" data-sum="${t.id}"></span></summary>
+          <div class="fms-body">
+            <p>${esc(t.para)}</p>
+            <p class="muted"><b>Material:</b> ${esc(t.material)}</p>
+            <ol>${t.pasos.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>
+            <iframe class="fms-iframe" src="https://www.youtube-nocookie.com/embed/${t.video}" loading="lazy" allowfullscreen title="Vídeo: ${esc(t.n)}"></iframe>
+            <div class="fms-pts-box">${t.pts.map((x,j)=>`<div class="fms-pt"><span class="fms-n fms-v${3-j}">${3-j}</span><span>${esc(x)}</span></div>`).join("")}</div>
+            ${fmsFila(anAdminMode?"fms_":"cli_",t)}
+            <div class="fms-vid" data-fv="${t.id}"></div>
+          </div>
+        </details>`).join("")}
+        ${anAdminMode?`<div class="fms-final"><h4>Resumen general <span class="muted">(solo entrenador)</span></h4>
+          <p class="muted">Puntúa después de revisar los vídeos. El cliente no ve esta columna.</p>
+          <table class="an-grid"><thead><tr><th>Test</th><th>Cliente (D / I)</th><th>Final D</th><th>Final I</th></tr></thead><tbody>${FMS.map(t=>`<tr><td>${esc(t.n)}</td><td><span data-cs="${t.id}" class="fms-sv">–</span></td><td>${fmsSc("fin_"+t.id+"_d")}</td><td>${t.lado?fmsSc("fin_"+t.id+"_i"):"–"}</td></tr>`).join("")}</tbody></table></div>`:""}</div>`;
     case "grid":
       return `<div class="an-scroll"><table class="an-grid"><thead><tr><th></th>${fd.o.map(o=>`<th>${esc(o)}</th>`).join("")}</tr></thead><tbody>${fd.rows.map(([l,k])=>`<tr><td>${esc(l)}</td>${fd.o.map(o=>`<td><input type="radio" name="${k}" value="${esc(o)}" aria-label="${esc(l+": "+o)}"></td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
     case "pares":
@@ -1869,9 +1891,22 @@ function anFaltan(form,lista){
   })})(lista.flatMap(s=>s.f));
   return n;
 }
-function fmsSc(name){return [0,1,2,3].map(n=>`<label class="fms-sc"><input type="radio" name="${name}" value="${n}"> ${n}</label>`).join("")}
+function fmsFila(pre,t){return `<div class="fms-row">${t.lado?`<div class="fms-line"><span class="fms-lbl">Derecha</span>${fmsSc(pre+t.id+"_d")}</div><div class="fms-line"><span class="fms-lbl">Izquierda</span>${fmsSc(pre+t.id+"_i")}</div>`:`<div class="fms-line"><span class="fms-lbl">Puntuación</span>${fmsSc(pre+t.id+"_d")}</div>`}</div>`}
+function fmsSc(name){return `<span class="fms-chips-row">${[3,2,1,0].map(n=>`<label class="fms-chip fms-v${n}"><input type="radio" name="${name}" value="${n}"><span>${n}</span></label>`).join("")}</span>`}
 // Batería FMS dentro de la valoración: el entrenador puntúa; el cliente sube o graba su vídeo
+function fmsResumenCorto(t,v,pre){
+  const d=v[pre+t.id+"_d"], i=v[pre+t.id+"_i"];
+  if(t.lado) return anVacio(d)&&anVacio(i)?"":`D ${anVacio(d)?"–":d} · I ${anVacio(i)?"–":i}`;
+  return anVacio(d)?"":`${d}/3`;
+}
 function anFmsPintar(form,vals,admin){
+  form.querySelectorAll("[data-cs]").forEach(el=>{
+    const t=FMS.find(x=>x.id===el.dataset.cs); const d=vals["cli_"+t.id+"_d"], i=vals["cli_"+t.id+"_i"];
+    el.textContent=t.lado?`${anVacio(d)?"–":d} / ${anVacio(i)?"–":i}`:(anVacio(d)?"–":d);
+  });
+  form.querySelectorAll("[data-sum]").forEach(el=>{
+    const t=FMS.find(x=>x.id===el.dataset.sum); el.textContent=fmsResumenCorto(t,vals,admin?"fms_":"cli_");
+  });
   form.querySelectorAll("[data-fv]").forEach(el=>{
     const id=el.dataset.fv, path=vals["fmsv_"+id];
     const ver=path?`<button type="button" class="vid" data-fvver="${esc(path)}">▶ Ver vídeo</button>`:"";
@@ -1908,6 +1943,15 @@ document.addEventListener("change",async ev=>{
     m.textContent="Vídeo guardado ✓";
   }catch(e){m.textContent=e.message}
   inp.value="";
+});
+document.addEventListener("change",ev=>{
+  const m=ev.target.name&&ev.target.name.match(/^(fms|cli)_(.+)_(d|i)$/);
+  if(!m) return;
+  const card=ev.target.closest(".fms-card"); if(!card) return;
+  const t=FMS.find(x=>x.id===m[2]); if(!t) return;
+  const vals={};
+  card.querySelectorAll("input[type=radio]:checked").forEach(r=>vals[r.name]=r.value);
+  const el=card.querySelector("[data-sum]"); if(el) el.textContent=fmsResumenCorto(t,vals,m[1]+"_");
 });
 document.addEventListener("click",async ev=>{
   const b=ev.target.closest&&ev.target.closest("[data-fvver]");
@@ -1947,9 +1991,10 @@ function anResumenHTML(v,lista,numerar=true){
         const sc=(k)=>anVacio(v[k])?"–":v[k];
         const linea=t.lado?`D ${sc("fms_"+t.id+"_d")} · I ${sc("fms_"+t.id+"_i")}`:`${sc("fms_"+t.id+"_d")}`;
         const fin=t.lado?`D ${sc("fin_"+t.id+"_d")} · I ${sc("fin_"+t.id+"_i")}`:`${sc("fin_"+t.id+"_d")}`;
-        const hay=["fms_"+t.id+"_d","fms_"+t.id+"_i","fin_"+t.id+"_d","fin_"+t.id+"_i"].some(k=>!anVacio(v[k]));
+        const hay=["fms_"+t.id+"_d","fms_"+t.id+"_i","cli_"+t.id+"_d","cli_"+t.id+"_i","fin_"+t.id+"_d","fin_"+t.id+"_i"].some(k=>!anVacio(v[k]));
         if(!hay&&!v["fmsv_"+t.id]) return;
-        filas+=`<tr><th>${esc(t.n)}</th><td>Test: ${linea} · Final: ${fin}${v["fmsv_"+t.id]?" · vídeo del cliente":""}</td></tr>`;
+        const cli=t.lado?`D ${sc("cli_"+t.id+"_d")} · I ${sc("cli_"+t.id+"_i")}`:`${sc("cli_"+t.id+"_d")}`;
+        filas+=`<tr><th>${esc(t.n)}</th><td>Test: ${linea} · Cliente: ${cli} · Final: ${fin}${v["fmsv_"+t.id]?" · vídeo del cliente":""}</td></tr>`;
       });
       else if(fd.t==="grid")fd.rows.forEach(([l,k])=>{if(!anVacio(v[k]))filas+=`<tr><th>${esc(l)}</th><td>${esc(v[k])}</td></tr>`});
       else if(fd.t==="pares")fd.rows.forEach(([l,a,b])=>{if(!anVacio(v[a])||!anVacio(v[b]))filas+=`<tr><th>${esc(l)}</th><td>Izq. ${esc(v[a]||"–")} · Der. ${esc(v[b]||"–")}</td></tr>`});
