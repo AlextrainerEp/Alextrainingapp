@@ -335,6 +335,9 @@ body:not(.cli) .login{margin-top:calc(36px + min(70vw,460px)*0.37 + 115px)}
 
 /* ---- Acceso del entrenado ---- */
 .acceso-box select,.acceso-box input[type=date]{width:auto}
+
+/* ---- Valoración inicial: campos numéricos y clasificación de prensión ---- */
+.grip-res{margin:6px 0 10px;font-size:14px}
 </style>
 </head>
 <body>
@@ -1583,19 +1586,36 @@ const ANAM_CLI=[
 ];
 // Bloque que rellena el entrenador en la primera sesión
 const ANAM_VAL=[
- {n:"Valoración inicial",f:[
-  {row:[{k:"peso",t:"text",l:"Peso (kg)"},{k:"altura",t:"text",l:"Altura (cm)"},{k:"cintura",t:"text",l:"Cintura (cm)"}]},
-  {row:[{k:"cadera",t:"text",l:"Cadera (cm)"},{k:"fc_reposo",t:"text",l:"FC en reposo (ppm)"},{k:"tension",t:"text",l:"Tensión arterial"}]},
-  {t:"tests",rows:[
-   ["Sentadilla con brazos arriba (compensaciones)","t_sentadilla"],
-   ["Flexiones máximas (o inclinadas)","t_flexiones"],
-   ["Plancha frontal (s)","t_plancha"],
-   ["Sentarse y levantarse de silla en 30 s","t_silla"],
-   ["Fuerza de agarre con dinamómetro (kg, mejor de 3)",["agarre_dcha","Dcha."],["agarre_izda","Izda."]],
-   ["Movilidad de tobillo, rodilla a la pared (cm)",["tobillo_dcho","Dcho."],["tobillo_izdo","Izdo."]],
-   ["Movilidad de hombro","t_hombro"],
-   ["Test cardiovascular (6 min marcha o escalón)","t_cardio"]
-  ]},
+ {n:"Movilidad",f:[
+  {row:[{k:"tobillo_i",t:"num",l:"Dorsiflexión tobillo izquierda (cm)"},{k:"tobillo_d",t:"num",l:"Dorsiflexión tobillo derecha (cm)"}]},
+  {row:[{k:"hombro_i",t:"num",l:"Movilidad hombro izquierda (cm)"},{k:"hombro_d",t:"num",l:"Movilidad hombro derecha (cm)"}]}
+ ]},
+ {n:"Estabilidad y control",f:[
+  {row:[{k:"trend_i",t:"radio",l:"Trendelenburg izquierda",o:["Positivo","Negativo"]},{k:"trend_d",t:"radio",l:"Trendelenburg derecha",o:["Positivo","Negativo"]}]},
+  {k:"rot_bascula",t:"radio",l:"Rotary stability: báscula cadera",o:["Sí","No"]},
+  {k:"rot_arquea",t:"radio",l:"Rotary stability: arquea lumbar",o:["Sí","No"]},
+  {k:"rot_escapulas",t:"radio",l:"Rotary stability: retrae escápulas",o:["Sí","No"]}
+ ]},
+ {n:"Sentadilla overhead",f:[
+  {k:"va_rot_cadera",t:"radio",l:"Vista anterior: rota externamente cadera",o:["Sí","No"]},
+  {k:"va_prona_tobillo",t:"radio",l:"Vista anterior: prona tobillo",o:["Sí","No"]},
+  {k:"va_valgo_rodillas",t:"radio",l:"Vista anterior: valgo de rodillas",o:["Sí","No"]},
+  {k:"vl_inclina_torso",t:"radio",l:"Vista lateral: inclina torso",o:["Sí","No"]},
+  {k:"vl_flexion_lumbar",t:"radio",l:"Vista lateral: flexión lumbar",o:["Sí","No"]},
+  {k:"vl_extiende_hombro",t:"radio",l:"Vista lateral: extiende hombro",o:["Sí","No"]},
+  {k:"vp_prona_tobillo",t:"radio",l:"Vista posterior: prona tobillo",o:["Sí","No"]},
+  {k:"vp_bascula_cadera",t:"radio",l:"Vista posterior: báscula cadera",o:["Sí","No"]}
+ ]},
+ {n:"Sentadilla a una pierna y salto",f:[
+  {row:[{k:"sl_valgo_i",t:"radio",l:"Single leg squat: valgo izquierda",o:["Sí","No"]},{k:"sl_valgo_d",t:"radio",l:"Single leg squat: valgo derecha",o:["Sí","No"]}]},
+  {k:"dj_valgo",t:"radio",l:"Drop jump: valgo",o:["Sí","No"]}
+ ]},
+ {n:"Fuerza",f:[
+  {row:[{k:"edad",t:"num",l:"Edad (años)"},{k:"sexo",t:"radio",l:"Sexo",o:["Hombre","Mujer"]}]},
+  {row:[{k:"agarre_i",t:"num",l:"Prensión manual izquierda (kg)"},{k:"agarre_d",t:"num",l:"Prensión manual derecha (kg)"}]},
+  {t:"grip"}
+ ]},
+ {n:"Observaciones",f:[
   {k:"observaciones_val",t:"area",l:"Observaciones y prioridades para el programa"}
  ]}
 ];
@@ -1620,6 +1640,10 @@ function anField(fd){
         ${fd.t==="scale"?`<div class="an-ends"><span>${esc(fd.ends[0])}</span><span>${esc(fd.ends[1])}</span></div>`:""}
         ${fd.otro?`<div class="an-otro" data-when="${fd.k}=Otro"><input type="text" name="${fd.k}_otro" placeholder="Especifica"></div>`:""}</div>`;
     }
+    case "num":
+      return `<div class="an-f" data-k="${fd.k}"><label>${anLab(fd)}<input type="number" inputmode="decimal" step="any" name="${fd.k}" autocomplete="off"></label></div>`;
+    case "grip":
+      return `<div class="an-f grip-res muted"></div>`;
     case "alert": return `<div class="an-alert"></div>`;
     case "p": return `<p class="muted">${esc(fd.h)}</p>`;
     case "tests":
@@ -1652,8 +1676,26 @@ function anAviso(v){
   const n=(v.patologias||[]).length;
   return n?`Ha marcado ${n} ${n===1?"patología":"patologías"}: pedir valoración o autorización médica antes de la primera sesión.`:"";
 }
+const GRIP={
+  Hombre:[[18,24,41.4,51.2],[25,29,43.3,59.4],[30,34,36.4,56.4],[35,39,39.7,54.3],[40,44,39.9,54.4],[45,49,35.8,48.2],[50,54,39,52.3],[55,59,32.4,47.8],[60,64,30.4,44.9],[65,69,31.5,45.8],[70,74,29.3,41.2],[75,79,25.9,36.6],[80,85,21.5,34.6]],
+  Mujer:[[18,24,22.4,33.8],[25,29,25.4,33.6],[30,34,23.9,33],[35,39,24.5,33],[40,44,26.5,33.8],[45,49,25.2,34.4],[50,54,24.6,32.7],[55,59,20.7,30.2],[60,64,19.2,28.1],[65,69,19.3,25],[70,74,19.5,23.9],[75,79,15.7,22.4],[80,85,16.6,21.8]]
+};
+function gripTexto(v){
+  const tabla=GRIP[v.sexo], edad=parseInt(v.edad,10);
+  if(!tabla||isNaN(edad)) return "Indica edad y sexo para ver la clasificación de prensión manual.";
+  const fila=edad<=24?tabla[0]:edad>=80?tabla[tabla.length-1]:tabla.find(r=>edad>=r[0]&&edad<=r[1]);
+  const mano=(nombre,raw)=>{
+    const x=parseFloat(String(raw??"").replace(",","."));
+    if(isNaN(x)) return `${nombre}: sin datos`;
+    const c=x<fila[2]?"Baja":x>fila[3]?"Alta":"Media";
+    return `${nombre}: ${String(x).replace(".",",")} kg → ${c}`;
+  };
+  return `Rango ${fila[0]}-${fila[1]} años · ${mano("Izquierda",v.agarre_i)} · ${mano("Derecha",v.agarre_d)}`;
+}
 function anRefrescar(form){
   const v=anCollect(form);
+  const gr=form.querySelector(".grip-res");
+  if(gr) gr.textContent=gripTexto(v);
   form.querySelectorAll("[data-when]").forEach(el=>{el.hidden=!anCumple(el.dataset.when,v)});
   const al=form.querySelector(".an-alert");
   if(al){const n=(v.patologias||[]).length;al.hidden=!n;al.classList.toggle("on",n>0);al.textContent=n?`Has marcado ${n} ${n===1?"patología":"patologías"}. Antes de empezar, tu entrenador te pedirá una valoración médica.`:""}
