@@ -347,6 +347,10 @@ body:not(.cli) .login{margin-top:calc(36px + min(70vw,460px)*0.37 + 115px)}
 .an-grid input[type=number],.an-grid input[type=text],.an-grid input[type=date]{width:66px;padding:2px 4px;font-size:12px;border:1px solid rgba(128,128,128,.35);border-radius:4px;background:transparent;color:inherit}
 .an-reg input[type=date]{width:112px}
 .an-reg input[type=text]{width:84px}
+.an-reg th input.rn{width:84px;font-weight:600}
+.an-reg .rm{border:0;background:none;color:inherit;cursor:pointer;padding:0 0 0 3px;font-size:14px}
+.an-addcol{margin:6px 0 2px}
+.an-addcol button{font-size:13px;padding:4px 10px}
 </style>
 </head>
 <body>
@@ -982,7 +986,7 @@ async function fichaCliente(id){
       }catch(err){msg("#m",err.message,false)}
     };
   };
-  const verAnam=()=>subTabs([["Respuesta Anamnesis",()=>anRespuestasEntrenador(c)],["Respuesta Valoración Inicial",()=>anValoracionEntrenador(c)]]);
+  const verAnam=()=>subTabs([["Valoración inicial",()=>anValoracionEntrenador(c,"ini")],["Anamnesis",()=>anamnesisEntrenador(c)],["Valoración funcional",()=>anValoracionEntrenador(c,"fun")]]);
   const verHist=()=>{$("#tab").innerHTML=tabHistorial(ses)};
   const verMsgs=()=>tabMensajes(id,true);
   pestanas(["ta","tb","tc","td"],[verEntrenos,verAnam,verHist,verMsgs]);
@@ -1455,27 +1459,29 @@ function valoracionHTML(datos){
   // Muestra todas las preguntas de la valoración con sus respuestas (solo lectura)
   return anResumenHTML(datos||{},ANAM_VAL,false);
 }
-// Valoración inicial del cliente: solo lectura, y solo llega aquí si está visible
-function tabValoracionCliente(v,host="#tab"){
-  // El entrenado puede modificarla las veces que quiera mientras el entrenador la tenga compartida
-  $(host).innerHTML=`<div class="an-panel"><p class="muted">Valoración inicial${v.actualizada?" · Última actualización: "+anFecha(v.actualizada):""}. Puedes modificarla cuando quieras.</p>
+// Valoración inicial o funcional del cliente: puede editarla mientras el entrenador la tenga compartida
+function tabValoracionCliente(v,k,host="#sub"){
+  const titulo=k==="ini"?"Valoración inicial":"Valoración funcional";
+  $(host).innerHTML=`<div class="an-panel"><p class="muted">${titulo}${v.actualizada?" · Última actualización: "+anFecha(v.actualizada):""}. Puedes modificarla cuando quieras.</p>
     <div id="vcForm"></div>
-    <div class="row" style="margin-top:10px"><button class="gold" id="guardarVc">Guardar valoración</button></div><div class="msg" id="mvc"></div></div>`;
-  const form=anForm($("#vcForm"),ANAM_VAL,v.datos||{},false);
+    <div class="row" style="margin-top:10px"><button class="gold" id="guardarVc">Guardar</button></div><div class="msg" id="mvc"></div></div>`;
+  const form=anForm($("#vcForm"),k==="ini"?ANAM_INI:ANAM_FUN,v.datos||{},false);
   $("#guardarVc").onclick=async()=>{
     try{
-      const datos=anCollect(form);
-      const r=await db("PATCH","valoraciones",`?cliente_id=eq.${S.user.id}`,{datos,actualizada:new Date().toISOString()},"return=representation");
+      // Se mezcla con lo que haya en la fila (la otra página y los flags del entrenador)
+      const [f]=await db("GET","valoraciones",`?cliente_id=eq.${S.user.id}&select=datos`);
+      const nuevo={...((f&&f.datos)||{}),...anCollect(form)};
+      const r=await db("PATCH","valoraciones",`?cliente_id=eq.${S.user.id}`,{datos:nuevo,actualizada:new Date().toISOString()},"return=representation");
       if(!r||!r.length) throw new Error("No se pudo guardar. Pide a tu entrenador que la comparta de nuevo.");
-      v.datos=datos; v.actualizada=r[0].actualizada;
-      msg("#mvc","Valoración guardada ✓",true);
+      v.datos=nuevo; v.actualizada=r[0].actualizada;
+      msg("#mvc","Guardado ✓",true);
     }catch(e){msg("#mvc",e.message,false)}
   };
 }
 // Anamnesis del cliente (dentro de su perfil): respuestas en solo lectura y botón para rellenar o editar
 function anamnesisCliente(){
   const a=S.perfil.anamnesis||{};
-  const llena=Object.keys(a).some(k=>!["consent","actualizada","valoracion"].includes(k));
+  const llena=Object.keys(a).some(k=>!["consent","actualizada","valoracion","_vis"].includes(k));
   $("#sub").innerHTML=`<div class="an-panel">${llena?anResumenHTML(a,ANAM_CLI)+anAntigua(a):'<p class="muted">Todavía no has rellenado la anamnesis.</p>'}
     ${a.actualizada?`<p class="muted">Última actualización: ${anFecha(a.actualizada)}</p>`:""}
     <div class="row" style="margin-top:10px"><button class="gold" id="anEditar">${llena?"Editar anamnesis":"Rellenar anamnesis"}</button></div></div>`;
@@ -1484,12 +1490,22 @@ function anamnesisCliente(){
 async function panelCliente(tab,sub){
   // Todo el panel del cliente está en su perfil; el menú va en la barra superior
   const val=await valoracionVisible();
+  const vis=(val&&val.datos&&val.datos._vis)||{};
+  try{
+    const [fp]=await db("GET","perfiles",`?id=eq.${S.user.id}&select=anamnesis`);
+    if(fp) S.perfil.anamnesis=fp.anamnesis||{};
+  }catch(e){}
+  const anaOn=((S.perfil.anamnesis||{})._vis||{}).ana!==false;
+  const subs=[];
+  if(val&&vis.ini===true) subs.push(["Valoración inicial",()=>tabValoracionCliente(val,"ini","#sub")]);
+  if(anaOn) subs.push(["Anamnesis",anamnesisCliente]);
+  if(val&&vis.fun===true) subs.push(["Valoración funcional",()=>tabValoracionCliente(val,"fun","#sub")]);
   const lista=[["Entrenamientos",()=>tabEntrenosCal("#sub")],["Historial",()=>tabHistorialCliente("#sub")]];
-  if(val) lista.push(["Respuesta Valoración Inicial",()=>tabValoracionCliente(val,"#sub")]);
-  lista.push(["Mensajes",()=>tabMensajes(S.user.id,false,"#sub")],["Anamnesis",anamnesisCliente],["Foto y contraseña",tabPerfil]);
-  const claves={entrenamientos:"Entrenamientos",calendario:"Entrenamientos",historial:"Historial",valoracion:"Respuesta Valoración Inicial",mensajes:"Mensajes",anamnesis:"Anamnesis",perfil:"Foto y contraseña"};
+  if(subs.length) lista.push(["Valoración inicial",()=>subTabs(subs)]);
+  lista.push(["Mensajes",()=>tabMensajes(S.user.id,false,"#sub")],["Foto y contraseña",tabPerfil]);
+  const claves={entrenamientos:"Entrenamientos",calendario:"Entrenamientos",historial:"Historial",valoracion:"Valoración inicial",mensajes:"Mensajes",anamnesis:"Valoración inicial",perfil:"Foto y contraseña"};
   const key=tab==="perfil"?(sub||"perfil"):(tab||"entrenamientos");
-  const iconos={"Entrenamientos":"🏋️","Historial":"🕘","Respuesta Valoración Inicial":"📋","Mensajes":"💬","Anamnesis":"📝","Foto y contraseña":"👤"};
+  const iconos={"Entrenamientos":"🏋️","Historial":"🕘","Valoración inicial":"📋","Mensajes":"💬","Foto y contraseña":"👤"};
   shell(`<div id="tab"><div id="sub"></div></div>`);
   let idx=lista.findIndex(n=>n[0]===claves[key]);
   if(idx<0) idx=0;
@@ -1594,9 +1610,25 @@ const ANAM_CLI=[
  ]}
 ];
 // Bloque que rellena el entrenador en la primera sesión
-const REG_COLS=[["fecha","Fecha","date"],["pi","Prensión I","num"],["pd","Prensión D","num"],["glob","Globet 8 kg","num"],["flex","Flexiones 10","num"]];
-const REG_EX=[1,2,3,4,5];
-const ANAM_VAL=[
+const REG_FIJAS=[["fecha","Fecha","date"],["pi","Prensión I","num"],["pd","Prensión D","num"]];
+const REG_DEF=[["g","Globet 8 kg"],["f","Flexiones 10"],["e1","Ejercicio 1"],["e2","Ejercicio 2"],["e3","Ejercicio 3"],["e4","Ejercicio 4"],["e5","Ejercicio 5"]];
+const ANAM_INI=[
+ {n:"Datos generales y pruebas",f:[
+  {row:[{k:"peso",t:"text",l:"Peso (kg)"},{k:"altura",t:"text",l:"Altura (cm)"},{k:"cintura",t:"text",l:"Cintura (cm)"}]},
+  {row:[{k:"cadera",t:"text",l:"Cadera (cm)"},{k:"fc_reposo",t:"text",l:"FC en reposo (ppm)"},{k:"tension",t:"text",l:"Tensión arterial"}]},
+  {t:"tests",rows:[
+   ["Sentadilla con brazos arriba (compensaciones)","t_sentadilla"],
+   ["Flexiones máximas (o inclinadas)","t_flexiones"],
+   ["Plancha frontal (s)","t_plancha"],
+   ["Sentarse y levantarse de silla en 30 s","t_silla"],
+   ["Fuerza de agarre con dinamómetro (kg, mejor de 3)",["agarre_dcha","Dcha."],["agarre_izda","Izda."]],
+   ["Movilidad de tobillo, rodilla a la pared (cm)",["tobillo_dcho","Dcho."],["tobillo_izdo","Izdo."]],
+   ["Movilidad de hombro","t_hombro"],
+   ["Test cardiovascular (6 min marcha o escalón)","t_cardio"]
+  ]}
+ ]}
+];
+const ANAM_FUN=[
  {n:"Movilidad",f:[{t:"pares",cols:["Izquierda (cm)","Derecha (cm)"],rows:[["Dorsiflexión tobillo","tobillo_i","tobillo_d"],["Movilidad hombro","hombro_i","hombro_d"]]}]},
  {n:"Estabilidad",f:[
   {t:"grid",o:["Positivo","Negativo"],rows:[["Trendelenburg izquierda","trend_i"],["Trendelenburg derecha","trend_d"]]},
@@ -1616,6 +1648,27 @@ const ANAM_VAL=[
   {k:"observaciones_val",t:"area",l:"Observaciones y prioridades"}
  ]}
 ];
+const ANAM_VAL=[...ANAM_INI,...ANAM_FUN];
+
+function regIds(v){const s=(v&&v.reg_ids)||"";return s?s.split(",").filter(Boolean):REG_DEF.map(d=>d[0])}
+function regNombre(v,id){const n=v&&v["regn_"+id];if(n)return n;const d=REG_DEF.find(x=>x[0]===id);return d?d[1]:"Columna"}
+function anRegTabla(form,el,src,admin){
+  const ids=regIds(src);
+  const celda=(name,t,lab,value)=>`<input type="${t==="num"?"number":t}"${t==="num"?' inputmode="decimal" step="any"':""} name="${name}" value="${esc(value??"")}" aria-label="${esc(lab)}">`;
+  const cab=ids.map(id=>admin
+    ?`<th><input type="text" name="regn_${id}" value="${esc(regNombre(src,id))}" aria-label="Nombre de la columna" class="rn"><button type="button" class="rm" data-rm="${id}" aria-label="Quitar columna">×</button></th>`
+    :`<th>${esc(regNombre(src,id))}<input type="hidden" name="regn_${id}" value="${esc(regNombre(src,id))}"></th>`).join("");
+  const head=`<tr><th>Nº</th>${REG_FIJAS.map(c=>`<th>${c[1]}</th>`).join("")}${cab}</tr>`;
+  let body="";
+  for(let i=0;i<=12;i++){
+    body+=`<tr><td>${i?i:"Ini."}</td>${REG_FIJAS.map(c=>`<td>${celda(`r${i}_${c[0]}`,c[2],c[1]+" "+(i?"fila "+i:"inicial"),src[`r${i}_${c[0]}`])}</td>`).join("")}${ids.map(id=>`<td>${celda(`r${i}_${id}`,"text",regNombre(src,id)+" fila "+i,src[`r${i}_${id}`])}</td>`).join("")}</tr>`;
+  }
+  el.innerHTML=`<input type="hidden" name="reg_ids" value="${esc(ids.join(","))}"><div class="an-scroll"><table class="an-grid an-reg"><thead>${head}</thead><tbody>${body}</tbody></table></div>${admin?`<div class="an-addcol"><button type="button" data-addcol>+ Añadir columna</button></div>`:""}`;
+  if(admin){
+    el.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{const c=anCollect(form);c.reg_ids=regIds(c).filter(x=>x!==b.dataset.rm).join(",");anRegTabla(form,el,c,true)});
+    el.querySelector("[data-addcol]").onclick=()=>{const c=anCollect(form);const id="x"+Date.now().toString(36);c.reg_ids=[...regIds(c),id].join(",");c["regn_"+id]="Nueva columna";anRegTabla(form,el,c,true)};
+  }
+}
 
 function anLab(fd){return esc(fd.l)+(fd.req?' <span class="an-req">*</span>':"")}
 function anField(fd){
@@ -1643,16 +1696,8 @@ function anField(fd){
       return `<div class="an-scroll"><table class="an-grid"><thead><tr><th></th>${fd.o.map(o=>`<th>${esc(o)}</th>`).join("")}</tr></thead><tbody>${fd.rows.map(([l,k])=>`<tr><td>${esc(l)}</td>${fd.o.map(o=>`<td><input type="radio" name="${k}" value="${esc(o)}" aria-label="${esc(l+": "+o)}"></td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
     case "pares":
       return `<div class="an-scroll"><table class="an-grid"><thead><tr><th></th>${fd.cols.map(c=>`<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>${fd.rows.map(([l,a,b])=>`<tr><td>${esc(l)}</td><td><input type="number" inputmode="decimal" step="any" name="${a}" aria-label="${esc(l+" izquierda")}"></td><td><input type="number" inputmode="decimal" step="any" name="${b}" aria-label="${esc(l+" derecha")}"></td></tr>`).join("")}</tbody></table></div>`;
-    case "registro":{
-      const inp=(name,t,lab)=>`<input type="${t}"${t==="num"?' inputmode="decimal" step="any"':""} name="${name}" aria-label="${esc(lab)}">`;
-      const tipo=t=>t==="num"?"number":t;
-      const head=`<tr><th>Nº</th>${REG_COLS.map(c=>`<th>${c[1]}</th>`).join("")}${REG_EX.map(j=>`<th><input type="text" name="ex${j}" placeholder="Ejercicio ${j}" aria-label="Nombre del ejercicio ${j}"></th>`).join("")}</tr>`;
-      let body="";
-      for(let i=0;i<=12;i++){
-        body+=`<tr><td>${i?i:"Ini."}</td>${REG_COLS.map(c=>`<td>${inp(`r${i}_${c[0]}`,tipo(c[2]),c[1]+" "+(i?"fila "+i:"inicial"))}</td>`).join("")}${REG_EX.map(j=>`<td>${inp(`r${i}_e${j}`,"text",`Ejercicio ${j} fila ${i}`)}</td>`).join("")}</tr>`;
-      }
-      return `<div class="an-scroll"><table class="an-grid an-reg"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
-    }
+    case "registro":
+      return `<div class="an-regwrap" data-reg></div>`;
     case "grip":
       return `<div class="an-f grip-res muted"></div>`;
     case "alert": return `<div class="an-alert"></div>`;
@@ -1676,6 +1721,7 @@ function anCollect(form){
 function anApply(form,v){
   form.querySelectorAll("[name]").forEach(c=>{
     const x=v[c.name];
+    if(x===undefined)return;
     if(c.type==="checkbox")c.checked=Array.isArray(x)&&x.includes(c.value);
     else if(c.type==="radio")c.checked=x===c.value;
     else c.value=x??"";
@@ -1724,9 +1770,10 @@ function anFaltan(form,lista){
   })})(lista.flatMap(s=>s.f));
   return n;
 }
-function anForm(cont,lista,vals,numerar=true){
+function anForm(cont,lista,vals,numerar=true,opts={}){
   cont.innerHTML=`<form class="anam" novalidate>${lista.map((s,i)=>`<div class="cab">${numerar?(i+1)+". ":""}${esc(s.n)}</div>${s.f.map(anField).join("")}`).join("")}</form>`;
   const form=cont.querySelector("form");
+  form.querySelectorAll("[data-reg]").forEach(el=>anRegTabla(form,el,vals||{},!!opts.admin));
   anApply(form,vals||{});anRefrescar(form);
   form.addEventListener("input",()=>anRefrescar(form));
   form.addEventListener("change",()=>anRefrescar(form));
@@ -1750,10 +1797,13 @@ function anResumenHTML(v,lista,numerar=true){
       });
       else if(fd.t==="grid")fd.rows.forEach(([l,k])=>{if(!anVacio(v[k]))filas+=`<tr><th>${esc(l)}</th><td>${esc(v[k])}</td></tr>`});
       else if(fd.t==="pares")fd.rows.forEach(([l,a,b])=>{if(!anVacio(v[a])||!anVacio(v[b]))filas+=`<tr><th>${esc(l)}</th><td>Izq. ${esc(v[a]||"–")} · Der. ${esc(v[b]||"–")}</td></tr>`});
-      else if(fd.t==="registro"){for(let i=0;i<=12;i++){
-        const partes=[...REG_COLS.map(c=>[c[1],v[`r${i}_${c[0]}`]]),...REG_EX.map(j=>[v["ex"+j]||"Ejercicio "+j,v[`r${i}_e${j}`]])].filter(x=>!anVacio(x[1])).map(x=>x[0]+": "+x[1]);
-        if(partes.length)filas+=`<tr><th>${i?"Fila "+i:"Inicial"}</th><td>${esc(partes.join(" · "))}</td></tr>`;
-      }}
+      else if(fd.t==="registro"){
+        const cols=[...REG_FIJAS.map(c=>[c[1],c[0]]),...regIds(v).map(id=>[regNombre(v,id),id])];
+        for(let i=0;i<=12;i++){
+          const partes=cols.map(([l,k])=>[l,v[`r${i}_${k}`]]).filter(x=>!anVacio(x[1])).map(x=>x[0]+": "+x[1]);
+          if(partes.length)filas+=`<tr><th>${i?"Fila "+i:"Inicial"}</th><td>${esc(partes.join(" · "))}</td></tr>`;
+        }
+      }
       else if(fd.k){const val=anTexto(v,fd.k);if(!anVacio(val))filas+=`<tr><th>${esc(fd.l)}</th><td>${esc(val).replace(/\n/g,"<br>")}</td></tr>`}
     })})(s.f);
     return filas?`<div class="cab">${numerar?(i+1)+". ":""}${esc(s.n)}</div><div class="ses"><table class="an-res">${filas}</table></div>`:"";
@@ -1787,10 +1837,11 @@ function tabAnamnesis(){
       const data={...v,consent:true,actualizada:new Date().toISOString()};
       ANAM_OLD.forEach(([k])=>{if(previa[k])data[k]=previa[k]});
       if(previa.valoracion)data.valoracion=previa.valoracion;
+      if(previa._vis)data._vis=previa._vis;
       await db("PATCH","perfiles",`?id=eq.${S.user.id}`,{anamnesis:data},"return=minimal");
       S.perfil.anamnesis=data;
       msg("#m",faltan?`Guardado ✓ · Te faltan ${faltan} campos obligatorios, marcados en rojo.`:"Guardado ✓",true);
-      if(!faltan) setTimeout(()=>panelCliente("perfil","anamnesis"),900);
+      if(!faltan) setTimeout(()=>panelCliente("valoracion"),900);
     }catch(e){msg("#m",e.message,false)}
   };
 }
@@ -1800,26 +1851,46 @@ function anRespuestasEntrenador(c){
   const a=c.anamnesis;
   if(!a){$("#sub").innerHTML=`<div class="an-panel"><p class="muted">Todavía no ha rellenado la anamnesis.</p></div>`;return}
   const aviso=anAviso(a);
-  const nueva=Object.keys(a).some(k=>!ANAM_OLD.some(([o])=>o===k)&&!["consent","valoracion","actualizada"].includes(k));
+  const nueva=Object.keys(a).some(k=>!ANAM_OLD.some(([o])=>o===k)&&!["consent","valoracion","actualizada","_vis"].includes(k));
   $("#sub").innerHTML=`<div class="an-panel">${aviso?`<div class="an-alert on">${esc(aviso)}</div>`:""}
     ${a.actualizada?`<p class="muted">Actualizada el ${anFecha(a.actualizada)}</p>`:""}
     ${nueva?anResumenHTML(a,ANAM_CLI):`<p class="muted">Todavía no ha rellenado la ficha nueva.</p>`}
     ${anAntigua(a)}</div>`;
 }
-async function anValoracionEntrenador(c){
+async function anValoracionEntrenador(c,k="ini"){
   const [fila]=await db("GET","valoraciones",`?cliente_id=eq.${c.id}&select=datos,visible,actualizada`);
-  const val=(fila&&fila.datos)||{};
-  $("#sub").innerHTML=`<div class="an-panel"><p class="muted">A rellenar en la primera sesión.${fila&&fila.actualizada?" Última actualización: "+anFecha(fila.actualizada)+".":""}</p>
-    <label class="row"><input type="checkbox" id="vis" ${fila&&fila.visible?"checked":""}> Mostrar al cliente</label>
+  const datos=(fila&&fila.datos)||{};
+  $("#sub").innerHTML=`<div class="an-panel"><p class="muted">${fila&&fila.actualizada?"Última actualización: "+anFecha(fila.actualizada)+".":"Sin rellenar todavía."}</p>
+    <label class="row"><input type="checkbox" id="vis" ${(datos._vis||{})[k]===true?"checked":""}> Mostrar al cliente</label>
     <div id="anVal"></div>
-    <div class="row" style="margin-top:10px"><button class="gold" id="guardarV">Guardar valoración</button></div><div class="msg" id="mv"></div></div>`;
-  const form=anForm($("#anVal"),ANAM_VAL,val,false);
+    <div class="row" style="margin-top:10px"><button class="gold" id="guardarV">Guardar</button></div><div class="msg" id="mv"></div></div>`;
+  const form=anForm($("#anVal"),k==="ini"?ANAM_INI:ANAM_FUN,datos,false,{admin:true});
   $("#guardarV").onclick=async()=>{
     try{
-      const datos=anCollect(form);
-      await db("POST","valoraciones","?on_conflict=cliente_id",{cliente_id:c.id,datos,visible:$("#vis").checked,actualizada:new Date().toISOString()},"resolution=merge-duplicates,return=minimal");
-      msg("#mv","Valoración guardada ✓",true);
+      const [f]=await db("GET","valoraciones",`?cliente_id=eq.${c.id}&select=datos`);
+      const prev=(f&&f.datos)||{};
+      const _vis={...(prev._vis||{}),[k]:$("#vis").checked};
+      const nuevo={...prev,...anCollect(form),_vis};
+      await db("POST","valoraciones","?on_conflict=cliente_id",{cliente_id:c.id,datos:nuevo,visible:_vis.ini===true||_vis.fun===true,actualizada:new Date().toISOString()},"resolution=merge-duplicates,return=minimal");
+      msg("#mv","Guardado ✓",true);
     }catch(e){msg("#mv",e.message,false)}
+  };
+}
+// Entrenador: anamnesis (respuestas) con interruptor para que el cliente pueda rellenarla
+async function anamnesisEntrenador(c){
+  const [p]=await db("GET","perfiles",`?id=eq.${c.id}&select=anamnesis`);
+  const a=(p&&p.anamnesis)||{};
+  c.anamnesis=Object.keys(a).length?a:null;
+  anRespuestasEntrenador(c);
+  const on=(a._vis||{}).ana!==false;
+  $("#sub").insertAdjacentHTML("afterbegin",`<div class="an-panel"><label class="row"><input type="checkbox" id="visA" ${on?"checked":""}> Mostrar al cliente (puede rellenar la anamnesis)</label><div class="msg" id="mvA"></div></div>`);
+  $("#visA").onchange=async()=>{
+    try{
+      const [f]=await db("GET","perfiles",`?id=eq.${c.id}&select=anamnesis`);
+      const cur=(f&&f.anamnesis)||{};
+      await db("PATCH","perfiles",`?id=eq.${c.id}`,{anamnesis:{...cur,_vis:{...(cur._vis||{}),ana:$("#visA").checked}}},"return=minimal");
+      msg("#mvA","Guardado ✓",true);
+    }catch(e){msg("#mvA",e.message,false)}
   };
 }
 // Entrenador: vista de solo lectura de la valoración ya cumplimentada
