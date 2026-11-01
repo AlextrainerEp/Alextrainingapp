@@ -332,25 +332,29 @@ body:not(.cli) .fondo{background-size:min(70vw,460px) auto;background-repeat:no-
 /* ---- Pantalla de acceso: la frase va justo debajo del logo de fondo y el formulario debajo de la frase ---- */
 body:not(.cli) .frase{top:calc(36px + min(70vw,460px)*0.37 + 8px)}
 body:not(.cli) .login{margin-top:calc(36px + min(70vw,460px)*0.37 + 115px)}
-
-/* ---- Acceso del entrenado ---- */
-.acceso-box select,.acceso-box input[type=date]{width:auto}
-
-/* ---- Valoración inicial: campos numéricos y clasificación de prensión ---- */
-.grip-res{margin:6px 0 10px;font-size:14px}
-.an-scroll{overflow-x:auto;max-width:100%;margin:4px 0 8px}
-.an-grid{width:100%;border-collapse:collapse;font-size:13px}
-.an-grid th,.an-grid td{padding:3px 4px;border-bottom:1px solid rgba(128,128,128,.2);text-align:left;vertical-align:middle}
-.an-grid th{font-size:12px;font-weight:600;color:var(--acento)}
-.an-grid th:not(:first-child),.an-grid td:not(:first-child){text-align:center;white-space:nowrap}
-.an-grid input[type=radio]{margin:0;width:15px;height:15px;vertical-align:middle}
-.an-grid input[type=number],.an-grid input[type=text],.an-grid input[type=date]{width:66px;padding:2px 4px;font-size:12px;border:1px solid rgba(128,128,128,.35);border-radius:4px;background:transparent;color:inherit}
-.an-reg input[type=date]{width:112px}
-.an-reg input[type=text]{width:84px}
-.an-reg th input.rn{width:84px;font-weight:600}
-.an-reg .rm{border:0;background:none;color:inherit;cursor:pointer;padding:0 0 0 3px;font-size:14px}
-.an-addcol{margin:6px 0 2px}
-.an-addcol button{font-size:13px;padding:4px 10px}
+/* Batería de test FMS */
+.fms-ficha{border-top:1px solid #e3e5e7;padding:10px 0}
+.fms-ficha summary{cursor:pointer;font-size:16px;list-style:none}
+.fms-ficha summary::-webkit-details-marker{display:none}
+.fms-ficha ol{padding-left:20px;margin:4px 0 10px}
+.fms-tag{font-size:12px;background:#2e3133;color:#fff;border-radius:6px;padding:2px 6px;margin-left:6px;font-weight:400}
+.fms-pts{list-style:none;padding-left:0;margin:6px 0 10px}
+.fms-pts li{margin:6px 0;display:flex;gap:8px;align-items:flex-start}
+.fms-n{display:inline-flex;width:24px;height:24px;border-radius:50%;align-items:center;justify-content:center;color:#fff;font-weight:700;flex:none;font-size:13px}
+.fms-n.fms-v3,.fms-c.fms-v3.on{background:#2e7d32;color:#fff}
+.fms-n.fms-v2,.fms-c.fms-v2.on{background:#8a6508;color:#fff}
+.fms-n.fms-v1,.fms-c.fms-v1.on{background:#c46a1b;color:#fff}
+.fms-n.fms-v0,.fms-c.fms-v0.on{background:#b3261e;color:#fff}
+.fms-video{position:relative;padding-top:56.25%;margin:12px 0;border-radius:10px;overflow:hidden;background:#000}
+.fms-video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.fms-pasos{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.fms-pasos button{padding:6px 10px;background:#ddd;color:#1d1f21;min-width:38px}
+.fms-pasos button.hecho{background:#c9d8c5}
+.fms-pasos button.on{background:#2e3133;color:#fff}
+.fms-chips{display:flex;gap:6px;margin:4px 0 12px}
+.fms-c{width:46px;height:46px;padding:0;font-size:18px;font-weight:700;background:#ddd;color:#1d1f21}
+.fms-total{font-size:18px;margin:12px 0 6px}
+.fms-tabla td:nth-child(2),.fms-tabla td:nth-child(3),.fms-tabla td:nth-child(4){text-align:center}
 </style>
 </head>
 <body>
@@ -510,19 +514,7 @@ function entrar(){
     shell(`<div id="tab"></div>`);
     $("#cnav").innerHTML='<button id="ent">Entrenados</button>';
     $("#ent").onclick=listaClientes;
-  } else if(!accesoActivo(S.perfil)) pantallaCaducado();
-  else panelCliente("entrenamientos");
-}
-function accesoActivo(p){
-  return !p.acceso_hasta || new Date(p.acceso_hasta)>new Date();
-}
-function pantallaCaducado(){
-  const p=S.perfil;
-  $("#app").innerHTML=`<div class="login card">
-    <h2>Tu acceso ha caducado</h2>
-    <p class="muted">${p.acceso_hasta?"Caducó el "+fechaLocal(new Date(p.acceso_hasta))+".":""} Para seguir entrenando, contacta con tu entrenador y renueva por pago o con un bono.</p>
-    <button class="sec" id="sal">Salir</button></div>`;
-  $("#sal").onclick=salir;
+  } else panelCliente("entrenamientos");
 }
 function pestanas(ids,fns){
   ids.forEach((id,i)=>{$("#"+id).onclick=()=>{ids.forEach(x=>$("#"+x).classList.remove("on"));$("#"+id).classList.add("on");fns[i]()}});
@@ -958,17 +950,15 @@ async function fichaCliente(id){
   const [c]=await db("GET","perfiles",`?id=eq.${id}&select=*`);
   const ses=await db("GET","sesiones",`?cliente_id=eq.${id}&order=created_at.desc&select=*`);
   shell(`<div id="tab"></div>`,c);
-  $("#cnav").innerHTML=`<button id="volver">← Clientes</button><button id="ta" class="on">Entrenamientos</button><button id="tb">Anamnesis</button><button id="tc">Historial</button><button id="td">Mensajes</button>`;
+  $("#cnav").innerHTML=`<button id="volver">← Clientes</button><button id="ta" class="on">Entrenamientos</button><button id="tb">Anamnesis</button><button id="te">Batería de test</button><button id="tc">Historial</button><button id="td">Mensajes</button>`;
   $("#volver").onclick=listaClientes;
 
   const verEntrenos=()=>{
     $("#tab").innerHTML=`
-      ${accesoHTML(c)}
       <div class="row"><label>Subir hoja de Excel <input type="file" id="xls" accept=".xlsx,.xls,.csv"></label></div>
       <div class="msg" id="m"></div>
       <div id="sub"></div>`;
     tabEntrenosCal("#sub",id,true);
-    enlazarAcceso(c);
     $("#xls").onchange=async ev=>{
       const f=ev.target.files[0];if(!f)return;
       try{
@@ -986,10 +976,11 @@ async function fichaCliente(id){
       }catch(err){msg("#m",err.message,false)}
     };
   };
-  const verAnam=()=>subTabs([["Valoración inicial",()=>anValoracionEntrenador(c,"ini")],["Anamnesis",()=>anamnesisEntrenador(c)],["Valoración funcional",()=>anValoracionEntrenador(c,"fun")]]);
+  const verAnam=()=>subTabs([["Respuestas",()=>anRespuestasEntrenador(c)],["Valoración inicial",()=>anValoracionEntrenador(c)],["Ver valoración",()=>anValoracionVer(c)]]);
   const verHist=()=>{$("#tab").innerHTML=tabHistorial(ses)};
   const verMsgs=()=>tabMensajes(id,true);
-  pestanas(["ta","tb","tc","td"],[verEntrenos,verAnam,verHist,verMsgs]);
+  const verBat=()=>bateriaVerEntrenador(c);
+  pestanas(["ta","tb","te","tc","td"],[verEntrenos,verAnam,verBat,verHist,verMsgs]);
   verEntrenos();
 }
 
@@ -1401,45 +1392,6 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false){
   pintar();
 }
 
-/* ---------- Acceso del entrenado: prueba, pago o bono ---------- */
-function accesoHTML(c){
-  const hasta=c.acceso_hasta?new Date(c.acceso_hasta):null;
-  const activo=accesoActivo(c);
-  const opt=(v,t)=>`<option value="${v}"${c.plan===v?" selected":""}>${t}</option>`;
-  return `<div class="card acceso-box"><h3>Acceso del entrenado</h3>
-    <p class="muted">${hasta?`Plan: ${esc(c.plan||"—")} · ${activo?"activo hasta":"caducó el"} ${fechaLocal(hasta)}`:"Sin límite de acceso"}</p>
-    <div class="row">
-      <label>Plan <select id="acPlan"><option value="">—</option>${opt("prueba","Prueba")}${opt("pago","Pago")}${opt("bono","Bono")}</select></label>
-      <label>Acceso hasta <input type="date" id="acHasta" value="${hasta?isoLocal(hasta):""}"></label>
-    </div>
-    <div class="row">
-      <button class="sec" id="acPrueba">Dar 7 días de prueba</button>
-      <button class="gold" id="acGuardar">Guardar acceso</button>
-      <button class="sec" id="acSin">Quitar límite</button>
-    </div>
-    <div class="msg" id="acMsg"></div></div>`;
-}
-function enlazarAcceso(c){
-  const guardar=async(plan,fechaIso)=>{
-    try{
-      const acceso_hasta=fechaIso?new Date(fechaIso+"T23:59:59").toISOString():null;
-      await db("PATCH","perfiles",`?id=eq.${c.id}`,{plan:plan||null,acceso_hasta},"return=minimal");
-      c.plan=plan||null; c.acceso_hasta=acceso_hasta;
-      fichaCliente(c.id);
-    }catch(e){msg("#acMsg",e.message,false)}
-  };
-  $("#acPrueba").onclick=()=>{
-    const f=new Date(Date.now()+7*86400000);
-    guardar("prueba",isoLocal(f));
-  };
-  $("#acGuardar").onclick=()=>{
-    const f=$("#acHasta").value;
-    if(!f){msg("#acMsg","Elige una fecha de caducidad",false);return}
-    guardar($("#acPlan").value,f);
-  };
-  $("#acSin").onclick=()=>guardar($("#acPlan").value,null);
-}
-
 /* ---------- Panel del cliente ---------- */
 function subTabs(lista,ini=0){
   $("#tab").innerHTML=`<div class="tabs">${lista.map((n,i)=>`<button id="sb${i}" class="${i===ini?"on":""}">${n[0]}</button>`).join("")}</div><div id="sub"></div>`;
@@ -1459,29 +1411,14 @@ function valoracionHTML(datos){
   // Muestra todas las preguntas de la valoración con sus respuestas (solo lectura)
   return anResumenHTML(datos||{},ANAM_VAL,false);
 }
-// Valoración inicial o funcional del cliente: puede editarla mientras el entrenador la tenga compartida
-function tabValoracionCliente(v,k,host="#sub"){
-  const titulo=k==="ini"?"Valoración inicial":"Valoración funcional";
-  $(host).innerHTML=`<div class="an-panel"><p class="muted">${titulo}${v.actualizada?" · Última actualización: "+anFecha(v.actualizada):""}. Puedes modificarla cuando quieras.</p>
-    <div id="vcForm"></div>
-    <div class="row" style="margin-top:10px"><button class="gold" id="guardarVc">Guardar</button></div><div class="msg" id="mvc"></div></div>`;
-  const form=anForm($("#vcForm"),k==="ini"?ANAM_INI:ANAM_FUN,v.datos||{},false);
-  $("#guardarVc").onclick=async()=>{
-    try{
-      // Se mezcla con lo que haya en la fila (la otra página y los flags del entrenador)
-      const [f]=await db("GET","valoraciones",`?cliente_id=eq.${S.user.id}&select=datos`);
-      const nuevo={...((f&&f.datos)||{}),...anCollect(form)};
-      const r=await db("PATCH","valoraciones",`?cliente_id=eq.${S.user.id}`,{datos:nuevo,actualizada:new Date().toISOString()},"return=representation");
-      if(!r||!r.length) throw new Error("No se pudo guardar. Pide a tu entrenador que la comparta de nuevo.");
-      v.datos=nuevo; v.actualizada=r[0].actualizada;
-      msg("#mvc","Guardado ✓",true);
-    }catch(e){msg("#mvc",e.message,false)}
-  };
+// Valoración inicial del cliente: solo lectura, y solo llega aquí si está visible
+function tabValoracionCliente(v,host="#tab"){
+  $(host).innerHTML=`<div class="an-panel"><p class="muted">Valoración hecha por tu entrenador${v.actualizada?" · "+anFecha(v.actualizada):""}. Solo lectura.</p>${valoracionHTML(v.datos)}</div>`;
 }
 // Anamnesis del cliente (dentro de su perfil): respuestas en solo lectura y botón para rellenar o editar
 function anamnesisCliente(){
   const a=S.perfil.anamnesis||{};
-  const llena=Object.keys(a).some(k=>!["consent","actualizada","valoracion","_vis"].includes(k));
+  const llena=Object.keys(a).some(k=>!["consent","actualizada","valoracion"].includes(k));
   $("#sub").innerHTML=`<div class="an-panel">${llena?anResumenHTML(a,ANAM_CLI)+anAntigua(a):'<p class="muted">Todavía no has rellenado la anamnesis.</p>'}
     ${a.actualizada?`<p class="muted">Última actualización: ${anFecha(a.actualizada)}</p>`:""}
     <div class="row" style="margin-top:10px"><button class="gold" id="anEditar">${llena?"Editar anamnesis":"Rellenar anamnesis"}</button></div></div>`;
@@ -1490,22 +1427,14 @@ function anamnesisCliente(){
 async function panelCliente(tab,sub){
   // Todo el panel del cliente está en su perfil; el menú va en la barra superior
   const val=await valoracionVisible();
-  const vis=(val&&val.datos&&val.datos._vis)||{};
-  try{
-    const [fp]=await db("GET","perfiles",`?id=eq.${S.user.id}&select=anamnesis`);
-    if(fp) S.perfil.anamnesis=fp.anamnesis||{};
-  }catch(e){}
-  const anaOn=((S.perfil.anamnesis||{})._vis||{}).ana!==false;
-  const subs=[];
-  if(val&&vis.ini===true) subs.push(["Valoración inicial",()=>tabValoracionCliente(val,"ini","#sub")]);
-  if(anaOn) subs.push(["Anamnesis",anamnesisCliente]);
-  if(val&&vis.fun===true) subs.push(["Valoración funcional",()=>tabValoracionCliente(val,"fun","#sub")]);
+  const bat=await bateriaVisible();
   const lista=[["Entrenamientos",()=>tabEntrenosCal("#sub")],["Historial",()=>tabHistorialCliente("#sub")]];
-  if(subs.length) lista.push(["Valoración inicial",()=>subTabs(subs)]);
-  lista.push(["Mensajes",()=>tabMensajes(S.user.id,false,"#sub")],["Foto y contraseña",tabPerfil]);
-  const claves={entrenamientos:"Entrenamientos",calendario:"Entrenamientos",historial:"Historial",valoracion:"Valoración inicial",mensajes:"Mensajes",anamnesis:"Valoración inicial",perfil:"Foto y contraseña"};
+  if(val) lista.push(["Valoración inicial",()=>tabValoracionCliente(val,"#sub")]);
+  if(bat) lista.push(["Batería de test",()=>tabBateriaCliente(bat,"#sub")]);
+  lista.push(["Mensajes",()=>tabMensajes(S.user.id,false,"#sub")],["Anamnesis",anamnesisCliente],["Foto y contraseña",tabPerfil]);
+  const claves={entrenamientos:"Entrenamientos",calendario:"Entrenamientos",historial:"Historial",valoracion:"Valoración inicial",bateria:"Batería de test",mensajes:"Mensajes",anamnesis:"Anamnesis",perfil:"Foto y contraseña"};
   const key=tab==="perfil"?(sub||"perfil"):(tab||"entrenamientos");
-  const iconos={"Entrenamientos":"🏋️","Historial":"🕘","Valoración inicial":"📋","Mensajes":"💬","Foto y contraseña":"👤"};
+  const iconos={"Entrenamientos":"🏋️","Historial":"🕘","Valoración inicial":"📋","Batería de test":"🧪","Mensajes":"💬","Anamnesis":"📝","Foto y contraseña":"👤"};
   shell(`<div id="tab"><div id="sub"></div></div>`);
   let idx=lista.findIndex(n=>n[0]===claves[key]);
   if(idx<0) idx=0;
@@ -1610,10 +1539,8 @@ const ANAM_CLI=[
  ]}
 ];
 // Bloque que rellena el entrenador en la primera sesión
-const REG_FIJAS=[["fecha","Fecha","date"],["pi","Prensión I","num"],["pd","Prensión D","num"]];
-const REG_DEF=[["g","Globet 8 kg"],["f","Flexiones 10"],["e1","Ejercicio 1"],["e2","Ejercicio 2"],["e3","Ejercicio 3"],["e4","Ejercicio 4"],["e5","Ejercicio 5"]];
-const ANAM_INI=[
- {n:"Datos generales y pruebas",f:[
+const ANAM_VAL=[
+ {n:"Valoración inicial",f:[
   {row:[{k:"peso",t:"text",l:"Peso (kg)"},{k:"altura",t:"text",l:"Altura (cm)"},{k:"cintura",t:"text",l:"Cintura (cm)"}]},
   {row:[{k:"cadera",t:"text",l:"Cadera (cm)"},{k:"fc_reposo",t:"text",l:"FC en reposo (ppm)"},{k:"tension",t:"text",l:"Tensión arterial"}]},
   {t:"tests",rows:[
@@ -1625,50 +1552,10 @@ const ANAM_INI=[
    ["Movilidad de tobillo, rodilla a la pared (cm)",["tobillo_dcho","Dcho."],["tobillo_izdo","Izdo."]],
    ["Movilidad de hombro","t_hombro"],
    ["Test cardiovascular (6 min marcha o escalón)","t_cardio"]
-  ]}
+  ]},
+  {k:"observaciones_val",t:"area",l:"Observaciones y prioridades para el programa"}
  ]}
 ];
-const ANAM_FUN=[
- {n:"Movilidad",f:[{t:"pares",cols:["Izquierda (cm)","Derecha (cm)"],rows:[["Dorsiflexión tobillo","tobillo_i","tobillo_d"],["Movilidad hombro","hombro_i","hombro_d"]]}]},
- {n:"Estabilidad",f:[
-  {t:"grid",o:["Positivo","Negativo"],rows:[["Trendelenburg izquierda","trend_i"],["Trendelenburg derecha","trend_d"]]},
-  {t:"grid",o:["Sí","No"],rows:[["Rotary: báscula cadera","rot_bascula"],["Rotary: arquea lumbar","rot_arquea"],["Rotary: retrae escápulas","rot_escapulas"]]}
- ]},
- {n:"Sentadilla overhead",f:[{t:"grid",o:["Sí","No"],rows:[
-  ["Anterior: rota ext. cadera","va_rot_cadera"],["Anterior: prona tobillo","va_prona_tobillo"],["Anterior: valgo rodillas","va_valgo_rodillas"],
-  ["Lateral: inclina torso","vl_inclina_torso"],["Lateral: flexión lumbar","vl_flexion_lumbar"],["Lateral: extiende hombro","vl_extiende_hombro"],
-  ["Posterior: prona tobillo","vp_prona_tobillo"],["Posterior: báscula cadera","vp_bascula_cadera"]]}]},
- {n:"Sentadilla a una pierna y salto",f:[{t:"grid",o:["Sí","No"],rows:[["Single leg squat: valgo izq.","sl_valgo_i"],["Single leg squat: valgo der.","sl_valgo_d"],["Drop jump: valgo","dj_valgo"]]}]},
- {n:"Fuerza y progresión",f:[
-  {row:[{k:"edad",t:"num",l:"Edad (años)"},{k:"sexo",t:"radio",l:"Sexo",o:["Hombre","Mujer"]}]},
-  {t:"registro"},
-  {t:"grip"}
- ]},
- {n:"Observaciones",f:[
-  {k:"observaciones_val",t:"area",l:"Observaciones y prioridades"}
- ]}
-];
-const ANAM_VAL=[...ANAM_INI,...ANAM_FUN];
-
-function regIds(v){const s=(v&&v.reg_ids)||"";return s?s.split(",").filter(Boolean):REG_DEF.map(d=>d[0])}
-function regNombre(v,id){const n=v&&v["regn_"+id];if(n)return n;const d=REG_DEF.find(x=>x[0]===id);return d?d[1]:"Columna"}
-function anRegTabla(form,el,src,admin){
-  const ids=regIds(src);
-  const celda=(name,t,lab,value)=>`<input type="${t==="num"?"number":t}"${t==="num"?' inputmode="decimal" step="any"':""} name="${name}" value="${esc(value??"")}" aria-label="${esc(lab)}">`;
-  const cab=ids.map(id=>admin
-    ?`<th><input type="text" name="regn_${id}" value="${esc(regNombre(src,id))}" aria-label="Nombre de la columna" class="rn"><button type="button" class="rm" data-rm="${id}" aria-label="Quitar columna">×</button></th>`
-    :`<th>${esc(regNombre(src,id))}<input type="hidden" name="regn_${id}" value="${esc(regNombre(src,id))}"></th>`).join("");
-  const head=`<tr><th>Nº</th>${REG_FIJAS.map(c=>`<th>${c[1]}</th>`).join("")}${cab}</tr>`;
-  let body="";
-  for(let i=0;i<=12;i++){
-    body+=`<tr><td>${i?i:"Ini."}</td>${REG_FIJAS.map(c=>`<td>${celda(`r${i}_${c[0]}`,c[2],c[1]+" "+(i?"fila "+i:"inicial"),src[`r${i}_${c[0]}`])}</td>`).join("")}${ids.map(id=>`<td>${celda(`r${i}_${id}`,"text",regNombre(src,id)+" fila "+i,src[`r${i}_${id}`])}</td>`).join("")}</tr>`;
-  }
-  el.innerHTML=`<input type="hidden" name="reg_ids" value="${esc(ids.join(","))}"><div class="an-scroll"><table class="an-grid an-reg"><thead>${head}</thead><tbody>${body}</tbody></table></div>${admin?`<div class="an-addcol"><button type="button" data-addcol>+ Añadir columna</button></div>`:""}`;
-  if(admin){
-    el.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{const c=anCollect(form);c.reg_ids=regIds(c).filter(x=>x!==b.dataset.rm).join(",");anRegTabla(form,el,c,true)});
-    el.querySelector("[data-addcol]").onclick=()=>{const c=anCollect(form);const id="x"+Date.now().toString(36);c.reg_ids=[...regIds(c),id].join(",");c["regn_"+id]="Nueva columna";anRegTabla(form,el,c,true)};
-  }
-}
 
 function anLab(fd){return esc(fd.l)+(fd.req?' <span class="an-req">*</span>':"")}
 function anField(fd){
@@ -1690,16 +1577,6 @@ function anField(fd){
         ${fd.t==="scale"?`<div class="an-ends"><span>${esc(fd.ends[0])}</span><span>${esc(fd.ends[1])}</span></div>`:""}
         ${fd.otro?`<div class="an-otro" data-when="${fd.k}=Otro"><input type="text" name="${fd.k}_otro" placeholder="Especifica"></div>`:""}</div>`;
     }
-    case "num":
-      return `<div class="an-f" data-k="${fd.k}"><label>${anLab(fd)}<input type="number" inputmode="decimal" step="any" name="${fd.k}" autocomplete="off"></label></div>`;
-    case "grid":
-      return `<div class="an-scroll"><table class="an-grid"><thead><tr><th></th>${fd.o.map(o=>`<th>${esc(o)}</th>`).join("")}</tr></thead><tbody>${fd.rows.map(([l,k])=>`<tr><td>${esc(l)}</td>${fd.o.map(o=>`<td><input type="radio" name="${k}" value="${esc(o)}" aria-label="${esc(l+": "+o)}"></td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
-    case "pares":
-      return `<div class="an-scroll"><table class="an-grid"><thead><tr><th></th>${fd.cols.map(c=>`<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>${fd.rows.map(([l,a,b])=>`<tr><td>${esc(l)}</td><td><input type="number" inputmode="decimal" step="any" name="${a}" aria-label="${esc(l+" izquierda")}"></td><td><input type="number" inputmode="decimal" step="any" name="${b}" aria-label="${esc(l+" derecha")}"></td></tr>`).join("")}</tbody></table></div>`;
-    case "registro":
-      return `<div class="an-regwrap" data-reg></div>`;
-    case "grip":
-      return `<div class="an-f grip-res muted"></div>`;
     case "alert": return `<div class="an-alert"></div>`;
     case "p": return `<p class="muted">${esc(fd.h)}</p>`;
     case "tests":
@@ -1721,7 +1598,6 @@ function anCollect(form){
 function anApply(form,v){
   form.querySelectorAll("[name]").forEach(c=>{
     const x=v[c.name];
-    if(x===undefined)return;
     if(c.type==="checkbox")c.checked=Array.isArray(x)&&x.includes(c.value);
     else if(c.type==="radio")c.checked=x===c.value;
     else c.value=x??"";
@@ -1733,26 +1609,8 @@ function anAviso(v){
   const n=(v.patologias||[]).length;
   return n?`Ha marcado ${n} ${n===1?"patología":"patologías"}: pedir valoración o autorización médica antes de la primera sesión.`:"";
 }
-const GRIP={
-  Hombre:[[18,24,41.4,51.2],[25,29,43.3,59.4],[30,34,36.4,56.4],[35,39,39.7,54.3],[40,44,39.9,54.4],[45,49,35.8,48.2],[50,54,39,52.3],[55,59,32.4,47.8],[60,64,30.4,44.9],[65,69,31.5,45.8],[70,74,29.3,41.2],[75,79,25.9,36.6],[80,85,21.5,34.6]],
-  Mujer:[[18,24,22.4,33.8],[25,29,25.4,33.6],[30,34,23.9,33],[35,39,24.5,33],[40,44,26.5,33.8],[45,49,25.2,34.4],[50,54,24.6,32.7],[55,59,20.7,30.2],[60,64,19.2,28.1],[65,69,19.3,25],[70,74,19.5,23.9],[75,79,15.7,22.4],[80,85,16.6,21.8]]
-};
-function gripTexto(v){
-  const tabla=GRIP[v.sexo], edad=parseInt(v.edad,10);
-  if(!tabla||isNaN(edad)) return "Indica edad y sexo para ver la clasificación de prensión manual.";
-  const fila=edad<=24?tabla[0]:edad>=80?tabla[tabla.length-1]:tabla.find(r=>edad>=r[0]&&edad<=r[1]);
-  const mano=(nombre,raw)=>{
-    const x=parseFloat(String(raw??"").replace(",","."));
-    if(isNaN(x)) return `${nombre}: sin datos`;
-    const c=x<fila[2]?"Baja":x>fila[3]?"Alta":"Media";
-    return `${nombre}: ${String(x).replace(".",",")} kg → ${c}`;
-  };
-  return `Rango ${fila[0]}-${fila[1]} años · ${mano("Izquierda",v.r0_pi)} · ${mano("Derecha",v.r0_pd)}`;
-}
 function anRefrescar(form){
   const v=anCollect(form);
-  const gr=form.querySelector(".grip-res");
-  if(gr) gr.textContent=gripTexto(v);
   form.querySelectorAll("[data-when]").forEach(el=>{el.hidden=!anCumple(el.dataset.when,v)});
   const al=form.querySelector(".an-alert");
   if(al){const n=(v.patologias||[]).length;al.hidden=!n;al.classList.toggle("on",n>0);al.textContent=n?`Has marcado ${n} ${n===1?"patología":"patologías"}. Antes de empezar, tu entrenador te pedirá una valoración médica.`:""}
@@ -1770,10 +1628,9 @@ function anFaltan(form,lista){
   })})(lista.flatMap(s=>s.f));
   return n;
 }
-function anForm(cont,lista,vals,numerar=true,opts={}){
+function anForm(cont,lista,vals,numerar=true){
   cont.innerHTML=`<form class="anam" novalidate>${lista.map((s,i)=>`<div class="cab">${numerar?(i+1)+". ":""}${esc(s.n)}</div>${s.f.map(anField).join("")}`).join("")}</form>`;
   const form=cont.querySelector("form");
-  form.querySelectorAll("[data-reg]").forEach(el=>anRegTabla(form,el,vals||{},!!opts.admin));
   anApply(form,vals||{});anRefrescar(form);
   form.addEventListener("input",()=>anRefrescar(form));
   form.addEventListener("change",()=>anRefrescar(form));
@@ -1795,15 +1652,6 @@ function anResumenHTML(v,lista,numerar=true){
         const val=typeof r[1]==="string"?v[r[1]]:r.slice(1).filter(x=>v[x[0]]).map(x=>x[1]+" "+v[x[0]]).join(" · ");
         if(!anVacio(val))filas+=`<tr><th>${esc(r[0])}</th><td>${esc(val)}</td></tr>`;
       });
-      else if(fd.t==="grid")fd.rows.forEach(([l,k])=>{if(!anVacio(v[k]))filas+=`<tr><th>${esc(l)}</th><td>${esc(v[k])}</td></tr>`});
-      else if(fd.t==="pares")fd.rows.forEach(([l,a,b])=>{if(!anVacio(v[a])||!anVacio(v[b]))filas+=`<tr><th>${esc(l)}</th><td>Izq. ${esc(v[a]||"–")} · Der. ${esc(v[b]||"–")}</td></tr>`});
-      else if(fd.t==="registro"){
-        const cols=[...REG_FIJAS.map(c=>[c[1],c[0]]),...regIds(v).map(id=>[regNombre(v,id),id])];
-        for(let i=0;i<=12;i++){
-          const partes=cols.map(([l,k])=>[l,v[`r${i}_${k}`]]).filter(x=>!anVacio(x[1])).map(x=>x[0]+": "+x[1]);
-          if(partes.length)filas+=`<tr><th>${i?"Fila "+i:"Inicial"}</th><td>${esc(partes.join(" · "))}</td></tr>`;
-        }
-      }
       else if(fd.k){const val=anTexto(v,fd.k);if(!anVacio(val))filas+=`<tr><th>${esc(fd.l)}</th><td>${esc(val).replace(/\n/g,"<br>")}</td></tr>`}
     })})(s.f);
     return filas?`<div class="cab">${numerar?(i+1)+". ":""}${esc(s.n)}</div><div class="ses"><table class="an-res">${filas}</table></div>`:"";
@@ -1837,11 +1685,10 @@ function tabAnamnesis(){
       const data={...v,consent:true,actualizada:new Date().toISOString()};
       ANAM_OLD.forEach(([k])=>{if(previa[k])data[k]=previa[k]});
       if(previa.valoracion)data.valoracion=previa.valoracion;
-      if(previa._vis)data._vis=previa._vis;
       await db("PATCH","perfiles",`?id=eq.${S.user.id}`,{anamnesis:data},"return=minimal");
       S.perfil.anamnesis=data;
       msg("#m",faltan?`Guardado ✓ · Te faltan ${faltan} campos obligatorios, marcados en rojo.`:"Guardado ✓",true);
-      if(!faltan) setTimeout(()=>panelCliente("valoracion"),900);
+      if(!faltan) setTimeout(()=>panelCliente("perfil","anamnesis"),900);
     }catch(e){msg("#m",e.message,false)}
   };
 }
@@ -1851,46 +1698,26 @@ function anRespuestasEntrenador(c){
   const a=c.anamnesis;
   if(!a){$("#sub").innerHTML=`<div class="an-panel"><p class="muted">Todavía no ha rellenado la anamnesis.</p></div>`;return}
   const aviso=anAviso(a);
-  const nueva=Object.keys(a).some(k=>!ANAM_OLD.some(([o])=>o===k)&&!["consent","valoracion","actualizada","_vis"].includes(k));
+  const nueva=Object.keys(a).some(k=>!ANAM_OLD.some(([o])=>o===k)&&!["consent","valoracion","actualizada"].includes(k));
   $("#sub").innerHTML=`<div class="an-panel">${aviso?`<div class="an-alert on">${esc(aviso)}</div>`:""}
     ${a.actualizada?`<p class="muted">Actualizada el ${anFecha(a.actualizada)}</p>`:""}
     ${nueva?anResumenHTML(a,ANAM_CLI):`<p class="muted">Todavía no ha rellenado la ficha nueva.</p>`}
     ${anAntigua(a)}</div>`;
 }
-async function anValoracionEntrenador(c,k="ini"){
+async function anValoracionEntrenador(c){
   const [fila]=await db("GET","valoraciones",`?cliente_id=eq.${c.id}&select=datos,visible,actualizada`);
-  const datos=(fila&&fila.datos)||{};
-  $("#sub").innerHTML=`<div class="an-panel"><p class="muted">${fila&&fila.actualizada?"Última actualización: "+anFecha(fila.actualizada)+".":"Sin rellenar todavía."}</p>
-    <label class="row"><input type="checkbox" id="vis" ${(datos._vis||{})[k]===true?"checked":""}> Mostrar al cliente</label>
+  const val=(fila&&fila.datos)||{};
+  $("#sub").innerHTML=`<div class="an-panel"><p class="muted">A rellenar en la primera sesión.${fila&&fila.actualizada?" Última actualización: "+anFecha(fila.actualizada)+".":""}</p>
+    <label class="row"><input type="checkbox" id="vis" ${fila&&fila.visible?"checked":""}> Mostrar al cliente</label>
     <div id="anVal"></div>
-    <div class="row" style="margin-top:10px"><button class="gold" id="guardarV">Guardar</button></div><div class="msg" id="mv"></div></div>`;
-  const form=anForm($("#anVal"),k==="ini"?ANAM_INI:ANAM_FUN,datos,false,{admin:true});
+    <div class="row" style="margin-top:10px"><button class="gold" id="guardarV">Guardar valoración</button></div><div class="msg" id="mv"></div></div>`;
+  const form=anForm($("#anVal"),ANAM_VAL,val,false);
   $("#guardarV").onclick=async()=>{
     try{
-      const [f]=await db("GET","valoraciones",`?cliente_id=eq.${c.id}&select=datos`);
-      const prev=(f&&f.datos)||{};
-      const _vis={...(prev._vis||{}),[k]:$("#vis").checked};
-      const nuevo={...prev,...anCollect(form),_vis};
-      await db("POST","valoraciones","?on_conflict=cliente_id",{cliente_id:c.id,datos:nuevo,visible:_vis.ini===true||_vis.fun===true,actualizada:new Date().toISOString()},"resolution=merge-duplicates,return=minimal");
-      msg("#mv","Guardado ✓",true);
+      const datos=anCollect(form);
+      await db("POST","valoraciones","?on_conflict=cliente_id",{cliente_id:c.id,datos,visible:$("#vis").checked,actualizada:new Date().toISOString()},"resolution=merge-duplicates,return=minimal");
+      msg("#mv","Valoración guardada ✓",true);
     }catch(e){msg("#mv",e.message,false)}
-  };
-}
-// Entrenador: anamnesis (respuestas) con interruptor para que el cliente pueda rellenarla
-async function anamnesisEntrenador(c){
-  const [p]=await db("GET","perfiles",`?id=eq.${c.id}&select=anamnesis`);
-  const a=(p&&p.anamnesis)||{};
-  c.anamnesis=Object.keys(a).length?a:null;
-  anRespuestasEntrenador(c);
-  const on=(a._vis||{}).ana!==false;
-  $("#sub").insertAdjacentHTML("afterbegin",`<div class="an-panel"><label class="row"><input type="checkbox" id="visA" ${on?"checked":""}> Mostrar al cliente (puede rellenar la anamnesis)</label><div class="msg" id="mvA"></div></div>`);
-  $("#visA").onchange=async()=>{
-    try{
-      const [f]=await db("GET","perfiles",`?id=eq.${c.id}&select=anamnesis`);
-      const cur=(f&&f.anamnesis)||{};
-      await db("PATCH","perfiles",`?id=eq.${c.id}`,{anamnesis:{...cur,_vis:{...(cur._vis||{}),ana:$("#visA").checked}}},"return=minimal");
-      msg("#mvA","Guardado ✓",true);
-    }catch(e){msg("#mvA",e.message,false)}
   };
 }
 // Entrenador: vista de solo lectura de la valoración ya cumplimentada
@@ -1938,6 +1765,207 @@ function fotoAJPG(file){
     img.onerror=rej;
     img.src=URL.createObjectURL(file);
   });
+}
+
+/* ---------- Batería de test FMS (Functional Movement Screen) ---------- */
+const FMS_VIDEO="https://www.youtube-nocookie.com/embed/KkxFRFs-XVU";
+const FMS_MAX=21;
+const FMS=[
+ {id:"sent",video:"Zt93U1_lbp0",n:"Sentadilla profunda con brazos estirados",lado:false,
+  para:"Coordinación, core estable y movilidad de tobillos, rodillas, caderas, cintura escapular y hombros.",
+  material:"Palo o tubo de PVC.",
+  pasos:["Pies a la altura de los hombros y paralelos entre sí.","Apoya el palo en la cabeza con los codos a 90º para ver dónde van las manos; después estira los brazos para levantar el palo.","Con la mirada al frente, desciende lo más profundo que puedas con los talones pegados al suelo.","Evita que las rodillas se metan hacia dentro. El palo debe mantenerse paralelo al suelo."],
+  pts:["Ejecución perfecta sin ayuda: caderas por debajo de las rodillas, torso paralelo a la tibia, rodillas rectas y palo horizontal sobre los pies.","Para ejecutarla necesitas elevar los talones o curvar la zona lumbar.","No puedes realizarla ni con ayuda para elevar los talones.","Hay dolor."]},
+ {id:"valla",video:"s5lvjkYrM_I",n:"Paso de valla",lado:true,
+  para:"Compensaciones y asimetrías en la locomoción, junto con la estabilidad del core y del glúteo medio.",
+  material:"Palo o tubo de PVC y un obstáculo ligeramente inferior a la altura de tus rodillas (una cinta adhesiva en el marco de una puerta sirve).",
+  pasos:["Sujeta el palo por detrás de la cabeza, apoyado en la nuca, encima de los hombros.","Empieza con los pies juntos y paralelos, con la punta alineada con la vertical de la cinta.","Manteniendo la postura recta, levanta una pierna por encima de la cinta y toca con el talón el otro lado. No flexiones ni eleves la pierna de apoyo.","Sin perder la postura recta de la espalda, vuelve a la posición inicial."],
+  pts:["Tobillo, rodillas y caderas alineados y sin compensar con la zona lumbar. El palo se mantiene paralelo al suelo y no tocas la cinta.","Rompes la alineación de tobillo, rodilla y cadera, compensas con la zona lumbar o el palo toca el marco de la puerta.","Pierdes el equilibrio, el palo no permanece horizontal o tocas la cinta con el pie.","Hay dolor."]},
+ {id:"estocada",video:"zm_jSAaIQIM",n:"Estocada en línea (zancada)",lado:true,
+  para:"Estabilidad, equilibrio y movilidad del tren inferior (cadera, rodillas y tobillos).",
+  material:"Palo o tubo de PVC y una línea recta en el suelo con cinta adhesiva o tiza, de la longitud de la distancia entre tu rodilla y el suelo.",
+  pasos:["Coge el palo por detrás de la espalda, en vertical: una mano en la zona lumbar y la otra detrás del cuello.","Coloca un pie con la punta al final de la línea y da un paso hasta que el talón del otro pie marque el inicio de la línea.","Sin mover los pies, baja el cuerpo hasta tocar el suelo con la rodilla de atrás, sin elevar el talón del pie delantero.","Vuelve a la posición inicial impulsándote con el pie adelantado. El palo debe permanecer en contacto con la cabeza y la espalda. Repite con el otro lado."],
+  pts:["Ejecución perfecta: sin perder la alineación, sin flexionar el tronco, sin levantar el talón y con estabilidad y equilibrio.","Compensas flexionando el tronco, lo que se nota porque el palo se separa del cuerpo.","Pierdes el equilibrio.","Hay dolor."]},
+ {id:"hombros",video:"2bi5uCRHJz4",n:"Movilidad de hombros",lado:true,
+  para:"Movilidad articular de hombros, escápulas y columna torácica.",
+  material:"Palo o tubo de PVC y cinta métrica.",
+  pasos:["Con la mirada al frente y los pies juntos, intenta juntar las manos detrás de la espalda.","Una mano baja por detrás de la cabeza y la otra sube por la espalda. Mantén los puños cerrados.","Mide la distancia entre las puntas de los dedos (o usa el palo como referencia)."],
+  pts:["Se tocan o hay menos de una mano de distancia.","Existe una distancia inferior a una mano y media.","La distancia es superior a una mano y media.","Hay dolor."]},
+ {id:"pierna",video:"t9AsBEtlSJk",n:"Elevación activa de pierna estirada",lado:true,
+  para:"Estabilidad del core y flexión y extensión de cadera.",
+  material:"Palo o tubo de PVC (lo sostiene quien te evalúa).",
+  pasos:["Túmbate boca arriba con las piernas juntas y los brazos estirados, con las palmas hacia arriba.","Eleva una pierna lo que puedas, sin flexionar el tobillo ni la rodilla. La cadera y la otra pierna deben permanecer inmóviles, pegadas al suelo.","Quien te evalúa coloca el palo marcando la vertical del talón."],
+  pts:["El palo baja entre la mitad del muslo y la cadera.","El palo queda en la mitad inferior del muslo.","El palo queda por debajo de la rodilla.","Hay dolor."]},
+ {id:"flexion",video:"CWb38D76DCw",n:"Estabilidad del tronco en flexión",lado:false,
+  para:"Estabilidad y fortaleza del core, y capacidad de moverte sin compensaciones y con la columna en posición neutra.",
+  material:"Ninguno.",
+  pasos:["Tumbado boca abajo, apoya las manos a una anchura similar o ligeramente superior a la de los hombros. Los pulgares quedan a la altura de la frente (hombres) o de la barbilla (mujeres).","Con piernas y tronco totalmente estirados, realiza una flexión estirando los brazos."],
+  pts:["Ejecución perfecta sin doblar el cuerpo, usando de forma sincronizada hombros y caderas.","Para una buena técnica, baja ligeramente la posición de las manos: el pulgar a la altura de la barbilla (hombres) o de los hombros (mujeres).","No eres capaz de realizar el ejercicio manteniendo la posición firme del tronco.","Hay dolor."]},
+ {id:"rotacion",video:"gyt46-TEPcA",n:"Estabilidad con rotación",lado:true,
+  para:"Estabilidad de hombros, tronco y pelvis en movimiento combinado de extremidad superior e inferior. Muy útil para escaladores.",
+  material:"Cinta adhesiva para marcar una línea recta de unos 1 metro en el suelo.",
+  pasos:["Colócate a cuatro patas simétricamente sobre la cinta, con el torso recto y paralelo al suelo. Muslos y brazos perpendiculares al suelo y al tronco.","Estira a la vez una pierna y un brazo del mismo lado, manteniendo el tronco horizontal y la columna neutra.","Intenta tocar con el codo la rodilla a mitad de recorrido, sin perder la estabilidad del tronco.","Si no puedes con el brazo y la pierna del mismo lado, prueba con extremidades de lados distintos; en ese caso, el contacto codo-rodilla se hace en la vertical de la cinta. Evalúa ambos lados."],
+  pts:["Ejecución perfecta, con pierna y brazo del mismo lado.","Ejecución perfecta, pero con las extremidades de distintos lados.","No consigues ninguno de los anteriores por pérdida de equilibrio o falta de movilidad.","Hay dolor."]}
+];
+FMS.forEach((t,i)=>t.orden=i+1);
+
+const hoyISO=()=>new Date().toISOString().slice(0,10);
+const fmtFecha=s=>s?s.split("-").reverse().join("/"):"";
+
+// Puntuación de una prueba: en las bilaterales, la peor de ambos lados
+function fmsPuntuacion(t,r){
+  if(!r) return null;
+  if(!t.lado) return r.d==null?null:r.d;
+  if(r.d==null||r.i==null) return null;
+  return Math.min(r.d,r.i);
+}
+function fmsTotal(res){
+  let total=0,completa=true;
+  FMS.forEach(t=>{const p=fmsPuntuacion(t,res[t.id]); if(p==null) completa=false; else total+=p;});
+  return {total,completa};
+}
+// Prueba bilateral con mayor diferencia entre lados (es la que más riesgo indica)
+function fmsAsimetria(res){
+  let mayor=null;
+  FMS.filter(t=>t.lado).forEach(t=>{
+    const r=res[t.id];
+    if(r&&r.d!=null&&r.i!=null){const dif=Math.abs(r.d-r.i); if(dif>0&&(!mayor||dif>mayor.dif)) mayor={t,dif};}
+  });
+  return mayor;
+}
+function fmsFichaHTML(t,abierta){
+  return `<details class="fms-ficha" ${abierta?"open":""}><summary><b>${t.orden}. ${esc(t.n)}</b>${t.lado?' <span class="fms-tag">Derecha / izquierda</span>':""}</summary>
+    <p><b>Para qué sirve:</b> ${esc(t.para)}</p>
+    <p><b>Material:</b> ${esc(t.material)}</p>
+    <p><b>Ejecución:</b></p><ol>${t.pasos.map(p=>`<li>${esc(p)}</li>`).join("")}</ol>
+    <p><b>Puntuación</b> <span class="muted">(${t.lado?"se valoran ambos lados; cuenta el peor":"0 a 3"})</span></p>
+    <ul class="fms-pts">${t.pts.map((p,i)=>`<li><span class="fms-n fms-v${3-i}">${3-i}</span><span>${esc(p)}</span></li>`).join("")}</ul>
+    ${fmsVideoHTML(t)}
+  </details>`;
+}
+function fmsVideoHTML(t){
+  return `<div class="fms-video"><iframe src="https://www.youtube-nocookie.com/embed/${t.video}" title="Vídeo: ${esc(t.n)}" loading="lazy" allowfullscreen></iframe></div>`;
+}
+function fmsTablaHTML(res){
+  const filas=FMS.map(t=>{
+    const r=res[t.id]||{};
+    const p=fmsPuntuacion(t,r);
+    return `<tr><td>${esc(t.n)}</td><td>${t.lado?(r.d??"–"):"–"}</td><td>${t.lado?(r.i??"–"):"–"}</td><td><b>${p??"–"}</b></td><td>${esc(r.obs||"")}</td><td>${r.vid&&/^https?:\/\//.test(r.vid)?`<a href="${esc(r.vid)}" target="_blank" rel="noopener">▶</a>`:"–"}</td></tr>`;
+  }).join("");
+  return `<table class="an-res fms-tabla"><thead><tr><th>Prueba</th><th>D</th><th>I</th><th>Puntuación</th><th>Observaciones</th><th>Vídeo</th></tr></thead><tbody>${filas}</tbody></table>`;
+}
+function fmsResumenHTML(res){
+  const {total,completa}=fmsTotal(res);
+  const asim=fmsAsimetria(res);
+  return `${fmsTablaHTML(res)}
+    <p class="fms-total">Total: <b>${total}</b> / ${FMS_MAX}${completa?"":` <span class="muted">(faltan pruebas por puntuar)</span>`}</p>
+    ${asim?`<p>Mayor asimetría: <b>${esc(asim.t.n)}</b>, con una diferencia de ${asim.dif} ${asim.dif===1?"punto":"puntos"} entre lados. Es el punto de partida del trabajo correctivo.</p>`:""}`;
+}
+
+// Consulta del entrenado: solo si el entrenador la ha habilitado
+async function bateriaVisible(){
+  try{
+    const r=await db("GET","baterias",`?cliente_id=eq.${S.user.id}&visible=eq.true&select=registro_cliente`);
+    return (r&&r[0])||null;
+  }catch(e){return null}
+}
+
+// Asistente de puntuación paso a paso (lo usan el entrenador y el entrenado).
+// res: objeto {id:{d,i,obs}} que se modifica en sitio. guardar: función async (opcional) que persiste res.
+function fmsAsistente(host,res,guardar,vidEditable=false){
+  const N=FMS.length;
+  let paso=0;
+  $(host).innerHTML=`<div id="fNav"></div><div id="fCuerpo"></div>
+    ${guardar?`<div class="row" style="margin-top:10px"><button class="gold" id="fGuardar">Guardar</button></div><div class="msg" id="fmsg"></div>`:""}`;
+
+  const wire=()=>{
+    document.querySelectorAll("#fNav [data-p]").forEach(b=>b.onclick=()=>{paso=+b.dataset.p;pintar()});
+    document.querySelectorAll("#fCuerpo [data-nav]").forEach(b=>b.onclick=()=>{paso=Math.min(N,Math.max(0,paso+ +b.dataset.nav));pintar()});
+    document.querySelectorAll("#fCuerpo .fms-c").forEach(b=>b.onclick=()=>{
+      const id=b.dataset.t, lado=b.dataset.l, v=+b.dataset.v;
+      const r=res[id]=res[id]||{};
+      r[lado]=r[lado]===v?null:v;   // pulsar de nuevo borra el valor
+      pintar();
+    });
+    document.querySelectorAll("#fCuerpo [data-obs]").forEach(ta=>ta.oninput=()=>{
+      const r=res[ta.dataset.obs]=res[ta.dataset.obs]||{};
+      r.obs=ta.value;
+    });
+    document.querySelectorAll("#fCuerpo [data-vid]").forEach(ip=>ip.oninput=()=>{
+      const r=res[ip.dataset.vid]=res[ip.dataset.vid]||{};
+      r.vid=ip.value.trim();
+    });
+  };
+
+  const pintar=()=>{
+    $("#fNav").innerHTML=`<div class="fms-pasos">${FMS.map((t,i)=>`<button data-p="${i}" class="${i===paso?"on":""} ${fmsPuntuacion(t,res[t.id])!=null?"hecho":""}">${i+1}</button>`).join("")}<button data-p="${N}" class="${paso===N?"on":""}">Registro</button></div>`;
+    if(paso<N){
+      const t=FMS[paso], r=res[t.id]||{};
+      const chips=lado=>`<div class="fms-chips">${[3,2,1,0].map(v=>`<button class="fms-c fms-v${v} ${r[lado]===v?"on":""}" data-t="${t.id}" data-l="${lado}" data-v="${v}">${v}</button>`).join("")}</div>`;
+      $("#fCuerpo").innerHTML=`<h3>${paso+1} de ${N}: ${esc(t.n)}</h3>
+        ${fmsFichaHTML(t,true)}
+        <div class="fms-anotar">
+          ${t.lado?`<p><b>Lado derecho</b></p>${chips("d")}<p><b>Lado izquierdo</b></p>${chips("i")}`:`<p><b>Puntuación</b></p>${chips("d")}`}
+          <label>Observaciones <textarea rows="2" data-obs="${t.id}">${esc(r.obs||"")}</textarea></label>
+          ${vidEditable?`<label>Vídeo de tu test (enlace) <input type="url" data-vid="${t.id}" value="${esc(r.vid||"")}" placeholder="https://..."></label>`:""}
+          ${!vidEditable&&r.vid&&/^https?:\/\//.test(r.vid)?`<p><a class="vid" href="${esc(r.vid)}" target="_blank" rel="noopener">▶ Ver vídeo del test</a></p>`:""}
+        </div>
+        <div class="row" style="margin-top:8px">
+          <button class="sec" data-nav="-1" ${paso===0?"disabled":""}>← Anterior</button>
+          <button class="gold" data-nav="1">${paso<N-1?"Siguiente →":"Ver resultado completo"}</button>
+        </div>`;
+    } else {
+      $("#fCuerpo").innerHTML=`<div class="an-panel">${fmsResumenHTML(res)}</div>
+        <div class="row" style="margin-top:8px"><button class="sec" data-nav="-1">← Anterior</button></div>`;
+    }
+    wire();
+  };
+
+  if(guardar) $("#fGuardar").onclick=async()=>{
+    try{await guardar(res);msg("#fmsg","Guardado ✓",true)}catch(e){msg("#fmsg",e.message,false)}
+  };
+  pintar();
+}
+
+// Entrenado: valora sus propias pruebas y ve la tabla completa al final
+function tabBateriaCliente(b,host="#sub"){
+  const res=JSON.parse(JSON.stringify((b&&b.registro_cliente)||{}));
+  $(host).innerHTML=`<div class="an-panel">
+    <p class="muted">Valora cada prueba de tu batería FMS: pulsa la puntuación de cada lado (0 a 3) y guarda. Al final verás la tabla completa.</p>
+    <div id="tAsis"></div></div>`;
+  fmsAsistente("#tAsis",res,async r=>{
+    await db("PATCH","baterias",`?cliente_id=eq.${S.user.id}`,{registro_cliente:r},"return=minimal");
+  },true);
+}
+
+// Entrenador: datos de la batería (fecha, visibilidad y valoración del entrenador) + autovaloración del entrenado
+async function bateriaVerEntrenador(c){
+  const [fila]=await db("GET","baterias",`?cliente_id=eq.${c.id}&select=datos,visible,actualizada,registro_cliente`);
+  const datos=(fila&&fila.datos)||{};
+  const B={fecha:datos.fecha||hoyISO(),resultados:datos.resultados||{},visible:!!(fila&&fila.visible)};
+  const auto=(fila&&fila.registro_cliente)||{};
+  const hayAuto=Object.keys(auto).some(k=>auto[k]&&(auto[k].d!=null||auto[k].i!=null));
+
+  $("#sub").innerHTML=`<div class="an-panel">
+    <p class="muted">Evalúa cada prueba con la puntuación de 0 a 3. Tres repeticiones por lado y se anota la mejor.${fila&&fila.actualizada?" Última actualización: "+fmtFecha(fila.actualizada.slice(0,10))+".":""}</p>
+    <label class="row"><input type="checkbox" id="bVis" ${B.visible?"checked":""}> Mostrar al cliente</label>
+    <label>Fecha <input type="date" id="bFecha" value="${B.fecha}"></label>
+    ${hayAuto?`<details class="fms-ficha"><summary><b>Autovaloración del cliente</b></summary>${fmsResumenHTML(auto)}</details>`:`<p class="muted">El cliente todavía no ha valorado sus pruebas.</p>`}
+    <div id="bAsis"></div>
+    <div class="row" style="margin-top:10px"><button class="gold" id="bGuardar">Guardar batería</button></div>
+    <div class="msg" id="mb"></div>
+  </div>`;
+  $("#bVis").onchange=ev=>B.visible=ev.target.checked;
+  $("#bFecha").onchange=ev=>B.fecha=ev.target.value||hoyISO();
+  fmsAsistente("#bAsis",B.resultados,null);
+
+  $("#bGuardar").onclick=async()=>{
+    try{
+      const datos={fecha:B.fecha,resultados:B.resultados};
+      await db("POST","baterias","?on_conflict=cliente_id",{cliente_id:c.id,datos,visible:B.visible,actualizada:new Date().toISOString()},"resolution=merge-duplicates,return=minimal");
+      msg("#mb",B.visible?"Batería guardada ✓. Visible para el cliente.":"Batería guardada ✓. Oculta para el cliente.",true);
+    }catch(e){msg("#mb",e.message,false)}
+  };
 }
 
 /* ---------- Arranque ---------- */
