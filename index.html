@@ -424,6 +424,10 @@ body:not(.cli) .login{margin-top:calc(36px + min(70vw,460px)*0.37 + 115px)}
   body.cli .chat-caja textarea{font-size:16px;padding:10px;border-radius:10px}
   body.cli .chat-caja .row button{min-height:44px;flex:1}
 }
+.pw-wrap{position:relative;display:block;width:100%}
+.pw-wrap input{width:100%;padding-right:46px;box-sizing:border-box}
+.pw-ojo{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:auto;min-height:0;background:transparent;border:0;padding:6px 8px;margin:0;font-size:18px;line-height:1;cursor:pointer;color:#666;box-shadow:none}
+.pw-ojo.on{color:var(--acento)}
 </style>
 </head>
 <body>
@@ -2250,6 +2254,27 @@ function fotoAJPG(file){
     img.src=URL.createObjectURL(file);
   });
 }
+
+/* ---------- Ojo para ver la contraseña (todos los campos password) ---------- */
+function anadirOjos(){
+  document.querySelectorAll('input[type=password]:not([data-ojo])').forEach(inp=>{
+    inp.dataset.ojo="1";
+    const w=document.createElement("span"); w.className="pw-wrap";
+    inp.parentNode.insertBefore(w,inp); w.appendChild(inp);
+    const b=document.createElement("button");
+    b.type="button"; b.className="pw-ojo"; b.textContent="👁";
+    b.title="Mostrar contraseña"; b.setAttribute("aria-label","Mostrar contraseña");
+    b.onclick=()=>{
+      const ver=inp.type==="password";
+      inp.type=ver?"text":"password";
+      b.classList.toggle("on",ver);
+      b.title=ver?"Ocultar contraseña":"Mostrar contraseña";
+      b.setAttribute("aria-label",b.title);
+    };
+    w.appendChild(b);
+  });
+}
+new MutationObserver(anadirOjos).observe(document.body,{childList:true,subtree:true});
 
 /* ---------- Arranque ---------- */
 async function init(){
