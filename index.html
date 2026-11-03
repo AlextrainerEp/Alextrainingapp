@@ -1240,9 +1240,10 @@ async function sinLeer(){
   return (await db("GET","mensajes",q))||[];
 }
 // Marca como leídos los mensajes de la otra parte en esta conversación
-async function marcarLeidos(clienteId,esAdmin){
+// Usa la función marcar_leidos de Supabase (ver SQL), porque un PATCH directo puede ser bloqueado en silencio por RLS
+async function marcarLeidos(clienteId){
   try{
-    await db("PATCH","mensajes",`?cliente_id=eq.${clienteId}&de_admin=eq.${!esAdmin}&leido=eq.false`,{leido:true},"return=minimal");
+    await db("POST","rpc/marcar_leidos","",{p_cliente:clienteId});
   }catch(e){console.warn("No se pudieron marcar como leídos los mensajes:",e.message)}
 }
 // Cliente: un globo en "Mensajes". Entrenador: un globo por cada cliente.
