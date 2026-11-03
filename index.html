@@ -1169,7 +1169,7 @@ async function tabMensajes(clienteId,esAdmin,host="#tab"){
       </div>
       <div class="msg" id="mm"></div>
     </div>`;
-  const chat=$("#chat"); if(chat) chat.scrollTop=chat.scrollHeight;
+  const chat=$("#chat"); if(chat){chat.scrollTop=chat.scrollHeight;chat.dataset.cli=clienteId;chat.dataset.admin=esAdmin?"1":"0"}
   await marcarLeidos(clienteId,esAdmin);
   refrescarBadges();
 
@@ -1243,12 +1243,15 @@ async function sinLeer(){
 async function marcarLeidos(clienteId,esAdmin){
   try{
     await db("PATCH","mensajes",`?cliente_id=eq.${clienteId}&de_admin=eq.${!esAdmin}&leido=eq.false`,{leido:true},"return=minimal");
-  }catch(e){}
+  }catch(e){console.warn("No se pudieron marcar como leídos los mensajes:",e.message)}
 }
 // Cliente: un globo en "Mensajes". Entrenador: un globo por cada cliente.
 async function refrescarBadges(){
   if(!S||!S.perfil||!document.querySelector(".badge-msg")) return;
   try{
+    // Si la conversación está abierta y la pestaña visible, lo que llega ya se está viendo: se marca como leído
+    const ch=document.querySelector("#chat");
+    if(ch&&ch.dataset.cli&&document.visibilityState==="visible") await marcarLeidos(ch.dataset.cli,ch.dataset.admin==="1");
     const pend=await sinLeer();
     const pon=(el,n)=>{el.textContent=n||"";el.style.display=n?"inline-block":"none"};
     if(S.perfil.rol==="admin"){
