@@ -1650,9 +1650,12 @@ async function panelCliente(tab,sub){
   if(anaOn) subs.push(["Anamnesis",anamnesisCliente]);
   if(val&&vis.fun===true) subs.push(["Valoración funcional",()=>tabValoracionCliente(val,"fun","#sub")]);
   if(val&&vis.fms===true) subs.push(["Test FMS",()=>tabValoracionCliente(val,"fms","#sub")]);
-  const lista=[["Entrenamientos",()=>tabEntrenosCal("#sub")],["Historial",()=>tabHistorialCliente("#sub")]];
+  // subTabs() sustituye todo #tab por su barra de subpestañas; al volver a otra pestaña principal
+  // hay que restaurar #tab, si no el contenido se pinta dentro de la barra de valoración.
+  const limpiarTab=()=>{$("#tab").innerHTML=`<div id="sub"></div>`};
+  const lista=[["Entrenamientos",()=>{limpiarTab();return tabEntrenosCal("#sub")}],["Historial",()=>{limpiarTab();return tabHistorialCliente("#sub")}]];
   if(subs.length) lista.push(["Valoración inicial",()=>subTabs(subs)]);
-  lista.push(["Mensajes",()=>tabMensajes(S.user.id,false,"#sub")],["Foto y contraseña",tabPerfil]);
+  lista.push(["Mensajes",()=>{limpiarTab();return tabMensajes(S.user.id,false,"#sub")}],["Foto y contraseña",()=>{limpiarTab();return tabPerfil()}]);
   const claves={entrenamientos:"Entrenamientos",calendario:"Entrenamientos",historial:"Historial",valoracion:"Valoración inicial",mensajes:"Mensajes",anamnesis:"Valoración inicial",perfil:"Foto y contraseña"};
   const key=tab==="perfil"?(sub||"perfil"):(tab||"entrenamientos");
   const iconos={"Entrenamientos":"🏋️","Historial":"🕘","Valoración inicial":"📋","Mensajes":"💬","Foto y contraseña":"👤"};
