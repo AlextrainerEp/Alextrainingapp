@@ -429,17 +429,17 @@ body:not(.cli) .login{margin-top:calc(36px + min(70vw,460px)*0.37 + 115px)}
 .pw-ojo{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:auto;min-height:0;background:transparent;border:0;padding:6px 8px;margin:0;font-size:18px;line-height:1;cursor:pointer;color:#666;box-shadow:none}
 .pw-ojo.on{color:var(--acento)}
 /* ===== PANTALLA DE ACCESO: DISEÑO FIJO (no modificar) =====
-   Fondo gris liso. Logo negro centrado arriba, frase debajo y tarjeta debajo de todo:
-   nada se superpone, igual en ordenador que en móvil. */
-html body:not(.cli){background:#b9bcbe;background-image:none}
+   Fondo gris liso. Logo negro centrado arriba, frase debajo y, debajo, el león blanco traslúcido
+   con los campos. Sin cajas de fondo. Nada se superpone, igual en ordenador que en móvil. */
+html body:not(.cli){background:#8f9499;background-image:none}
 html body:not(.cli) .fondo{position:relative;inset:auto;height:auto;background-color:transparent;background-repeat:no-repeat;background-position:center 16px;background-size:min(80vw,460px) auto;padding-top:calc(min(80vw,460px)*0.3656 + 24px);overflow:visible}
 html body:not(.cli) .frase{position:static;top:auto;left:auto;right:auto;margin:0 auto;padding:0 16px;max-width:640px;text-align:center;color:#111}
-html body:not(.cli) .frase .autor{color:#7a5a06}
-html body:not(.cli) .login.card{position:relative;margin:18px auto 40px;width:calc(100% - 32px);max-width:440px;padding:22px 20px;border-radius:16px;background:rgba(38,42,45,.94);box-shadow:0 10px 30px rgba(0,0,0,.25);backdrop-filter:none;-webkit-backdrop-filter:none;box-sizing:border-box}
-html body:not(.cli) .login .big{position:static;transform:none;display:block;width:min(72%,300px);max-width:none;height:auto;margin:0 auto 18px;opacity:.6;pointer-events:none}
+html body:not(.cli) .frase .autor{color:#3a2a04}
+html body:not(.cli) .login.card{position:relative;margin:18px auto 40px;width:calc(100% - 32px);max-width:440px;padding:12px 4px 0;background:transparent;border-radius:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;box-sizing:border-box}
+html body:not(.cli) .login .big{position:static;transform:none;display:block;width:min(72%,300px);max-width:none;height:auto;margin:0 auto 18px;opacity:.75;pointer-events:none}
 html body:not(.cli) .login input{background:#fff;color:#1d1f21}
-html body:not(.cli) .login p,html body:not(.cli) .login label,html body:not(.cli) .login h3{color:#f2f2f2}
-html body:not(.cli) .login a{color:#e8c46a}
+html body:not(.cli) .login p,html body:not(.cli) .login label,html body:not(.cli) .login h3{color:#fff}
+html body:not(.cli) .login a{color:#fff;text-decoration:underline;font-weight:600}
 </style>
 </head>
 <body>
