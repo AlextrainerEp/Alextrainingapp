@@ -380,6 +380,12 @@ h3{margin:12px 0 6px;font-size:15px}
   </div>
 
   <div id="vista-atleta" class="oculto">
+    <div class="card" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button id="btn-sync-strava" class="gold">Sincronizar Strava</button>
+      <span id="sync-estado" class="muted"></span>
+      <button id="btn-ver-strava" class="sec">Ver mis actividades</button>
+    </div>
+    <div id="lista-strava" class="card oculto"></div>
     <button id="conectarStrava" class="sec" style="margin-bottom:10px">Conectar con Strava</button>
     <nav class="tabs-t" id="tabs-a">
       <button class="tabt on" data-ta="cal">Calendario</button>
@@ -2098,6 +2104,110 @@ $('btn-plan-aplicar').onclick = async () => {
     cargarSemana();
   }
 };
+
+/* ---------- SINCRONIZAR STRAVA ---------- */
+const STRAVA_FUNCION = 'https://orrfqvrsrjfddhuzleel.supabase.co/functions/v1/strava-actividades';
+const TIPOS_STRAVA = {
+  Run: ['rodaje', 'series', 'tirada'], TrailRun: ['rodaje', 'series', 'tirada'], VirtualRun: ['rodaje', 'series', 'tirada'],
+  Ride: ['bici'], VirtualRide: ['bici'], WeightTraining: ['fuerza']
+};
+
+$('btn-sync-strava').onclick = sincronizarStrava;
+
+async function pedirActividades() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) throw new Error('Vuelve a entrar en la app.');
+  const r = await fetch(STRAVA_FUNCION, {
+    headers: { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + session.access_token }
+  });
+  const datos = await r.json();
+  if (!r.ok) throw new Error(datos.error || 'Error ' + r.status);
+  return datos.actividades;
+}
+
+async function sincronizarStrava() {
+  const estado = $('sync-estado');
+  estado.textContent = 'Sincronizando…';
+  let actividades;
+  try {
+    actividades = await pedirActividades();
+  } catch (e) {
+    estado.textContent = 'No se pudo sincronizar: ' + e.message;
+    return;
+  }
+
+  const usadas = new Set();
+  let emparejadas = 0, sinSesion = 0;
+  for (const act of actividades) {
+    const fecha = act.fecha.slice(0, 10);
+    const tipos = TIPOS_STRAVA[act.tipo] || [];
+    const candidata = datosAtleta.sesiones.find(s =>
+      s.fecha === fecha && !usadas.has(s.id) && s.estado !== 'hecha' && tipos.includes(s.tipo));
+    if (!candidata) { sinSesion++; continue; }
+    usadas.add(candidata.id);
+    const { error } = await sb.from('sesiones_planificadas')
+      .update({ estado: 'hecha', km_reales: act.km })
+      .eq('id', candidata.id);
+    if (error) { estado.textContent = 'Error al guardar: ' + error.message; return; }
+    emparejadas++;
+  }
+
+  estado.textContent = `${emparejadas} sesiones marcadas como hechas · ${sinSesion} actividades sin sesión planificada`;
+  await cargarTodoAtleta();
+  cargarSemana();
+}
+
+
+function escHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+
+function fechaActividad(iso) {
+  const [y, m, d] = iso.slice(0, 10).split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function vinculada(act) {
+  const fecha = act.fecha.slice(0, 10);
+  const tipos = TIPOS_STRAVA[act.tipo] || [];
+  return datosAtleta.sesiones.some(s =>
+    s.fecha === fecha && s.estado === 'hecha' && tipos.includes(s.tipo));
+}
+
+async function verActividades() {
+  const caja = $('lista-strava');
+  caja.classList.remove('oculto');
+  caja.innerHTML = '<span class="muted">Cargando actividades…</span>';
+  let actividades;
+  try {
+    actividades = await pedirActividades();
+  } catch (e) {
+    caja.innerHTML = '<span class="muted">No se pudieron cargar: ' + escHtml(e.message) + '</span>';
+    return;
+  }
+  if (!actividades.length) {
+    caja.innerHTML = '<span class="muted">No hay actividades en los últimos 60 días.</span>';
+    return;
+  }
+  const filas = actividades
+    .slice()
+    .sort((a, b) => b.fecha.localeCompare(a.fecha))
+    .map(a => `
+      <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid #eee">
+        <div>
+          <b>${escHtml(a.nombre)}</b><br>
+          <span class="muted">${fechaActividad(a.fecha)} · ${escHtml(a.tipo)} · ${a.minutos} min${a.fc_media ? ' · FC ' + Math.round(a.fc_media) : ''}</span>
+        </div>
+        <div style="text-align:right">
+          <b>${a.km} km</b><br>
+          <span class="muted">${vinculada(a) ? 'Vinculada a sesión' : 'Sin sesión'}</span>
+        </div>
+      </div>`).join('');
+  caja.innerHTML = '<div class="cab">Mis actividades de Strava (últimos 60 días)</div>' + filas;
+}
+
+$('btn-ver-strava').onclick = verActividades;
+
 
 mostrarSegunSesion();
 </script>
