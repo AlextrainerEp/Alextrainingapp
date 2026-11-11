@@ -50,8 +50,8 @@ main{max-width:980px;margin:0 auto;padding:calc(150px + min(80vw,600px)*0.37 + 1
 .cita{text-align:center;margin:60px 0 0;font-size:15px;line-height:1.5;color:#1d1f21}
 .tagline{text-align:center;font-weight:600;color:#1d1f21;margin:0 0 14px;font-size:15px}
 .login .tagline{display:none}
-/* Acceso: el logo blanco va encima del logo de la imagen de fondo. Al bajar la página se ajusta hasta coincidir con él (script al final) */
-body:has(.login) .login img.big{display:block;position:fixed;left:0;top:0;margin:0;max-width:none;height:auto}
+/* Acceso: el logo blanco va encima del logo de la imagen de fondo, se mueve con la página y se ajusta al logo de fondo al bajar (script al final) */
+body:has(.login) .login img.big{display:block;position:absolute;left:0;top:0;margin:0;max-width:none;height:auto}
 body:has(.login) .login input,body:has(.login) .login select,body:has(.login) .login textarea,body:has(.login) .login button{background:rgba(255,255,255,.12)!important;color:#fff;border:1px solid rgba(255,255,255,.35);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 body:has(.login) .login input::placeholder,body:has(.login) .login textarea::placeholder{color:rgba(255,255,255,.8)}
 body:has(.login) .login a{color:#fff}
@@ -1230,7 +1230,7 @@ init().catch(()=>pantallaLogin());
     var t=Math.min(1, Math.max(0, scrollY/(vh*0.5)));
     img.style.width=(sw+(ew-sw)*t)+'px';
     img.style.left=(sl+(el-sl)*t)+'px';
-    img.style.top=(st+(et-st)*t)+'px';
+    img.style.top=(st+(et-st)*t+scrollY)+'px';
   }
   addEventListener('scroll',place,{passive:true});
   addEventListener('resize',place);
