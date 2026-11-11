@@ -178,6 +178,14 @@ textarea{font-size:14px;width:100%;margin:4px 0 8px}
 .pw-wrap{position:relative;display:block;margin:0}
 .pw-wrap input{width:100%;box-sizing:border-box;padding-right:72px}
 .pw-wrap .pw-ver{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:auto;margin:0;padding:6px 8px;background:none!important;border:0!important;box-shadow:none;color:#f2c230;font-size:13px;font-weight:600;cursor:pointer}
+/* Menú lateral izquierdo en escritorio, como en la app de resistencia: la cabecera queda arriba y las pestañas a la izquierda */
+@media (min-width:900px){
+  main:has(> .tabs){max-width:1280px;margin:0;padding-left:230px;padding-right:20px}
+  main > .tabs{position:fixed;left:0;top:64px;bottom:0;width:210px;flex-direction:column;flex-wrap:nowrap;gap:4px;margin:0;padding:16px 10px;border-radius:0;background:#2e3133;overflow-x:hidden;overflow-y:auto;z-index:6;box-shadow:2px 0 8px rgba(0,0,0,.18)}
+  main > .tabs button{width:100%;text-align:left;padding:11px 14px;font-size:15px;background:transparent;color:#D9DDE0;border-left:4px solid transparent;border-radius:6px}
+  main > .tabs button:hover{background:#3a3e41}
+  main > .tabs button.on{background:#4a4f52;color:#fff;border-left-color:#e0b43a;font-weight:700}
+}
 </style>
 </head>
 <body>
