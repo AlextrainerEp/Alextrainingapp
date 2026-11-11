@@ -674,7 +674,7 @@ async function fichaCliente(id){
   const ses=await db("GET","sesiones",`?cliente_id=eq.${id}&order=created_at.desc&select=*`);
   shell(`<button class="sec" id="volver">← Clientes</button>
     <div class="card ficha"><div class="row" style="align-items:center;gap:12px">${c.foto?`<img class="avatar" style="width:90px;height:90px" src="${c.foto}" alt="">`:`<span class="muted">Sin foto</span>`}<h2 style="margin:0">${esc(c.nombre||"Sin nombre")}</h2></div>
-    <div class="tabs"><button id="ta" class="on">Entrenamientos</button><button id="tb">Anamnesis</button><button id="tc">Historial</button><button id="td">Mensajes</button></div>
+    <div class="tabs"><button id="ta" class="on">Entrenamientos</button><button id="tb">Anamnesis</button><button id="tc">Historial</button><button id="td">Mensajes</button><button id="te">Pestañas</button></div>
     <div id="tab"></div></div>`);
   $("#volver").onclick=listaClientes;
 
@@ -735,7 +735,18 @@ async function fichaCliente(id){
   const verAnam=()=>subTabs([["Respuestas",()=>anRespuestasEntrenador(c)],["Valoración inicial",()=>anValoracionEntrenador(c)]]);
   const verHist=()=>{$("#tab").innerHTML=tabHistorial(ses)};
   const verMsgs=()=>tabMensajes(id,true);
-  pestanas(["ta","tb","tc","td"],[verEntrenos,verAnam,verHist,verMsgs]);
+  const verPest=()=>{
+    const oc=c.ocultas||[];
+    $("#tab").innerHTML=`<p class="muted">Desmarca las pestañas que quieres ocultar a este entrenado.</p>
+      ${PEST_CLI.map(([k,n])=>`<label class="ver"><input type="checkbox" data-vis="${k}" ${oc.includes(k)?"":"checked"}> ${n}</label>`).join("")}
+      <div class="row" style="margin-top:10px"><button id="guardarPest">Guardar pestañas</button><span class="muted" id="pst"></span></div>`;
+    $("#guardarPest").onclick=async()=>{
+      const ocultas=PEST_CLI.map(([k])=>k).filter(k=>!document.querySelector(`[data-vis="${k}"]`).checked);
+      try{await db("PATCH","perfiles",`?id=eq.${id}`,{ocultas},"return=minimal");c.ocultas=ocultas;$("#pst").textContent="Guardado ✓"}
+      catch(e){$("#pst").textContent="Error: "+e.message}
+    };
+  };
+  pestanas(["ta","tb","tc","td","te"],[verEntrenos,verAnam,verHist,verMsgs,verPest]);
   verEntrenos();
 }
 
@@ -870,19 +881,36 @@ function subTabs(lista){
 }
 function tabEntrenosCliente(){subTabs([["Mi entrenamiento",tabEntrenos],["Historial",tabHistorialCliente]])}
 function tabPerfilCliente(){subTabs([["Foto y contraseña",tabPerfil],["Anamnesis",tabAnamnesis]])}
+/* Pestañas del entrenado (el entrenador puede ocultar cualquiera desde su ficha, pestaña Pestañas) */
+const PEST_CLI=[["entrenos","Mis entrenamientos"],["historial","Historial"],["mensajes","Entrenador"],["valoracion","Valoración inicial"],["anamnesis","Anamnesis"]];
+function pestanaOculta(k){return ((S.perfil&&S.perfil.ocultas)||[]).includes(k)}
+function tabAnamnesisPagina(){$("#tab").innerHTML='<div id="sub"></div>';tabAnamnesis()}
+function tabValoracionCliente(){
+  const v=((S.perfil&&S.perfil.anamnesis)||{}).valoracion||{};
+  $("#tab").innerHTML=`<div class="an-panel"><p class="muted">Rellena tu valoración inicial.${v.fecha?" Última actualización: "+anFecha(v.fecha)+".":""}</p>
+    <div id="anVal"></div>
+    <div class="row" style="margin-top:10px"><button class="gold" id="guardarVC">Guardar valoración</button></div><div class="msg" id="m"></div></div>`;
+  const form=anForm($("#anVal"),ANAM_VAL,v);
+  $("#guardarVC").onclick=async()=>{
+    try{
+      const [fresca]=await db("GET","perfiles",`?id=eq.${S.user.id}&select=anamnesis`);
+      const previa=(fresca&&fresca.anamnesis)||{};
+      await db("PATCH","perfiles",`?id=eq.${S.user.id}`,{anamnesis:{...previa,valoracion:{...anCollect(form),fecha:new Date().toISOString()}}},"return=minimal");
+      msg("#m","Valoración guardada ✓",true);
+    }catch(e){msg("#m","Error: "+e.message,false)}
+  };
+}
 function panelCliente(tab){
-  // Anamnesis (desde el nombre de la cabecera): página propia, solo el formulario, con Volver
-  if(tab==="perfil"||tab==="anamnesis"){
-    shell(`<button class="sec" id="volverA">← Volver</button><div id="tab"><div id="sub"></div></div>`);
-    $("#volverA").onclick=()=>panelCliente();
-    tabAnamnesis(); return;
-  }
-  shell(`<div class="tabs"><button id="c1">Mis entrenamientos</button><button id="c2">Historial</button><button id="c3">Entrenador</button></div><div id="tab"></div>`);
-  const fns=[tabEntrenos,tabHistorialCliente,tabMensajesCliente];
-  pestanas(["c1","c2","c3"],fns);
-  const idx=tab==="historial"?1:tab==="mensajes"?2:0;
-  ["c1","c2","c3"].forEach((x,i)=>$("#"+x).classList.toggle("on",i===idx));
-  fns[idx]();
+  if(tab==="perfil") tab="anamnesis";
+  if(tab==="entrenamientos") tab="entrenos";
+  const visibles=PEST_CLI.filter(([k])=>!pestanaOculta(k));
+  const fnMap={entrenos:tabEntrenos,historial:tabHistorialCliente,mensajes:tabMensajesCliente,valoracion:tabValoracionCliente,anamnesis:tabAnamnesisPagina};
+  if(!visibles.length){shell(`<p class="muted">No hay pestañas activas. Consulta con tu entrenador.</p>`);return}
+  shell(`<div class="tabs">${visibles.map(([k,n],i)=>`<button id="c_${k}" class="${i?"":"on"}">${n}</button>`).join("")}</div><div id="tab"></div>`);
+  pestanas(visibles.map(([k])=>"c_"+k),visibles.map(([k])=>fnMap[k]));
+  let idx=visibles.findIndex(([k])=>k===tab); if(idx<0) idx=0;
+  visibles.forEach(([k],i)=>$("#c_"+k).classList.toggle("on",i===idx));
+  fnMap[visibles[idx][0]]();
 }
 async function tabEntrenos(){
   // Solo las sesiones pendientes: las completadas pasan al historial
@@ -1142,7 +1170,7 @@ function anRespuestasEntrenador(c){
 }
 function anValoracionEntrenador(c){
   const a=c.anamnesis||{},val=a.valoracion||{};
-  $("#sub").innerHTML=`<div class="an-panel"><p class="muted">A rellenar en la primera sesión. El entrenado no ve este bloque.${val.fecha?" Última actualización: "+anFecha(val.fecha)+".":""}</p>
+  $("#sub").innerHTML=`<div class="an-panel"><p class="muted">A rellenar en la primera sesión. Si activas la pestaña Valoración inicial del entrenado, también puede rellenarla él.${val.fecha?" Última actualización: "+anFecha(val.fecha)+".":""}</p>
     <div id="anVal"></div>
     <div class="row" style="margin-top:10px"><button class="gold" id="guardarV">Guardar valoración</button></div><div class="msg" id="mv"></div></div>`;
   const form=anForm($("#anVal"),ANAM_VAL,val,false);
