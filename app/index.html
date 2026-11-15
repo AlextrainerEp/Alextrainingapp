@@ -486,6 +486,19 @@ html:not(.oscuro) body.cli .fondo{background:transparent}
 html:not(.oscuro) body.cli::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;background:linear-gradient(rgba(230,233,235,.70),rgba(230,233,235,.70)),var(--foto-niebla) center/cover no-repeat}
 /* logo y frase de fondo más separados de la barra superior */
 html body.cli .fondo{padding-top:62px}
+/* frase de Kobe sin recuadro: letras negras sobre el fondo y el nombre en dorado, como en el acceso */
+html body.cli .frase{background:none!important;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none;border-radius:0;padding:0 16px}
+html:not(.oscuro) body.cli .frase{color:#111}
+html body.cli .frase .autor{color:#e0b43a;text-shadow:0 1px 3px rgba(0,0,0,.55)}
+/* frase de Kobe sin recuadro, como en la app de resistencia */
+html body.cli .frase,html.oscuro body.cli .frase{background:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0 16px;border-radius:0}
+
+/* ===== FRASE SIN RECUADRO Y ACCESO A LA OTRA APP (igual que resistencia) ===== */
+html body.cli .frase{background:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0 16px;color:#111}
+html body.cli .frase .autor{color:#e0b43a;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+html.oscuro body.cli .frase{background:none;color:#f2f2f2}
+html body.cli .cli-nav .otra-app{display:block;margin-top:16px;padding:11px 12px;border-radius:8px;border:1px solid #5a5f63;color:#e0b43a;text-decoration:none;font-size:14px;font-weight:700;white-space:normal}
+html body.cli .cli-nav .otra-app:hover{background:#3a3e41}
 /* ---- Acceso: foto completa y logo entero; la frase fija sobre el pico; solo el león con el formulario se mueve ---- */
 html body:not(.cli) .fondo{background:none;position:static;height:0;padding:0;margin:0;overflow:visible}
 html body:not(.cli) .frase{position:fixed;left:0;right:0;top:0;transform:translateY(-100%);margin:0 auto;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.9);z-index:1}
@@ -2466,6 +2479,18 @@ window.addEventListener('load',colocarAcceso);
 if(window.MutationObserver){ new MutationObserver(function(){ colocarAcceso(); }).observe(document.getElementById('app')||document.body,{childList:true}); }
 if(document.fonts&&document.fonts.ready) document.fonts.ready.then(colocarAcceso);
 colocarAcceso();
+</script>
+<script>
+/* Entrenador: en el menú lateral, enlace a la app de resistencia */
+(function(){
+  function ponerOtraApp(){
+    try{ if(!(S&&S.perfil&&S.perfil.rol==="admin")) return; }catch(e){ return; }
+    var n=document.getElementById('cnav');
+    if(n&&!n.querySelector('.otra-app')) n.insertAdjacentHTML('beforeend','<a class="otra-app" href="../resistencia/">↔ App resistencia</a>');
+  }
+  var app=document.getElementById('app');
+  if(app&&window.MutationObserver) new MutationObserver(ponerOtraApp).observe(app,{childList:true,subtree:true});
+})();
 </script>
 </body>
 </html>
