@@ -211,18 +211,21 @@ h3{margin:12px 0 6px;font-size:15px}
 
 /* ===== DENTRO DE LA APP ===== */
 header img.logo{height:40px;width:auto}
+/* logo y frase de fondo más separados de la barra superior */
+.fondo{background-position:center 124px}
+.frase{top:calc(124px + min(80vw,600px)*0.37 + 12px)}
 /* La frase va debajo del logo de fondo y el contenido empieza debajo de la frase */
-main:has(#panel:not(.oculto)),main:has(#vista-atleta:not(.oculto)){padding-top:calc(84px + min(80vw,600px)*0.37 + 12px + var(--frase-h,70px) + 22px)}
+main:has(#panel:not(.oculto)),main:has(#vista-atleta:not(.oculto)){padding-top:calc(124px + min(80vw,600px)*0.37 + 12px + var(--frase-h,70px) + 22px)}
 @media (max-width:899px){
-  .fondo{background-position:center 72px;background-size:min(86vw,600px) auto}
-  .frase{top:calc(72px + min(86vw,600px)*0.37 + 10px);font-size:16px}
-  main:has(#panel:not(.oculto)),main:has(#vista-atleta:not(.oculto)){padding-top:calc(72px + min(86vw,600px)*0.37 + 10px + var(--frase-h,80px) + 18px)}
+  .fondo{background-position:center 130px;background-size:min(86vw,600px) auto}
+  .frase{top:calc(130px + min(86vw,600px)*0.37 + 10px);font-size:16px}
+  main:has(#panel:not(.oculto)),main:has(#vista-atleta:not(.oculto)){padding-top:calc(130px + min(86vw,600px)*0.37 + 10px + var(--frase-h,80px) + 18px)}
 }
 /* --- Apariencia «Niebla»: gris claro con la montaña difuminada arriba --- */
 html.tema-niebla body{background:#e6e9eb}
-html.tema-niebla .fondo{background:url("logo-fondo.png") no-repeat center 84px/min(80vw,600px) auto,linear-gradient(to bottom,rgba(230,233,235,.55) 0,rgba(230,233,235,.75) 220px,#e6e9eb 430px),url("fondo-app.jpg") center top/max(100%,1000px) auto no-repeat,#e6e9eb}
+html.tema-niebla .fondo{background:url("logo-fondo.png") no-repeat center 124px/min(80vw,600px) auto,linear-gradient(rgba(230,233,235,.70),rgba(230,233,235,.70)),url("fondo-app-total.jpg") center/cover no-repeat,#e6e9eb}
 @media (max-width:899px){
-  html.tema-niebla .fondo{background-position:center 72px,0 0,center top,0 0;background-size:min(86vw,600px) auto,auto,max(100%,1000px) auto,auto}
+  html.tema-niebla .fondo{background-position:center 130px,0 0,center,0 0;background-size:min(86vw,600px) auto,auto,cover,auto}
 }
 /* ===== PANTALLA DE ACCESO: igual que la app de entrenamiento funcional =====
    Foto de la montaña con el logo, frase de Kobe arriba y el formulario debajo del logo. Sin scroll. */
