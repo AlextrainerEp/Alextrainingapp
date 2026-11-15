@@ -2192,12 +2192,25 @@ function activarChat(pref, atletaId, miId) {
   chatTimers[pref] = setInterval(() => cargarMensajes(pref, atletaId, miId), 10000);
 }
 
+/* Entrada única: al entrar aquí se abre también la sesión de la app funcional
+   (mismo email y contraseña), para pasar de una app a otra sin volver a identificarse. */
+const FUN_URL = 'https://xnqksbpwsqdgngaskbpx.supabase.co', FUN_KEY = 'sb_publishable_3cFWXykjHyxsdo65c2CZkA_8dM6U-HF';
+async function puenteFuncional(email, pw) {
+  try {
+    const r = await fetch(FUN_URL + '/auth/v1/token?grant_type=password', {
+      method: 'POST', headers: { apikey: FUN_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: pw })
+    });
+    if (!r.ok) return;
+    const j = await r.json();
+    sessionStorage.setItem('alex_s', JSON.stringify({ access: j.access_token, refresh: j.refresh_token }));
+  } catch (e) {}
+}
 $('btn-login').onclick = async () => {
-  const { error } = await sb.auth.signInWithPassword({
-    email: $('email').value, password: $('password').value
-  });
+  const email = $('email').value, pw = $('password').value;
+  const { error } = await sb.auth.signInWithPassword({ email, password: pw });
   mostrarError($('error'), error ? error.message : '');
-  if (!error) mostrarSegunSesion();
+  if (!error) { await puenteFuncional(email.trim(), pw); mostrarSegunSesion(); }
 };
 
 $('btn-registro').onclick = async () => {
@@ -2249,7 +2262,7 @@ function alternarVer(checkId, inputId) {
 alternarVer('ver-pass', 'password');
 alternarVer('ver-pass-nueva', 'pass-nueva');
 
-$('btn-salir').onclick = async () => { ['strava_code','strava_error','strava_state'].forEach(k => sessionStorage.removeItem(k)); await sb.auth.signOut(); mostrarSegunSesion(); };
+$('btn-salir').onclick = async () => { ['strava_code','strava_error','strava_state','alex_s'].forEach(k => sessionStorage.removeItem(k)); await sb.auth.signOut(); mostrarSegunSesion(); };
 
 /* ---------- ATLETAS ---------- */
 
