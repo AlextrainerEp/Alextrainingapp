@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" class="tema-niebla">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -208,6 +208,22 @@ h3{margin:12px 0 6px;font-size:15px}
 .act-fila a{color:#FC4C02;font-weight:700;margin-left:6px;white-space:nowrap}
 .pie-strava{font-size:11px;color:#555;margin-top:6px}
 
+
+/* ===== DENTRO DE LA APP ===== */
+header img.logo{height:40px;width:auto}
+/* La frase va debajo del logo de fondo y el contenido empieza debajo de la frase */
+main:has(#panel:not(.oculto)),main:has(#vista-atleta:not(.oculto)){padding-top:calc(84px + min(80vw,600px)*0.37 + 12px + var(--frase-h,70px) + 22px)}
+@media (max-width:899px){
+  .fondo{background-position:center 72px;background-size:min(86vw,600px) auto}
+  .frase{top:calc(72px + min(86vw,600px)*0.37 + 10px);font-size:16px}
+  main:has(#panel:not(.oculto)),main:has(#vista-atleta:not(.oculto)){padding-top:calc(72px + min(86vw,600px)*0.37 + 10px + var(--frase-h,80px) + 18px)}
+}
+/* --- Apariencia «Niebla»: gris claro con la montaña difuminada arriba --- */
+html.tema-niebla body{background:#e6e9eb}
+html.tema-niebla .fondo{background:url("logo-fondo.png") no-repeat center 84px/min(80vw,600px) auto,linear-gradient(to bottom,rgba(230,233,235,.55) 0,rgba(230,233,235,.75) 220px,#e6e9eb 430px),url("fondo-app.jpg") center top/max(100%,1000px) auto no-repeat,#e6e9eb}
+@media (max-width:899px){
+  html.tema-niebla .fondo{background-position:center 72px,0 0,center top,0 0;background-size:min(86vw,600px) auto,auto,max(100%,1000px) auto,auto}
+}
 /* ===== PANTALLA DE ACCESO: igual que la app de entrenamiento funcional =====
    Foto de la montaña con el logo, frase de Kobe arriba y el formulario debajo del logo. Sin scroll. */
 html:has(#login:not(.oculto)){overflow:hidden;height:100%;background:#0b0b0b}
@@ -232,7 +248,7 @@ body:has(#login:not(.oculto)) #login .row{margin-top:2px}
 </div>
 
 <header id="hdr" class="oculto">
-  <img class="logo" src="logo-alex.png" alt="" onerror="this.remove()">
+  <img class="logo" src="logo-cabecera.png" alt="Alex Training Lab" onerror="this.remove()">
   <div class="t">Alex Training Lab · Resistencia <span id="version-app" style="font-size:11px;font-weight:400;opacity:.7">· versión 15-nov-e</span></div>
   <button id="btn-salir" class="sec">Salir</button>
 </header>
@@ -651,9 +667,11 @@ const STRAVA_CLIENT_ID = '295862';
 // antes de que Supabase la lea.
 {
   const q = new URLSearchParams(location.search);
-  if (q.get('state') === 'strava') {
+  const estado = q.get('state') || '';
+  if (estado === 'strava' || estado.startsWith('strava-')) {
     if (q.get('code')) sessionStorage.setItem('strava_code', q.get('code'));
     if (q.get('error')) sessionStorage.setItem('strava_error', q.get('error'));
+    sessionStorage.setItem('strava_state', estado);
     history.replaceState(null, '', location.pathname);
   }
 }
@@ -1106,9 +1124,16 @@ function pintarEstadoStrava() {
 async function iniciarStravaAtleta() {
   pintarEstadoStrava();
   const errorStrava = sessionStorage.getItem('strava_error');
-  const code = sessionStorage.getItem('strava_code');
+  let code = sessionStorage.getItem('strava_code');
+  const estadoStrava = sessionStorage.getItem('strava_state') || '';
   sessionStorage.removeItem('strava_error');
   sessionStorage.removeItem('strava_code');
+  sessionStorage.removeItem('strava_state');
+  // La autorización tiene que ser del mismo atleta que la pidió (por si otra persona ha entrado en este ordenador)
+  if (code && (!miAtleta || estadoStrava !== 'strava-' + miAtleta.id)) {
+    code = null;
+    alert('Esa autorización de Strava no corresponde a la cuenta que está dentro ahora. Vuelve a pulsar «Conectar con Strava».');
+  }
   if (errorStrava) alert('No se ha completado la conexión con Strava (has cancelado o denegado el permiso).');
   if (code) {
     mostrarTabA('perfil');
@@ -1134,10 +1159,15 @@ async function iniciarStravaAtleta() {
 }
 $('btn-strava-conectar').onclick = () => {
   if (!/^\d+$/.test(STRAVA_CLIENT_ID)) return alert('La conexión con Strava todavía no está configurada. Avisa a tu entrenador.');
+  if (!miAtleta) return alert('Entra con tu cuenta antes de conectar Strava.');
+  const ok = confirm('Se conectará la cuenta de Strava que esté abierta en este navegador.\n\n' +
+    'En la siguiente pantalla, Strava te mostrará tu nombre: comprueba que es tu cuenta antes de pulsar «Autorizar».\n\n' +
+    'Si aparece la cuenta de otra persona, pulsa «Cancelar» en Strava, cierra su sesión en strava.com y vuelve a conectar.\n\n¿Continuar?');
+  if (!ok) return;
   const vuelta = location.origin + location.pathname;
   location.href = 'https://www.strava.com/oauth/authorize?client_id=' + STRAVA_CLIENT_ID +
     '&redirect_uri=' + encodeURIComponent(vuelta) +
-    '&response_type=code&approval_prompt=auto&scope=read,activity:read_all&state=strava';
+    '&response_type=code&approval_prompt=force&scope=read,activity:read_all&state=strava-' + encodeURIComponent(miAtleta.id);
 };
 $('btn-strava-sync').onclick = async () => {
   $('strava-estado').textContent = 'Sincronizando…';
@@ -2194,7 +2224,7 @@ function alternarVer(checkId, inputId) {
 alternarVer('ver-pass', 'password');
 alternarVer('ver-pass-nueva', 'pass-nueva');
 
-$('btn-salir').onclick = async () => { await sb.auth.signOut(); mostrarSegunSesion(); };
+$('btn-salir').onclick = async () => { ['strava_code','strava_error','strava_state'].forEach(k => sessionStorage.removeItem(k)); await sb.auth.signOut(); mostrarSegunSesion(); };
 
 /* ---------- ATLETAS ---------- */
 
@@ -3152,7 +3182,11 @@ mostrarSegunSesion();
    Coordenadas del logo en la foto (1672x941): y 390-655, ancho 540. */
 function colocarAcceso(){
   var l=document.getElementById('login');
-  if(!l||l.classList.contains('oculto')) return;
+  var fr=document.querySelector('.frase');
+  if(!l||l.classList.contains('oculto')){
+    if(fr){ fr.style.top=''; document.documentElement.style.setProperty('--frase-h',fr.offsetHeight+'px'); }
+    return;
+  }
   var W=window.innerWidth, H=window.innerHeight, raiz=document.documentElement;
   var f=document.querySelector('.frase'), fAbajo=0;
   if(f){ f.style.top='14px'; fAbajo=14+f.offsetHeight; }
