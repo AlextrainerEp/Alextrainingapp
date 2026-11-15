@@ -169,7 +169,7 @@ h3{margin:12px 0 6px;font-size:15px}
 
 /* Menú en columna a la izquierda (pantallas anchas), estilo intervals.icu.
    En móvil se mantiene la barra horizontal de arriba. */
-@media (min-width:900px){
+@media (min-width:768px){
   header{position:sticky;top:0;z-index:7;flex-wrap:nowrap;height:64px}
   .tabs-t{position:fixed;left:0;top:64px;bottom:0;width:210px;flex-direction:column;gap:4px;margin:0;padding:16px 10px;border-radius:0;overflow-x:hidden;overflow-y:auto;z-index:6;box-shadow:2px 0 8px rgba(0,0,0,.18)}
   .tabs-t .tabt{width:100%;text-align:left;padding:11px 14px;font-size:15px;background:transparent;color:#D9DDE0;border-left:4px solid transparent;border-radius:6px}
@@ -211,6 +211,9 @@ h3{margin:12px 0 6px;font-size:15px}
 
 /* ===== DENTRO DE LA APP ===== */
 header img.logo{height:40px;width:auto}
+/* frase de Kobe: letras negras y el nombre en dorado, como en el acceso (igual que la app funcional) */
+.frase{color:#111;background:none}
+.frase .autor{color:#e0b43a;text-shadow:0 1px 3px rgba(0,0,0,.55)}
 /* logo y frase de fondo más separados de la barra superior */
 .fondo{background-position:center 124px}
 .frase{top:calc(124px + min(80vw,600px)*0.37 + 12px)}
@@ -227,6 +230,23 @@ html.tema-niebla .fondo{background:url("logo-fondo.png") no-repeat center 124px/
 @media (max-width:899px){
   html.tema-niebla .fondo{background-position:center 130px,0 0,center,0 0;background-size:min(86vw,600px) auto,auto,cover,auto}
 }
+
+/* ===== MENÚ LATERAL Y FRASE (igual que la app funcional) ===== */
+.menu-btn{display:none}
+.otra-app{order:99;display:block;margin-top:auto;padding:11px 14px;border-radius:6px;border:1px solid #5a5f63;color:#e0b43a;text-decoration:none;font-size:14px;font-weight:700;white-space:normal}
+.otra-app:hover{background:#3a3e41}
+@media (min-width:768px){ .tabs-t .otra-app{margin-top:16px} }
+@media (max-width:767px){
+  body:has(#panel:not(.oculto)) .menu-btn,body:has(#vista-atleta:not(.oculto)) .menu-btn{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;padding:0;font-size:22px;background:#5a5f63;color:#fff;flex:0 0 auto}
+  .tabs-t{position:fixed;top:0;left:0;bottom:0;width:250px;flex-direction:column;flex-wrap:nowrap;gap:4px;margin:0;padding:16px 10px;border-radius:0;overflow-x:hidden;overflow-y:auto;z-index:40;transform:translateX(-100%);transition:transform .25s ease}
+  body.menu-abierto .tabs-t{transform:none;box-shadow:0 0 0 100vmax rgba(0,0,0,.45)}
+  .tabs-t .tabt{width:100%;text-align:left;padding:11px 14px;font-size:15px;background:transparent;color:#D9DDE0;border-left:4px solid transparent;border-radius:6px}
+  .tabs-t .tabt.on{background:#4a4f52;color:#fff;border-left-color:#e0b43a;font-weight:700}
+  .tabs-t .otra-app{margin-top:16px}
+}
+/* frase sin recuadro, letras negras y firma dorada */
+.frase{color:#111}
+.frase .autor{color:#e0b43a;text-shadow:0 1px 3px rgba(0,0,0,.6)}
 /* ===== PANTALLA DE ACCESO: igual que la app de entrenamiento funcional =====
    Foto de la montaña con el logo, frase de Kobe arriba y el formulario debajo del logo. Sin scroll. */
 html:has(#login:not(.oculto)){overflow:hidden;height:100%;background:#0b0b0b}
@@ -251,6 +271,7 @@ body:has(#login:not(.oculto)) #login .row{margin-top:2px}
 </div>
 
 <header id="hdr" class="oculto">
+  <button id="btn-menu" class="menu-btn" type="button" aria-label="Abrir menú">☰</button>
   <img class="logo" src="logo-cabecera.png" alt="Alex Training Lab" onerror="this.remove()">
   <div class="t">Alex Training Lab · Resistencia <span id="version-app" style="font-size:11px;font-weight:400;opacity:.7">· versión 15-nov-e</span></div>
   <button id="btn-salir" class="sec">Salir</button>
@@ -281,6 +302,7 @@ body:has(#login:not(.oculto)) #login .row{margin-top:2px}
   <div id="panel" class="oculto">
     <div id="badge-admin" class="oculto muted" style="margin:4px 0 10px">Modo administrador: gestionas los atletas de la cuenta principal</div>
     <nav class="tabs-t" id="tabs-t">
+      <a class="otra-app" href="../app/">↔ App funcional</a>
       <button class="tabt on" data-tab="atletas">Atletas</button>
       <button class="tabt" data-tab="ficha">Ficha</button>
       <button class="tabt" data-tab="biblio">Biblioteca y planes</button>
@@ -3208,6 +3230,15 @@ window.addEventListener('load',colocarAcceso);
 if(document.fonts&&document.fonts.ready) document.fonts.ready.then(colocarAcceso);
 (function(){var l=document.getElementById('login'); if(l&&window.MutationObserver) new MutationObserver(colocarAcceso).observe(l,{attributes:true,childList:true,subtree:true});})();
 colocarAcceso();
+</script>
+<script>
+/* Menú lateral en móvil: se abre con ☰ y se cierra al elegir una opción o pulsar fuera */
+(function(){
+  var b=document.getElementById('btn-menu'); if(!b) return;
+  b.addEventListener('click',function(e){e.stopPropagation();document.body.classList.toggle('menu-abierto');});
+  document.querySelectorAll('.tabs-t').forEach(function(n){n.addEventListener('click',function(e){ if(e.target.closest('.tabt')) document.body.classList.remove('menu-abierto'); });});
+  document.addEventListener('click',function(e){ if(document.body.classList.contains('menu-abierto')&&!e.target.closest('.tabs-t,#btn-menu')) document.body.classList.remove('menu-abierto'); });
+})();
 </script>
 </body>
 </html>
