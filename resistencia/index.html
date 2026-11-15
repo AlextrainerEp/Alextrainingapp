@@ -251,14 +251,15 @@ html.tema-niebla .fondo{background:url("logo-fondo.png") no-repeat center 124px/
    Foto de la montaña con el logo, frase de Kobe arriba y el formulario debajo del logo. Sin scroll. */
 html:has(#login:not(.oculto)){overflow:hidden;height:100%;background:#0b0b0b}
 body:has(#login:not(.oculto)){overflow:hidden;height:100%;background:transparent}
-body:has(#login:not(.oculto))::before{content:"";position:fixed;inset:-40px;z-index:-2;background:#0b0b0b url("acceso-montana.jpg") center/cover no-repeat;filter:blur(16px) brightness(.55)}
+body:has(#login:not(.oculto))::before{content:"";position:fixed;inset:-40px;z-index:-2;background:#0b0b0b url("acceso-resistencia.jpg") center/cover no-repeat;filter:blur(16px) brightness(.55)}
 body:has(#login:not(.oculto))::after{content:"";position:fixed;inset:0;z-index:-1;background:url("acceso-montana.jpg") no-repeat;background-size:var(--bgw,cover) auto;background-position:var(--bgx,center) var(--bgy,center)}
 body:has(#login:not(.oculto)) .fondo{background:none;z-index:0;pointer-events:none}
 body:has(#login:not(.oculto)) .frase{position:fixed;left:0;right:0;top:14px;margin:0 auto;padding:0 16px;max-width:680px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.9)}
 body:has(#login:not(.oculto)) .frase .autor{color:#e0b43a;text-shadow:0 1px 4px rgba(0,0,0,.9)}
 body:has(#login:not(.oculto)) main{padding:0}
 body:has(#login:not(.oculto)) #login{position:fixed;left:0;right:0;top:60%;margin:0 auto;width:calc(100% - 32px);max-width:440px;z-index:2}
-body:has(#login:not(.oculto)) #login .entrada{display:none}
+body:has(#login:not(.oculto)) #login .entrada{display:block;width:min(80%,360px);height:auto;margin:0 auto 16px;filter:drop-shadow(0 2px 10px rgba(0,0,0,.85))}
+body:has(#login:not(.oculto))::after{background:linear-gradient(rgba(0,0,0,.30),rgba(0,0,0,.25) 40%,rgba(0,0,0,.65)),url("acceso-resistencia.jpg") center/cover no-repeat !important}
 body:has(#login:not(.oculto)) #login input:not([type=checkbox]){margin:0 0 8px}
 body:has(#login:not(.oculto)) #login label,body:has(#login:not(.oculto)) #login .muted,body:has(#login:not(.oculto)) #login .link,body:has(#login:not(.oculto)) #login .ver{color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.9)}
 body:has(#login:not(.oculto)) #login .row{margin-top:2px}
@@ -279,7 +280,7 @@ body:has(#login:not(.oculto)) #login .row{margin-top:2px}
 
 <main>
   <div id="login" class="card login">
-    <img class="entrada" src="logo-login.png" alt="Alex Training Lab" onerror="this.remove()">
+    <img class="entrada" src="logo-cabecera.png" alt="Alex Training Lab On-line" onerror="this.remove()">
     <input id="nombre-registro" type="text" placeholder="Nombre y apellidos (solo para crear cuenta)">
     <input id="email" type="email" placeholder="Email">
     <input id="password" type="password" placeholder="Contraseña">
@@ -3230,8 +3231,8 @@ mostrarSegunSesion();
   </div>
 </div>
 <script>
-/* Pantalla de acceso: frase arriba, logo de la foto completo y el formulario debajo (igual que la app funcional).
-   Coordenadas del logo en la foto (1672x941): y 390-655, ancho 540. */
+/* Pantalla de acceso: foto de los atletas a pantalla completa, frase arriba y el logo con el formulario
+   centrados en el espacio que queda debajo (igual estructura que la app funcional). */
 function colocarAcceso(){
   var l=document.getElementById('login');
   var fr=document.querySelector('.frase');
@@ -3239,18 +3240,11 @@ function colocarAcceso(){
     if(fr){ fr.style.top=''; document.documentElement.style.setProperty('--frase-h',fr.offsetHeight+'px'); }
     return;
   }
-  var W=window.innerWidth, H=window.innerHeight, raiz=document.documentElement;
-  var f=document.querySelector('.frase'), fAbajo=0;
-  if(f){ f.style.top='14px'; fAbajo=14+f.offsetHeight; }
-  var cH=l.offsetHeight||300;
-  var sCubre=Math.max(W/1672,H/941), sAncho=0.92*W/540, sAlto=(H-fAbajo-10-14-cH-10)/310;
-  var s=Math.max(0.15,Math.min(sCubre,sAncho,sAlto));
-  var lo=fAbajo+10, hi=H-(310*s+14+cH+10);
-  var logoTop=Math.min(hi,Math.max(lo,H-551*s)); if(hi<lo) logoTop=lo;
-  raiz.style.setProperty('--bgw',(1672*s)+'px');
-  raiz.style.setProperty('--bgx',((W-1672*s)/2)+'px');
-  raiz.style.setProperty('--bgy',(logoTop-390*s)+'px');
-  l.style.top=(logoTop+310*s+14)+'px';
+  var H=window.innerHeight, fAbajo=0;
+  if(fr){ fr.style.top='14px'; fAbajo=14+fr.offsetHeight; }
+  var cH=l.offsetHeight||420;
+  var top=fAbajo+Math.max(12,(H-fAbajo-cH)/2);
+  l.style.top=Math.min(top,Math.max(fAbajo+8,H-cH-8))+'px';
 }
 window.addEventListener('resize',colocarAcceso);
 window.addEventListener('load',colocarAcceso);
