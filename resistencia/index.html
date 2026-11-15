@@ -17,7 +17,7 @@ html,body{margin:0;min-height:100%}
 body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#1d1f21;background:#909398}
 /* Logo de fondo y frase, como en la app de Alex Training Lab */
 .fondo{position:fixed;inset:0;background:#b9bcbe url("logo-fondo.png") no-repeat center 84px/min(80vw,600px) auto;z-index:-1}
-.frase{position:absolute;left:0;right:0;top:calc(84px + min(80vw,600px)*0.37 + 12px);margin:0;padding:0 16px;text-align:center;font-size:18px;line-height:1.4;font-style:italic;color:#111;max-width:640px;margin-inline:auto}
+.frase{position:absolute;left:0;right:0;top:calc(84px + min(80vw,600px)*0.4322 + 12px);margin:0;padding:0 16px;text-align:center;font-size:18px;line-height:1.4;font-style:italic;color:#111;max-width:640px;margin-inline:auto}
 .frase .autor{display:block;margin-top:6px;font-style:normal;font-size:15px;font-weight:700;color:#e0b43a;text-shadow:0 1px 2px rgba(0,0,0,.45)}
 
 /* Cabecera igual que la app de Alex Training Lab */
@@ -26,7 +26,7 @@ header img.logo{height:44px}
 header .t{flex:1;font-weight:700;color:#D9DDE0}
 header button{width:auto}
 
-main{max-width:980px;margin:0 auto;padding:calc(84px + min(80vw,600px)*0.37 + 90px) 16px 16px}
+main{max-width:980px;margin:0 auto;padding:calc(84px + min(80vw,600px)*0.4322 + 90px) 16px 16px}
 
 /* Tarjetas translúcidas */
 .card{background:rgba(255,255,255,.62);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);border-radius:12px;padding:18px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.12)}
@@ -216,13 +216,13 @@ header img.logo{height:40px;width:auto}
 .frase .autor{color:#e0b43a;text-shadow:0 1px 3px rgba(0,0,0,.55)}
 /* logo y frase de fondo más separados de la barra superior */
 .fondo{background-position:center 124px}
-.frase{top:calc(124px + min(80vw,600px)*0.37 + 12px)}
+.frase{top:calc(124px + min(80vw,600px)*0.4322 + 12px)}
 /* La frase va debajo del logo de fondo y el contenido empieza debajo de la frase */
-main:has(#panel:not(.oculto)),main:has(#vista-atleta:not(.oculto)){padding-top:calc(124px + min(80vw,600px)*0.37 + 12px + var(--frase-h,70px) + 22px)}
+main:has(#panel:not(.oculto)),main:has(#vista-atleta:not(.oculto)){padding-top:calc(124px + min(80vw,600px)*0.4322 + 12px + var(--frase-h,70px) + 22px)}
 @media (max-width:899px){
   .fondo{background-position:center 130px;background-size:min(86vw,600px) auto}
-  .frase{top:calc(130px + min(86vw,600px)*0.37 + 10px);font-size:16px}
-  main:has(#panel:not(.oculto)),main:has(#vista-atleta:not(.oculto)){padding-top:calc(130px + min(86vw,600px)*0.37 + 10px + var(--frase-h,80px) + 18px)}
+  .frase{top:calc(130px + min(86vw,600px)*0.4322 + 10px);font-size:16px}
+  main:has(#panel:not(.oculto)),main:has(#vista-atleta:not(.oculto)){padding-top:calc(130px + min(86vw,600px)*0.4322 + 10px + var(--frase-h,80px) + 18px)}
 }
 /* --- Apariencia «Niebla»: gris claro con la montaña difuminada arriba --- */
 html.tema-niebla body{background:#e6e9eb}
@@ -690,6 +690,19 @@ const STRAVA_CLIENT_ID = '295862';
 
 // Si volvemos de autorizar en Strava, guardamos el código y limpiamos la dirección
 // antes de que Supabase la lea.
+function textoErrorEnlace(code,desc){
+  if(code==="otp_expired"||/expired|invalid/i.test(desc||"")) return "El enlace del correo ha caducado o ya se había usado. Si ya confirmaste tu cuenta, entra con tu email y contraseña. Si no, vuelve a crear la cuenta para recibir un enlace nuevo.";
+  return "No se ha podido completar el acceso desde el enlace del correo"+(desc?": "+desc:".")+" Prueba a entrar con tu email y contraseña.";
+}
+// Enlace del correo con error (caducado, ya usado…): guardamos el aviso y limpiamos la dirección
+{
+  const hh = new URLSearchParams(location.hash.slice(1)), qq = new URLSearchParams(location.search);
+  const code = hh.get('error_code') || qq.get('error_code'), desc = hh.get('error_description') || qq.get('error_description');
+  if ((hh.get('error') || qq.get('error') || code) && qq.get('state') !== 'strava' && !(qq.get('state') || '').startsWith('strava-')) {
+    sessionStorage.setItem('auth_error', textoErrorEnlace(code, desc));
+    history.replaceState(null, '', location.pathname);
+  }
+}
 {
   const q = new URLSearchParams(location.search);
   const estado = q.get('state') || '';
@@ -762,6 +775,7 @@ async function mostrarSegunSesion() {
   const { data: { session } } = await sb.auth.getSession();
   $('login').classList.toggle('oculto', !!session);
   $('hdr').classList.toggle('oculto', !session);
+  { const ae = sessionStorage.getItem('auth_error'); if (ae) { sessionStorage.removeItem('auth_error'); if (!session) mostrarError($('error'), ae); } }
   if (!session) {
     $('pendiente').classList.add('oculto');
     $('panel').classList.add('oculto');
@@ -3229,14 +3243,14 @@ function colocarAcceso(){
   var f=document.querySelector('.frase'), fAbajo=0;
   if(f){ f.style.top='14px'; fAbajo=14+f.offsetHeight; }
   var cH=l.offsetHeight||300;
-  var sCubre=Math.max(W/1672,H/941), sAncho=0.92*W/540, sAlto=(H-fAbajo-10-14-cH-10)/265;
+  var sCubre=Math.max(W/1672,H/941), sAncho=0.92*W/540, sAlto=(H-fAbajo-10-14-cH-10)/310;
   var s=Math.max(0.15,Math.min(sCubre,sAncho,sAlto));
-  var lo=fAbajo+10, hi=H-(265*s+14+cH+10);
+  var lo=fAbajo+10, hi=H-(310*s+14+cH+10);
   var logoTop=Math.min(hi,Math.max(lo,H-551*s)); if(hi<lo) logoTop=lo;
   raiz.style.setProperty('--bgw',(1672*s)+'px');
   raiz.style.setProperty('--bgx',((W-1672*s)/2)+'px');
   raiz.style.setProperty('--bgy',(logoTop-390*s)+'px');
-  l.style.top=(logoTop+265*s+14)+'px';
+  l.style.top=(logoTop+310*s+14)+'px';
 }
 window.addEventListener('resize',colocarAcceso);
 window.addEventListener('load',colocarAcceso);
