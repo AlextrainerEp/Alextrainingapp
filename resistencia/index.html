@@ -207,6 +207,22 @@ h3{margin:12px 0 6px;font-size:15px}
 .act-fila b{font-size:15px}
 .act-fila a{color:#FC4C02;font-weight:700;margin-left:6px;white-space:nowrap}
 .pie-strava{font-size:11px;color:#555;margin-top:6px}
+
+/* ===== PANTALLA DE ACCESO: igual que la app de entrenamiento funcional =====
+   Foto de la montaña con el logo, frase de Kobe arriba y el formulario debajo del logo. Sin scroll. */
+html:has(#login:not(.oculto)){overflow:hidden;height:100%;background:#0b0b0b}
+body:has(#login:not(.oculto)){overflow:hidden;height:100%;background:transparent}
+body:has(#login:not(.oculto))::before{content:"";position:fixed;inset:-40px;z-index:-2;background:#0b0b0b url("acceso-montana.jpg") center/cover no-repeat;filter:blur(16px) brightness(.55)}
+body:has(#login:not(.oculto))::after{content:"";position:fixed;inset:0;z-index:-1;background:url("acceso-montana.jpg") no-repeat;background-size:var(--bgw,cover) auto;background-position:var(--bgx,center) var(--bgy,center)}
+body:has(#login:not(.oculto)) .fondo{background:none;z-index:0;pointer-events:none}
+body:has(#login:not(.oculto)) .frase{position:fixed;left:0;right:0;top:14px;margin:0 auto;padding:0 16px;max-width:680px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.9)}
+body:has(#login:not(.oculto)) .frase .autor{color:#e0b43a;text-shadow:0 1px 4px rgba(0,0,0,.9)}
+body:has(#login:not(.oculto)) main{padding:0}
+body:has(#login:not(.oculto)) #login{position:fixed;left:0;right:0;top:60%;margin:0 auto;width:calc(100% - 32px);max-width:440px;z-index:2}
+body:has(#login:not(.oculto)) #login .entrada{display:none}
+body:has(#login:not(.oculto)) #login input:not([type=checkbox]){margin:0 0 8px}
+body:has(#login:not(.oculto)) #login label,body:has(#login:not(.oculto)) #login .muted,body:has(#login:not(.oculto)) #login .link,body:has(#login:not(.oculto)) #login .ver{color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.9)}
+body:has(#login:not(.oculto)) #login .row{margin-top:2px}
 </style>
 </head>
 <body>
@@ -3131,6 +3147,31 @@ mostrarSegunSesion();
     <div class="acciones"><button id="dia-cerrar" class="link">Cerrar</button></div>
   </div>
 </div>
+<script>
+/* Pantalla de acceso: frase arriba, logo de la foto completo y el formulario debajo (igual que la app funcional).
+   Coordenadas del logo en la foto (1672x941): y 390-655, ancho 540. */
+function colocarAcceso(){
+  var l=document.getElementById('login');
+  if(!l||l.classList.contains('oculto')) return;
+  var W=window.innerWidth, H=window.innerHeight, raiz=document.documentElement;
+  var f=document.querySelector('.frase'), fAbajo=0;
+  if(f){ f.style.top='14px'; fAbajo=14+f.offsetHeight; }
+  var cH=l.offsetHeight||300;
+  var sCubre=Math.max(W/1672,H/941), sAncho=0.92*W/540, sAlto=(H-fAbajo-10-14-cH-10)/265;
+  var s=Math.max(0.15,Math.min(sCubre,sAncho,sAlto));
+  var lo=fAbajo+10, hi=H-(265*s+14+cH+10);
+  var logoTop=Math.min(hi,Math.max(lo,H-551*s)); if(hi<lo) logoTop=lo;
+  raiz.style.setProperty('--bgw',(1672*s)+'px');
+  raiz.style.setProperty('--bgx',((W-1672*s)/2)+'px');
+  raiz.style.setProperty('--bgy',(logoTop-390*s)+'px');
+  l.style.top=(logoTop+265*s+14)+'px';
+}
+window.addEventListener('resize',colocarAcceso);
+window.addEventListener('load',colocarAcceso);
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(colocarAcceso);
+(function(){var l=document.getElementById('login'); if(l&&window.MutationObserver) new MutationObserver(colocarAcceso).observe(l,{attributes:true,childList:true,subtree:true});})();
+colocarAcceso();
+</script>
 </body>
 </html>
    
