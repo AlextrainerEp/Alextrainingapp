@@ -182,6 +182,11 @@ footer img{height:56px;width:auto}
   .hero .wrap{grid-template-columns:1fr 40%}
   .about{grid-template-columns:40% 1fr}
 }
+
+/* Fotos dentro de los recuadros de Fuerza y de Running/trail (mismo tamaño en los dos) */
+.disc-img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;border:1px solid var(--line);margin:0 0 6px}
+.disc-img.fun{object-position:center 50%}
+.disc-img.trail{object-position:center}
 </style>
 </head>
 <body>
@@ -203,8 +208,8 @@ footer img{height:56px;width:auto}
 </header>
 
 <main>
-  <section class="banner" aria-label="Alex Training Lab · Run, Trail, Improve">
-    <img src="img/banner.jpg" srcset="img/banner-900.jpg 900w, img/banner.jpg 1672w" sizes="100vw" width="1672" height="941" alt="Alejandro Blanco corriendo en montaña con bastones, junto al logo de Alex Training Lab y el lema Run, Trail, Improve" fetchpriority="high">
+  <section class="banner" aria-label="Alex Training Lab On-line · Entrenamiento personal para todos">
+    <img src="img/banner-principal.jpg" srcset="img/banner-principal-900.jpg 900w, img/banner-principal.jpg 1672w" sizes="100vw" width="1672" height="941" alt="Cuatro personas de distintas edades entrenando fuerza, cuerda, sentadilla y carrera, con el logo de Alex Training Lab On-line y los lemas Fuerza, Salud, Funcional y Bienestar: entrenamiento personal para todos" fetchpriority="high">
   </section>
   <div class="hero" id="inicio">
     <canvas id="topo" aria-hidden="true"></canvas>
@@ -252,10 +257,12 @@ footer img{height:56px;width:auto}
 
       <div class="two">
         <div class="disc">
+          <img class="disc-img fun" src="img/funcional.jpg" width="800" height="1200" loading="lazy" alt="Collage de entrenamiento funcional: mancuernas, sprint, sentadilla con barra y carrera, con el logo de Alex Training Lab On-line">
           <h3>Fuerza</h3>
           <p>Entrenamiento de fuerza adaptado a tu objetivo, tu nivel, el material que tienes y los días que puedes entrenar.</p>
         </div>
         <div class="disc">
+          <img class="disc-img trail" src="img/trail.jpg" width="1000" height="563" loading="lazy" alt="Alejandro Blanco corriendo en montaña con bastones, con el logo de Alex Training Lab y el lema Run, Trail, Improve">
           <h3>Running y trail running</h3>
           <p>Planificación para asfalto o montaña, pensada para tu nivel actual y para la carrera o el objetivo que te propongas.</p>
         </div>
@@ -382,5 +389,7 @@ footer img{height:56px;width:auto}
   var t; window.addEventListener('resize',function(){clearTimeout(t);t=setTimeout(draw,150);});
 })();
 </script>
+<!-- Contador de visitas (GoatCounter: sin cookies ni datos personales) -->
+<script data-goatcounter="https://alextraininglab.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </body>
 </html>
