@@ -574,12 +574,27 @@ async function cargarPerfil(){
   if(!r||!r.length) throw new Error("Tu cuenta no tiene perfil. Contacta con el entrenador.");
   S.perfil=r[0];
 }
+/* Entrada única: al entrar aquí se abre también la sesión de la app de resistencia
+   (mismo email y contraseña), para pasar de una app a otra sin volver a identificarse. */
+const RES_URL="https://orrfqvrsrjfddhuzleel.supabase.co",RES_KEY="sb_publishable_PJeYDWMoLoRnZAT3o3jGWw_eBh5uwSR";
+const RES_CLAVE="sb-"+RES_URL.split("//")[1].split(".")[0]+"-auth-token";
+async function puenteResistencia(email,pw){
+  try{
+    const r=await fetch(RES_URL+"/auth/v1/token?grant_type=password",{method:"POST",headers:{apikey:RES_KEY,"Content-Type":"application/json"},body:JSON.stringify({email,password:pw})});
+    if(!r.ok) return;
+    const j=await r.json();
+    j.expires_at=Math.floor(Date.now()/1000)+(j.expires_in||3600);
+    sessionStorage.setItem(RES_CLAVE,JSON.stringify(j));
+  }catch(e){}
+}
 async function login(email,pw){
   const j=await auth("token?grant_type=password",{email,password:pw});
   S={access:j.access_token,refresh:j.refresh_token};
-  await cargarPerfil();guardarSesion();entrar();
+  await cargarPerfil();guardarSesion();
+  await puenteResistencia(email,pw);
+  entrar();
 }
-async function salir(){S=null;guardarSesion();pantallaLogin()}
+async function salir(){S=null;guardarSesion();try{sessionStorage.removeItem(RES_CLAVE)}catch(e){}pantallaLogin()}
 
 /* ---------- Pantallas de acceso ---------- */
 function pantallaLogin(){
