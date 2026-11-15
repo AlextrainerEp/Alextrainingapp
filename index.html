@@ -205,6 +205,11 @@ section,.hero{scroll-margin-top:96px}
 @media (max-width:560px){.ways b{font-size:1.3rem}}
 .trampa{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
 @media (max-width:560px){.form{padding:18px}.form .fila2{grid-template-columns:1fr}.form .btn{justify-self:stretch;text-align:center}}
+
+/* Opción Combinado dentro del plan Basic */
+.plan .extra{border:1px dashed var(--accent);padding:12px 14px;font-size:.95rem;line-height:1.45;color:#d2cfc7}
+.plan .extra b{display:block;font-family:var(--display);text-transform:uppercase;letter-spacing:.1em;color:var(--accent);font-size:1rem;margin-bottom:4px}
+.plan .extra a{display:inline-block;margin-top:6px;color:var(--accent);font-weight:600}
 </style>
 </head>
 <body>
@@ -296,6 +301,7 @@ section,.hero{scroll-margin-top:96px}
             <li>Revisión mensual</li>
             <li>Dudas por email</li>
           </ul>
+          <div class="extra"><b>Opción Combinado</b>¿Quieres las dos disciplinas? Añade la segunda: Fuerza - Funcional y Trail &amp; Running, con revisión mensual. <a href="#contacto" data-plan="Basic Combinado">Pedir información del Combinado</a></div>
           <a class="btn ghost" href="#contacto" data-plan="Basic">Pedir información</a>
         </article>
         <article class="plan star">
@@ -380,7 +386,7 @@ section,.hero{scroll-margin-top:96px}
         <div class="fila2">
           <label>Plan que te interesa
             <select name="Plan" id="f-plan">
-              <option>Aún no lo sé</option><option>Basic</option><option>Atleta</option><option>Premium</option>
+              <option>Aún no lo sé</option><option>Basic</option><option>Basic Combinado</option><option>Atleta</option><option>Premium</option>
             </select>
           </label>
           <label>Disciplina
