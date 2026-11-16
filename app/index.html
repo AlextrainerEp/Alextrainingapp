@@ -1121,11 +1121,11 @@ function abrirEditor(s,alGuardar){
   const pintar=()=>{
     ov.querySelector("#ed").innerHTML=`
       <label>Título <input id="e-tit" value="${esc(st.titulo)}"></label>
-      <label>Fecha <input id="e-fe" value="${esc(st.fecha)}"></label>
+      <label>Fecha <span class="row" style="gap:8px"><input id="e-fe" value="${esc(st.fecha)}" placeholder="dd/mm/aaaa" style="flex:1"><input type="date" id="e-fe-d" value="${parseFecha(st.fecha)?isoLocal(parseFecha(st.fecha)):""}" style="flex:1" title="Elegir en el calendario"></span></label>
       ${st.bloques.map((b,bi)=>`<div class="bloque e-bl">
         <div class="row"><input class="e-bn" value="${esc(b.nombre)}" placeholder="Nombre del bloque" style="flex:1;font-weight:700"><button class="sec" data-act="delb" data-bi="${bi}">Borrar bloque</button></div>
         <div class="ses"><table>
-          <tr><th>Código</th><th>Ejercicio y vídeo (YouTube)</th><th>Series</th><th>Reps</th><th>Intensidad / kg</th><th>RIR obj.</th><th>Progresión</th><th>Nota</th><th></th></tr>
+          <tr><th>Código</th><th>Ejercicio y vídeo (YouTube)</th><th>Series</th><th>Reps</th><th>Intensidad / kg</th><th>RIR obj.</th><th>RPE obj.</th><th>Progresión</th><th>Nota</th><th></th></tr>
           ${b.ejercicios.map((e,ei)=>`<tr class="e-ex">
             <td><input data-f="cod" value="${esc(e.cod)}"></td>
             <td><select class="e-bib" style="min-width:150px;margin:0 0 4px;padding:6px;font-size:13px"></select>
@@ -1135,6 +1135,7 @@ function abrirEditor(s,alGuardar){
             <td><textarea data-f="rep" rows="2" style="min-width:130px;margin:0;padding:6px;font-size:14px">${esc(e.rep)}</textarea></td>
             <td><textarea data-f="int" rows="2" style="min-width:130px;margin:0;padding:6px;font-size:14px">${esc(e.int)}</textarea></td>
                         <td><input class="n" data-f="rir" value="${esc(e.rir)}"></td>
+            <td><input class="n" data-f="rpe" value="${esc(e.rpe)}"></td>
             <td><textarea data-f="prog" rows="2" style="min-width:130px;margin:0;padding:6px;font-size:14px">${esc(e.prog)}</textarea></td>
             <td><textarea data-f="nota" rows="2" style="min-width:130px;margin:0;padding:6px;font-size:14px">${esc(e.nota)}</textarea></td>
             <td><button class="danger" data-act="dele" data-bi="${bi}" data-ei="${ei}">×</button></td></tr>`).join("")}
@@ -1147,6 +1148,7 @@ function abrirEditor(s,alGuardar){
   };
   // Al elegir un ejercicio de la biblioteca, se copian su nombre y su enlace a la fila
   ov.onchange=ev=>{
+    if(ev.target.id==="e-fe-d"&&ev.target.value){const [y,m,d]=ev.target.value.split("-");ov.querySelector("#e-fe").value=`${d}/${m}/${y}`;return}
     const sel=ev.target.closest(".e-bib");if(!sel||sel.value==="")return;
     const b=BIB[+sel.value],tr=sel.closest(".e-ex");
     if(b&&tr){
@@ -1680,7 +1682,7 @@ function textoClaro(t){
   }).join("");
 }
 const resPartes=p=>{const d=String(p.descripcion||""),i=d.indexOf(" — ");return i>0?[d.slice(0,i),d.slice(i+3)]:[d||RES_NOMBRE[p.tipo]||"Sesión",""]};
-const resChip=p=>{const c=RES_COLOR[p.tipo]||RES_COLOR.otro;return `<span class="cal-chip res${resHecha(p)?" ok":""}" style="background:${c};border-color:${c}" title="${esc(resPartes(p)[0])}">${resHecha(p)?"✓ ":""}${esc(RES_NOMBRE[p.tipo]||"Resistencia")}</span>`};
+const resChip=p=>{const c=RES_COLOR[p.tipo]||RES_COLOR.otro;return `<span class="cal-chip res${resHecha(p)?" ok":""}" style="background:${c};border-color:${c};touch-action:none;cursor:grab" data-chip="r:${p.id}" title="${esc(resPartes(p)[0])}">${resHecha(p)?"✓ ":""}${esc(RES_NOMBRE[p.tipo]||"Resistencia")}</span>`};
 const fmtSeg=seg=>{const m=Math.floor(seg/60),x=Math.round(seg%60);return `${m}:${String(x).padStart(2,"0")}`};
 function rangoZonaF(n,zonas){
   const r=zonas.find(z=>z.tipo==="ritmo"&&Number(z.zona)===Number(n)), f=zonas.find(z=>z.tipo==="fc"&&Number(z.zona)===Number(n));
@@ -1718,6 +1720,7 @@ const resTarjeta=(p,admin,zonas)=>{
       <label class="res-notas">Nombre <input data-re="nombre" value="${esc(tit)}"></label>
       <label class="res-notas">Explicación (una idea por línea; «Ritmos: 4:30» sale en negrita) <textarea data-re="desc" rows="5">${esc(desc)}</textarea></label>
       <div class="row"><button class="gold" data-resguardaredit="${p.id}">Guardar sesión</button></div></div>`:""}
+    <div class="row mover"><label>${admin?"Mover o copiar a otro día":"Mover a otro día"} <input type="date" data-mover-in="r:${p.id}"></label><button class="sec" data-mover="r:${p.id}">${admin?"Mover / copiar":"Mover"}</button></div>
   </div>`;
 };
 const resLeyenda=lista=>{
@@ -1887,7 +1890,7 @@ async function tabCalendario(clienteId,puedeMover,host="#tab"){
 // El calendario se puede ocultar (en móvil se oculta solo al elegir un día con entreno) y se recuerda
 let CAL_OCULTO=false;
 const pantallaPequena=()=>window.innerWidth<760||window.innerHeight<720;
-async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false){
+async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=null,avisoIni=""){
   const [todas,resis]=await Promise.all([db("GET","sesiones",`?cliente_id=eq.${clienteId}&order=created_at.desc&select=*`),sesionesResistencia(clienteId)]);
   let zonasRes=[];
   if(resis.length){try{zonasRes=await db("GET","zonas",`?atleta_id=eq.${resis[0].atleta_id}&select=*`)}catch(e){}}
@@ -1900,8 +1903,9 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false){
   const ref=pendFut||ultimo;
   let mes=new Date((ref?ref.d:hoy).getFullYear(),(ref?ref.d:hoy).getMonth(),1);
   let diaSel=ref?isoLocal(ref.d):hoyIso;
+  if(irA){const di=new Date(irA+"T00:00:00");if(!isNaN(di)){diaSel=irA;mes=new Date(di.getFullYear(),di.getMonth(),1)}}
   let arrastrado=false;
-  let aviso="";
+  let aviso=avisoIni||"";
   let modoSel=false; const selDias=new Set(); let verBorrado=false;
   const porDia=new Map();
   const meterRes=()=>resis.forEach(p=>porDia.set(p.fecha,[...(porDia.get(p.fecha)||[]),p]));
@@ -1911,20 +1915,35 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false){
   const tarjeta=(s,abierta)=>`<details class="card sesion${hecho(s)?" hecha":""}"${abierta?" open":""}><summary class="dia-sum" data-arr="${s.id}">${badgeFecha(s)}<h3>${nombreEntreno(s)}</h3></summary>
       ${sesionHTML(s,true)}
       <div class="row"><button data-save="${s.id}">${admin?"Guardar cambios":"Guardar registro"}</button>${admin?`<button class="sec" data-ed="${s.id}">Editar</button><button class="danger" data-del="${s.id}">Borrar</button>`:""}<span class="muted" data-st="${s.id}"></span></div>
-      <div class="row mover"><label>Mover a otro día <input type="date" data-mover-in="${s.id}"></label><button class="sec" data-mover="${s.id}">Mover</button></div></details>`;
+      <div class="row mover"><label>${admin?"Mover o copiar a otro día":"Mover a otro día"} <input type="date" data-mover-in="${s.id}"></label><button class="sec" data-mover="${s.id}">${admin?"Mover / copiar":"Mover"}</button></div></details>`;
   const moverA=async(id,val)=>{
+    const esRes=String(id).startsWith("r:"), rid=esRes?String(id).slice(2):String(id);
+    const item=esRes?resis.find(x=>String(x.id)===rid):todas.find(x=>String(x.id)===rid);
+    if(!item||!val) return;
     const [ny,nm,nd]=val.split("-");
     const txt=`${nd}/${nm}/${ny}`;
-    const st=$(host)&&$(host).querySelector(`[data-st="${id}"]`);
+    const origen=esRes?String(item.fecha).slice(0,10):(parseFecha(item.fecha)?isoLocal(parseFecha(item.fecha)):"");
+    if(origen===val){aviso="La sesión ya está en ese día";pintar();return}
+    let accion="mover";
+    if(admin){
+      accion=await preguntarMoverCopiar(esRes?resPartes(item)[0]:(item.titulo||"Sesión"),txt);
+      if(!accion) return;
+    }
     try{
-      await db("PATCH","sesiones",`?id=eq.${id}`,{fecha:txt},"return=minimal");
-      const s=todas.find(x=>x.id===id);
-      if(s) s.fecha=txt;
-      conF.length=0; todas.forEach(t=>{const dd=parseFecha(t.fecha); if(dd) conF.push({s:t,d:dd})});
-      porDia.clear(); conF.forEach(({s:t,d})=>{const k=isoLocal(d);porDia.set(k,[...(porDia.get(k)||[]),t])}); meterRes();
-      sinFecha.length=0; todas.forEach(t=>{if(!parseFecha(t.fecha)) sinFecha.push(t)});
-      diaSel=val; mes=new Date(+ny,+nm-1,1); aviso="Sesión movida al "+txt; pintar();
-    }catch(e){aviso="No se pudo mover: "+e.message; pintar()}
+      if(esRes){
+        if(accion==="mover") await db("PATCH","sesiones_planificadas",`?id=eq.${rid}`,{fecha:val},"return=minimal");
+        else{
+          const nueva={atleta_id:item.atleta_id,fecha:val,tipo:item.tipo,descripcion:item.descripcion,duracion_min:item.duracion_min,estado:"pendiente"};
+          if(item.bloque_id) nueva.bloque_id=item.bloque_id;
+          if(item.pasos) nueva.pasos=item.pasos;
+          await db("POST","sesiones_planificadas","",nueva,"return=minimal");
+        }
+      }else{
+        if(accion==="mover") await db("PATCH","sesiones",`?id=eq.${rid}`,{fecha:txt},"return=minimal");
+        else await db("POST","sesiones","",{cliente_id:clienteId,fecha:txt,titulo:item.titulo,bloques:item.bloques,registro:{}},"return=minimal");
+      }
+      await tabEntrenosCal(host,clienteId,admin,val,(accion==="mover"?"Sesión movida al ":"Sesión copiada al ")+txt);
+    }catch(e){aviso="No se pudo "+accion+": "+e.message; pintar()}
   };
   const borrarSesiones=async(lista,txt)=>{
     try{
@@ -2088,7 +2107,13 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false){
       }catch(e){st.textContent="Error: "+e.message}
     });
     if(admin){
-      cont.querySelectorAll("[data-reseditar]").forEach(b=>b.onclick=()=>{const f=cont.querySelector(`[data-resform="${b.dataset.reseditar}"]`);f.style.display=f.style.display==="none"?"":"none"});
+      cont.querySelectorAll("[data-reseditar]").forEach(b=>b.onclick=()=>{
+        const p=resis.find(x=>String(x.id)===String(b.dataset.reseditar)); if(!p) return;
+        abrirEditorRes(p,zonasRes,async cambios=>{
+          await db("PATCH","sesiones_planificadas",`?id=eq.${p.id}`,cambios,"return=minimal");
+          await tabEntrenosCal(host,clienteId,admin,cambios.fecha,"Sesión guardada");
+        });
+      });
       cont.querySelectorAll("[data-resguardaredit]").forEach(b=>b.onclick=async()=>{
         const id=b.dataset.resguardaredit, f=cont.querySelector(`[data-resform="${id}"]`), g=k=>f.querySelector(`[data-re="${k}"]`).value.trim();
         const nombre=g("nombre")||RES_NOMBRE[g("tipo")]||"Sesión", desc=g("desc");
@@ -3336,6 +3361,173 @@ html.oscuro body .atl-carga .tip{background:#262b30}
 </script>
 <script>
 /* =====================================================================
+ * Alex Training Lab · Carga de FUERZA sin encoder (por RPE / RIR del entrenado)
+ * Con lo que ya apunta el cliente en cada ejercicio (reps hechas, RIR, RPE) y en la sesión
+ * (RPE total + minutos) calcula:
+ *   - sRPE de la sesión = minutos × RPE total (Foster)
+ *   - series duras = series a ≤4 repeticiones de reserva (RIR ≤ 4; si solo hay RPE, RIR = 10 − RPE)
+ *   - carácter del esfuerzo = reps hechas / (reps hechas + RIR)
+ *   - desviación de RIR = RIR objetivo − RIR real (positivo = más duro de lo previsto)
+ *   - series duras por patrón de movimiento y semana
+ * Sin dependencias. Se expone como window.ATLFuerza (y module.exports en Node).
+ * ===================================================================== */
+(function (global) {
+  'use strict';
+  const RIR_DURA = 4;
+
+  const PATRONES = [
+    ['Pliometría / potencia', /\b(salto|saltos|jump|bound|drop|cmj|lanzamiento|throw|balon medicinal|slam|skipping|multisalto|pogo)/],
+    ['Isquios', /(nordic|nordico|curl femoral|femoral|isquio|leg curl)/],
+    ['Gemelo / sóleo', /(gemelo|soleo|talon|talones|calf)/],
+    ['Aductores / abductores', /(aductor|abductor|copenha|monster walk|clamshell|almeja)/],
+    ['Cadera (bisagra / puente)', /(peso muerto|rdl|bisagra|hip thrust|puente|good morning|buenos dias|swing|hiperextension|pull through)/],
+    ['Rodilla (sentadilla / zancada)', /(sentadilla|squat|zancada|lunge|prensa|step|split|bulgara|pistol|extension de (rodilla|cuadriceps)|wall sit)/],
+    ['Empuje vertical', /(press militar|press hombro|overhead|arnold|landmine press|pike|fondos|push press)/],
+    ['Empuje horizontal', /(press banca|banca|flexion|flexiones|push.?up|press pecho|press inclinado|press plano|aperturas)/],
+    ['Tracción vertical', /(dominada|jalon|pull.?up|chin.?up|pulldown|pullover)/],
+    ['Tracción horizontal', /(remo|row|face pull|pajaro|inverted)/],
+    ['Core', /(plancha|plank|pallof|dead bug|bird dog|rueda|ab wheel|crunch|antirrotacion|antirotacion|farmer|paseo|carry|hollow|rotacion|lenador|woodchop|abdominal|core)/],
+    ['Accesorios', /(curl|biceps|triceps|elevaciones? laterales|elevacion lateral|extension de triceps|encogimiento)/]
+  ];
+  const PRIORITARIOS = ['Cadera (bisagra / puente)', 'Isquios', 'Gemelo / sóleo', 'Aductores / abductores'];
+
+  const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const num = v => { const m = String(v ?? '').replace(',', '.').match(/-?\d+(\.\d+)?/); return m ? parseFloat(m[0]) : null; };
+  const r1 = x => x == null || !isFinite(x) ? null : Math.round(x * 10) / 10;
+  const r2 = x => x == null || !isFinite(x) ? null : Math.round(x * 100) / 100;
+
+  function patron(nombre) {
+    const t = norm(nombre);
+    for (const [p, re] of PATRONES) if (re.test(t)) return p;
+    return 'Otros';
+  }
+  const esCalentamiento = nombreBloque => /calent|movilidad|activaci|warm|vuelta a la calma|estiramiento/.test(norm(nombreBloque));
+
+  /** «8,8,7» / «8/8/7» / «8-8-7» / «10 10 9» → [8,8,7]; «8» → [8] */
+  function listaReps(txt) {
+    const t = String(txt ?? '').replace(/\d+\s*kg/gi, ' '); // ignora pesos escritos («8 con 20kg»)
+    const nums = t.match(/\d+/g) || [];
+    return nums.map(Number);
+  }
+
+  /**
+   * Analiza un ejercicio.
+   * plan: {ej, ser, rep, rir, rpe}  (lo que pone el entrenador)
+   * reg:  {reps, rir, rpe}          (lo que apunta el cliente)
+   */
+  function analizarEjercicio(plan, reg, bloque) {
+    const nombre = plan.ej || 'Ejercicio';
+    const calentamiento = esCalentamiento(bloque);
+    const seriesPlan = num(plan.ser) || 1;
+    const repsPlan = num(plan.rep);
+    const rirObj = num(plan.rir) ?? (num(plan.rpe) != null ? 10 - num(plan.rpe) : null);
+    // ejercicios por tiempo (plancha 30s, isométricos): cuentan series, no repeticiones
+    const porTiempo = /\d\s*(s|seg|segundos|"|''|min)\b/i.test(String(plan.rep ?? '') + ' ' + String((reg && reg.reps) ?? ''));
+    const lista = porTiempo ? [] : listaReps(reg && reg.reps);
+    const hecho = !!(reg && Object.values(reg).some(v => v !== '' && v != null));
+    let series = 0, reps = 0;
+    if (lista.length > 1) { series = lista.length; reps = lista.reduce((a, b) => a + b, 0); }
+    else if (lista.length === 1) { series = seriesPlan; reps = lista[0] * seriesPlan; }
+    else if (hecho) { series = seriesPlan; reps = repsPlan != null && !porTiempo ? repsPlan * seriesPlan : 0; }
+    let rir = num(reg && reg.rir);
+    const rpe = num(reg && reg.rpe);
+    if (rir == null && rpe != null) rir = Math.max(0, 10 - rpe);
+    const repsSerie = series && reps ? reps / series : null;
+    const duras = !calentamiento && rir != null && rir <= RIR_DURA ? series : 0;
+    const ce = repsSerie && rir != null ? repsSerie / (repsSerie + rir) : null;
+    return {
+      nombre, patron: patron(nombre), calentamiento, hecho,
+      series, reps, rir, rpe, rirObj, duras,
+      seriesDurasPlan: !calentamiento && rirObj != null && rirObj <= RIR_DURA ? seriesPlan : 0,
+      desvRIR: rir != null && rirObj != null ? rirObj - rir : null,
+      ce
+    };
+  }
+
+  /** Analiza una sesión de fuerza: {fecha, titulo, bloques:[{nombre, ejercicios:[plan]}], registro:{'bi-ei':{reps,rir,rpe}, s:{rpe,min}}} */
+  function analizarSesion(ses, normEj) {
+    const R = ses.registro || {};
+    const ejercicios = [];
+    (ses.bloques || []).forEach((b, bi) => (b.ejercicios || []).forEach((e0, ei) => {
+      const e = normEj ? normEj(e0) : e0;
+      ejercicios.push(analizarEjercicio(e, R[bi + '-' + ei] || {}, b.nombre));
+    }));
+    const s = R.s || {};
+    const rpeSes = num(s.rpe), min = num(s.min);
+    const hechos = ejercicios.filter(x => x.hecho && !x.calentamiento);
+    const conRIR = hechos.filter(x => x.rir != null);
+    const conDesv = hechos.filter(x => x.desvRIR != null);
+    const conCE = hechos.filter(x => x.ce != null);
+    const pesoSeries = (arr, f) => { const w = arr.reduce((a, x) => a + (x.series || 1), 0); return w ? arr.reduce((a, x) => a + f(x) * (x.series || 1), 0) / w : null; };
+    return {
+      fecha: ses.fecha, titulo: ses.titulo || 'Fuerza', ejercicios,
+      min, rpe: rpeSes, srpe: min != null && rpeSes != null ? r1(min * rpeSes) : null,
+      series: hechos.reduce((a, x) => a + x.series, 0),
+      seriesDuras: hechos.reduce((a, x) => a + x.duras, 0),
+      seriesDurasPlan: ejercicios.reduce((a, x) => a + x.seriesDurasPlan, 0),
+      reps: hechos.reduce((a, x) => a + x.reps, 0),
+      rirMedio: r1(pesoSeries(conRIR, x => x.rir)),
+      desvRIR: r1(pesoSeries(conDesv, x => x.desvRIR)),
+      ce: r2(pesoSeries(conCE, x => x.ce)),
+      ejerciciosSinEsfuerzo: hechos.filter(x => x.rir == null).length
+    };
+  }
+
+  /** Resumen semanal (lunes a domingo) a partir de sesiones analizadas con fecha ISO. */
+  function resumenSemanal(analizadas, { semanas = 12, hasta, fecha }) {
+    const F = fecha; // ATLCarga.fecha
+    const ultimoLunes = F.lunes(hasta), primer = F.sumarDias(ultimoLunes, -7 * (semanas - 1));
+    const out = [];
+    for (let i = 0; i < semanas; i++) {
+      const ini = F.sumarDias(primer, 7 * i), fin = F.sumarDias(ini, 6);
+      const ss = analizadas.filter(s => s.fecha >= ini && s.fecha <= fin);
+      const porPatron = {};
+      ss.forEach(s => s.ejercicios.forEach(e => { if (e.duras) porPatron[e.patron] = (porPatron[e.patron] || 0) + e.duras; }));
+      const sum = f => ss.reduce((a, s) => a + (f(s) || 0), 0);
+      const media = (f, w) => { const v = ss.filter(s => f(s) != null); const ws = v.reduce((a, s) => a + (w(s) || 1), 0); return ws ? v.reduce((a, s) => a + f(s) * (w(s) || 1), 0) / ws : null; };
+      out.push({
+        semana: ini, fin, enCurso: hasta < fin, sesiones: ss.length,
+        srpe: r1(sum(s => s.srpe)), minutos: r1(sum(s => s.min)),
+        seriesDuras: sum(s => s.seriesDuras), seriesDurasPlan: sum(s => s.seriesDurasPlan), series: sum(s => s.series), reps: sum(s => s.reps),
+        rirMedio: r1(media(s => s.rirMedio, s => s.series)), desvRIR: r1(media(s => s.desvRIR, s => s.series)), ce: r2(media(s => s.ce, s => s.series)),
+        porPatron
+      });
+    }
+    return out;
+  }
+
+  function alertas(sem) {
+    const res = [], n = sem.length; if (!n) return res;
+    const cur = sem[n - 1], i = cur.enCurso && n > 1 ? n - 2 : n - 1, act = sem[i];
+    const prev = sem.slice(Math.max(0, i - 4), i);
+    const pct = x => Math.round(x * 100) + ' %', c = x => String(x).replace('.', ',');
+    const max4 = Math.max(0, ...prev.map(w => w.seriesDuras));
+    if (max4 > 0 && act.seriesDuras > max4 * 1.2)
+      res.push({ nivel: 'alto', texto: `Series duras: ${act.seriesDuras} la semana pasada, un ${pct(act.seriesDuras / max4 - 1)} más que la semana más alta del último mes. Sube el volumen de forma más gradual.` });
+    if (act.desvRIR != null && act.desvRIR >= 1)
+      res.push({ nivel: 'alto', texto: `Entrena más cerca del fallo de lo previsto (RIR ${c(act.desvRIR)} por debajo del objetivo de media): posible fatiga o carga demasiado alta. Baja el peso o una serie.` });
+    else if (act.desvRIR != null && act.desvRIR <= -2)
+      res.push({ nivel: 'info', texto: `Se queda lejos del fallo (RIR ${c(Math.abs(act.desvRIR))} por encima del objetivo de media): puede subir peso o repeticiones.` });
+    if (act.seriesDurasPlan > 0 && act.seriesDuras < act.seriesDurasPlan * 0.75)
+      res.push({ nivel: 'info', texto: `Hizo ${act.seriesDuras} de ${act.seriesDurasPlan} series duras previstas.` });
+    const faltan = PRIORITARIOS.filter(p => !(act.porPatron[p] > 0));
+    if (act.sesiones && faltan.length)
+      res.push({ nivel: 'info', texto: `Sin series duras la semana pasada en: ${faltan.join(', ')} (prioritarios para el corredor).` });
+    const srpePrev = prev.map(w => w.srpe).filter(x => x > 0);
+    if (srpePrev.length && act.srpe > Math.max(...srpePrev) * 1.15)
+      res.push({ nivel: 'medio', texto: `La sRPE de fuerza superó en más de un 15 % a la semana más alta del último mes.` });
+    if (!res.length) res.push({ nivel: 'ok', texto: 'Fuerza dentro de lo previsto. Sin avisos.' });
+    return res;
+  }
+
+  const API = { RIR_DURA, PATRONES: PATRONES.map(p => p[0]).concat('Otros'), PRIORITARIOS, patron, listaReps, analizarEjercicio, analizarSesion, resumenSemanal, alertas };
+  if (typeof module !== 'undefined' && module.exports) module.exports = API;
+  global.ATLFuerza = API;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* =====================================================================
  * Alex Training Lab · Módulo de CARGA (interfaz)
  * Requiere carga-core.js (window.ATLCarga). Sin dependencias.
  *   ATLCargaUI.panelEntrenador(el, { sesiones, atleta, semanas, hasta, metodoAC })
@@ -3649,6 +3841,71 @@ border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 4px 16px rgba(0,0
     return { actualizar(nuevas) { if (nuevas) estado.sesiones = nuevas; pintar(); } };
   }
 
+
+  // ---------- PANEL DE FUERZA (por RPE / RIR, sin encoder) ----------
+  function panelFuerza(el, opts) {
+    estilos();
+    const FZ = global.ATLFuerza;
+    const estado = Object.assign({ semanas: 12, hasta: C.fecha.hoyISO() }, opts);
+    const raiz = h('div', { class: 'atl-carga' }); el.replaceChildren(raiz);
+    const tip = crearTooltip(raiz); const tipEl = raiz.querySelector('.tip');
+    function pintar() {
+      const an = estado.sesiones; // analizadas (ATLFuerza.analizarSesion) con fecha ISO
+      const sem = FZ.resumenSemanal(an, { semanas: estado.semanas, hasta: estado.hasta, fecha: C.fecha });
+      const n = sem.length, cur = sem[n - 1], ref = cur.enCurso && n > 1 ? sem[n - 2] : cur;
+      const al = FZ.alertas(sem);
+      const kpi = (l, v, d) => h('div', { class: 'kpi' }, h('div', { class: 'l', text: l }), h('div', { class: 'v', text: v }), h('div', { class: 'd', text: d }));
+      const cab = h('div', { class: 'card cab-carga' },
+        h('h2', { text: `Carga de fuerza${estado.atleta ? ' · ' + estado.atleta : ''}` }),
+        h('p', { class: 'sub', text: 'Sin encoder: sRPE de la sesión (min × RPE total) y, por ejercicio, series duras (RIR ≤ 4), carácter del esfuerzo (reps / (reps + RIR)) y desviación del RIR respecto al objetivo.' }),
+        estado.nota ? h('p', { class: 'sub nota-datos', text: estado.nota }) : null,
+        h('div', { class: 'filtros' }, h('label', { text: 'Periodo' }),
+          h('div', { class: 'seg' }, [6, 12, 24].map(k => h('button', { 'aria-pressed': String(estado.semanas === k), text: `${k} sem`, onclick: () => { estado.semanas = k; pintar(); } })))));
+      const kpis = h('div', { class: 'kpis' },
+        kpi('sRPE fuerza esta semana', fmt(cur.srpe) + ' UA', `${cur.sesiones} sesión(es) · semana pasada ${fmt((sem[n - 2] || {}).srpe)} UA`),
+        kpi('Series duras (sem. pasada)', fmt(ref.seriesDuras), ref.seriesDurasPlan ? `de ${fmt(ref.seriesDurasPlan)} previstas · RIR ≤ ${FZ.RIR_DURA}` : `RIR ≤ ${FZ.RIR_DURA}`),
+        kpi('RIR medio (sem. pasada)', fmt(ref.rirMedio, 1), 'repeticiones que le quedaban'),
+        kpi('Desviación de RIR', ref.desvRIR == null ? '—' : (ref.desvRIR > 0 ? '+' : '') + fmt(ref.desvRIR, 1), '+ = más duro de lo previsto'),
+        kpi('Carácter del esfuerzo', ref.ce == null ? '—' : fmt(ref.ce * 100) + ' %', 'reps hechas / reps posibles'));
+      const sAl = h('div', { class: 'card' }, h('h3', { text: 'Avisos de fuerza' }),
+        h('ul', { class: 'alertas' }, al.map(a => h('li', {}, h('span', { class: 'chip ' + a.nivel, text: { alto: 'Alto', medio: 'Atención', info: 'Info', ok: 'OK' }[a.nivel] }), h('span', { text: a.texto })))));
+      const serS = [{ key: 'seriesDurasPlan', label: 'Previstas', color: 'var(--s-plan)' }, { key: 'seriesDuras', label: 'Hechas', color: 'var(--s-real)' }];
+      const g1 = h('div', { class: 'card' }, h('h3', { text: 'Series duras por semana' }), h('p', { class: 'sub', text: `Series a ${FZ.RIR_DURA} repeticiones o menos del fallo (sin calentamiento).` }),
+        leyenda(serS), barrasAgrupadas(sem, serS, tip, 'Series duras previstas y hechas por semana'));
+      const serR = [{ key: 'srpe', label: 'sRPE fuerza', color: 'var(--s-fza)' }];
+      const g2 = h('div', { class: 'card' }, h('h3', { text: 'sRPE de fuerza por semana' }), h('p', { class: 'sub', text: 'Minutos × RPE total del entrenamiento.' }),
+        barrasAgrupadas(sem, serR, tip, 'sRPE de fuerza por semana'));
+      // tabla por patrón (últimas 6 semanas)
+      const ult = sem.slice(-6);
+      const usados = FZ.PATRONES.filter(p => ult.some(w => w.porPatron[p] > 0) || FZ.PRIORITARIOS.includes(p));
+      const tPat = h('div', { class: 'card' }, h('h3', { text: 'Series duras por patrón de movimiento' }),
+        h('p', { class: 'sub', text: 'Últimas 6 semanas. En rojo, patrones prioritarios para el corredor sin series duras esa semana.' }),
+        h('div', { class: 'tabla' }, h('table', {},
+          h('thead', {}, h('tr', {}, h('th', { text: 'Patrón' }), ult.map(w => h('th', { text: fmtSem(w.semana) + (w.enCurso ? '*' : '') })))),
+          h('tbody', {}, usados.map(p => h('tr', {}, h('td', { text: p }), ult.map(w => {
+            const v = w.porPatron[p] || 0, td = h('td', { text: v ? fmt(v) : '—' });
+            if (!v && FZ.PRIORITARIOS.includes(p) && w.sesiones && !w.enCurso) td.className = 'warn';
+            return td;
+          })))))));
+      // tabla de sesiones
+      const reales = an.filter(x => x.fecha >= sem[0].semana && x.fecha <= estado.hasta).sort((a, b) => a.fecha < b.fecha ? 1 : -1);
+      const cols = [['Fecha', x => C.fecha.parse(x.fecha).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })], ['Sesión', x => x.titulo],
+        ['Min', x => x.min == null ? 'falta' : fmt(x.min)], ['RPE', x => x.rpe == null ? 'falta' : fmt(x.rpe, x.rpe % 1 ? 1 : 0)], ['sRPE', x => fmt(x.srpe)],
+        ['Series', x => fmt(x.series)], ['Duras', x => `${fmt(x.seriesDuras)}${x.seriesDurasPlan ? '/' + fmt(x.seriesDurasPlan) : ''}`], ['Reps', x => fmt(x.reps)],
+        ['RIR medio', x => fmt(x.rirMedio, 1)], ['Desv. RIR', x => x.desvRIR == null ? '—' : (x.desvRIR > 0 ? '+' : '') + fmt(x.desvRIR, 1)], ['C. esfuerzo', x => x.ce == null ? '—' : fmt(x.ce * 100) + ' %']];
+      const tSes = h('div', { class: 'card' }, h('h3', { text: 'Sesiones de fuerza realizadas' }),
+        h('p', { class: 'sub', text: '«falta» = el entrenado no lo ha apuntado. Duras: hechas / previstas.' }),
+        h('div', { class: 'tabla' }, h('table', { class: 'tabla-ses' },
+          h('thead', {}, h('tr', {}, cols.map(c => h('th', { text: c[0] })))),
+          h('tbody', {}, reales.map(x => h('tr', {}, cols.map(([nn, f]) => { const v = f(x), td = h('td', { text: v });
+            if (v === 'falta' || (nn === 'Desv. RIR' && x.desvRIR >= 1)) td.className = 'warn'; return td; })))))));
+      raiz.replaceChildren(...[cab, kpis, sAl, h('div', { class: 'row2' }, g1, g2), h('div', { style: 'height:16px' }), tPat, tSes, tipEl].filter(Boolean));
+      tip.ocultar();
+    }
+    pintar();
+    return { actualizar(n) { if (n) estado.sesiones = n; pintar(); } };
+  }
+
   // ---------- FORMULARIO RPE (atleta, tras la sesión) ----------
   function formularioRPE(el, { sesion = {}, onGuardar } = {}) {
     estilos();
@@ -3731,7 +3988,7 @@ border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 4px 16px rgba(0,0
     };
   }
 
-  global.ATLCargaUI = { panelEntrenador, formularioRPE, planificador, repositorioSupabase };
+  global.ATLCargaUI = { panelEntrenador, panelFuerza, formularioRPE, planificador, repositorioSupabase };
 })(window);
 
 </script>
@@ -3974,18 +4231,160 @@ function cargaNota(info) {
   return p.length ? 'Datos: ' + p.join(' · ') + '.' : '';
 }
 
-async function tabCarga(host, clienteId, nombre) {
-  $(host).innerHTML = '<div class="card"><p class="muted">Calculando la carga…</p></div>';
-  try {
-    const { sesiones, info } = await cargaSesionesCliente(clienteId);
-    if (!sesiones.some(s => s.estado === 'realizada')) {
-      $(host).innerHTML = `<div class="card"><h3>Control de carga</h3><p class="muted">${esc(nombre || 'Este cliente')} todavía no tiene sesiones hechas ni actividades de Strava.</p></div>`;
-      return;
-    }
-    ATLCargaUI.panelEntrenador($(host), { sesiones, atleta: nombre, nota: cargaNota(info), detalle: true });
-  } catch (e) {
-    $(host).innerHTML = `<div class="card"><p class="muted">No se pudo calcular la carga: ${esc(e.message)}</p></div>`;
+async function cargaFuerzaCliente(clienteId) {
+  const ses = await db('GET', 'sesiones', `?cliente_id=eq.${clienteId}&select=id,fecha,titulo,bloques,registro`).catch(() => []);
+  const out = []; const info = { total: 0, sinRPE: 0, sinMin: 0, sinRIR: 0 };
+  for (const s of ses || []) {
+    if (!hecho(s) || (typeof esCarrera === 'function' && esCarrera(s))) continue;
+    const d = parseFecha(s.fecha); if (!d) continue;
+    const a = ATLFuerza.analizarSesion(Object.assign({}, s, { fecha: isoLocal(d) }), typeof normEj === 'function' ? normEj : null);
+    out.push(a); info.total++;
+    if (a.rpe == null) info.sinRPE++;
+    if (a.min == null) info.sinMin++;
+    if (a.ejerciciosSinEsfuerzo) info.sinRIR++;
   }
+  return { sesiones: out, info };
+}
+function cargaNotaFuerza(i) {
+  const p = [];
+  if (i.sinRPE) p.push(`${i.sinRPE} de ${i.total} sesiones sin «RPE total» (no suman sRPE)`);
+  if (i.sinMin) p.push(`${i.sinMin} sin duración (no suman sRPE)`);
+  if (i.sinRIR) p.push(`${i.sinRIR} con ejercicios sin RIR ni RPE (no cuentan como series duras)`);
+  return p.length ? 'Datos: ' + p.join(' · ') + '.' : '';
+}
+
+async function tabCarga(host, clienteId, nombre) {
+  $(host).innerHTML = `<div class="atl-carga"><div class="card cab-carga" style="padding:10px 14px"><div class="filtros">
+      <label>Ver</label><div class="seg" id="carga-vista">
+        <button aria-pressed="true" data-v="global">Global (resistencia + fuerza)</button>
+        <button aria-pressed="false" data-v="fuerza">Fuerza</button></div></div></div></div>
+    <div id="carga-cont"><div class="card"><p class="muted">Calculando la carga…</p></div></div>`;
+  const cont = $('#carga-cont');
+  const ver = async v => {
+    document.querySelectorAll('#carga-vista button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
+    cont.innerHTML = '<div class="card"><p class="muted">Calculando la carga…</p></div>';
+    try {
+      if (v === 'fuerza') {
+        const { sesiones, info } = await cargaFuerzaCliente(clienteId);
+        if (!sesiones.length) { cont.innerHTML = `<div class="card"><h3>Carga de fuerza</h3><p class="muted">${esc(nombre || 'Este cliente')} todavía no tiene sesiones de fuerza registradas.</p></div>`; return; }
+        ATLCargaUI.panelFuerza(cont, { sesiones, atleta: nombre, nota: cargaNotaFuerza(info) });
+      } else {
+        const { sesiones, info } = await cargaSesionesCliente(clienteId);
+        if (!sesiones.some(s => s.estado === 'realizada')) { cont.innerHTML = `<div class="card"><h3>Control de carga</h3><p class="muted">${esc(nombre || 'Este cliente')} todavía no tiene sesiones hechas ni actividades de Strava.</p></div>`; return; }
+        ATLCargaUI.panelEntrenador(cont, { sesiones, atleta: nombre, nota: cargaNota(info), detalle: true });
+      }
+    } catch (e) {
+      cont.innerHTML = `<div class="card"><p class="muted">No se pudo calcular la carga: ${esc(e.message)}</p></div>`;
+    }
+  };
+  document.querySelectorAll('#carga-vista button').forEach(b => b.onclick = () => ver(b.dataset.v));
+  ver('global');
+}
+
+</script>
+<script>
+/* =====================================================================
+ * Alex Training Lab · Edición completa desde el entrenador (app general)
+ *  - preguntarMoverCopiar(titulo, fechaTxt) → 'mover' | 'copiar' | null
+ *  - abrirEditorRes(p, zonas, alGuardar)    → editor de TODOS los campos de una sesión de resistencia
+ * Usa funciones de la app: esc, RES_NOMBRE.
+ * ===================================================================== */
+
+function preguntarMoverCopiar(titulo, fechaTxt) {
+  return new Promise(res => {
+    const ov = document.createElement('div');
+    ov.className = 'modal';
+    ov.innerHTML = `<div class="modal-card" style="max-width:420px;margin-top:20vh">
+      <h3>¿Mover o copiar?</h3>
+      <p>«${esc(titulo)}» → <b>${esc(fechaTxt)}</b></p>
+      <p class="muted">Mover la quita de su día. Copiar la deja donde está y crea otra igual (sin registro del cliente) en el día nuevo.</p>
+      <div class="row"><button class="gold" data-r="mover">Mover</button><button class="gold" data-r="copiar">Copiar</button><button class="sec" data-r="">Cancelar</button></div></div>`;
+    ov.onclick = e => {
+      const b = e.target.closest('[data-r]');
+      if (!b && e.target !== ov) return;
+      ov.remove(); res(b ? (b.dataset.r || null) : null);
+    };
+    document.body.appendChild(ov);
+  });
+}
+
+function abrirEditorRes(p, zonas, alGuardar) {
+  const partes = (() => { const d = String(p.descripcion || ''), i = d.indexOf(' — '); return i > 0 ? [d.slice(0, i), d.slice(i + 3)] : [d, '']; })();
+  let pasos = (Array.isArray(p.pasos) ? p.pasos : []).map(x => Object.assign({ nombre: '', rep: 1, cantidad: '', unidad: 'min', zona: '', rec: '' }, x));
+  const ov = document.createElement('div');
+  ov.className = 'modal';
+  ov.innerHTML = `<div class="modal-card"><h3>Editar sesión de resistencia</h3><div id="er"></div></div>`;
+  document.body.appendChild(ov);
+  const opt = (o, v) => Object.entries(o).map(([k, t]) => `<option value="${esc(k)}"${String(v ?? '') === String(k) ? ' selected' : ''}>${esc(t)}</option>`).join('');
+  const val = (sel) => { const el = ov.querySelector(sel); return el ? el.value.trim() : ''; };
+  const leerPasos = () => [...ov.querySelectorAll('.er-paso')].map(tr => {
+    const g = f => tr.querySelector(`[data-p="${f}"]`).value.trim();
+    const n = t => t === '' ? null : Number(String(t).replace(',', '.'));
+    return { nombre: g('nombre'), rep: n(g('rep')) || 1, cantidad: n(g('cantidad')), unidad: g('unidad') || 'min', zona: g('zona') ? Number(g('zona')) : null, rec: n(g('rec')) };
+  });
+  const durAuto = ps => ps.length && ps.every(x => x.unidad === 'min' && x.cantidad != null)
+    ? Math.round(ps.reduce((a, x) => a + x.cantidad * (x.rep || 1) + (x.rec && x.rep > 1 ? x.rec * (x.rep - 1) : 0), 0)) : null;
+  const pintar = () => {
+    ov.querySelector('#er').innerHTML = `
+      <div class="row"><label>Fecha <input type="date" id="er-fecha" value="${esc(p.fecha || '')}"></label>
+        <label>Tipo <select id="er-tipo">${opt(RES_NOMBRE, p.tipo || 'otro')}</select></label>
+        <label>Duración prevista (min) <input id="er-dur" inputmode="numeric" value="${esc(p.duracion_min ?? '')}" placeholder="auto si los pasos van en min"></label></div>
+      <label>Nombre <input id="er-nombre" value="${esc(partes[0])}"></label>
+      <label>Explicación (una idea por línea; «Ritmos: 4:30» sale en negrita) <textarea id="er-desc" rows="4">${esc(partes[1])}</textarea></label>
+      <h3 style="margin-top:12px">Pasos</h3>
+      <div class="ses"><table><tr><th>Paso</th><th>Rep.</th><th>Cantidad</th><th>Unidad</th><th>Zona</th><th>Recup. (min)</th><th></th></tr>
+        ${pasos.map((x, i) => `<tr class="er-paso">
+          <td><input data-p="nombre" value="${esc(x.nombre)}" placeholder="Calentamiento"></td>
+          <td><input class="n" data-p="rep" inputmode="numeric" value="${esc(x.rep ?? 1)}"></td>
+          <td><input class="n" data-p="cantidad" inputmode="decimal" value="${esc(x.cantidad ?? '')}"></td>
+          <td><select data-p="unidad">${opt({ min: 'min', m: 'm', km: 'km' }, x.unidad || 'min')}</select></td>
+          <td><select data-p="zona">${opt({ '': '—', 1: 'Z1', 2: 'Z2', 3: 'Z3', 4: 'Z4', 5: 'Z5' }, x.zona ?? '')}</select></td>
+          <td><input class="n" data-p="rec" inputmode="decimal" value="${esc(x.rec ?? '')}"></td>
+          <td><button class="danger" data-a="delp" data-i="${i}">×</button></td></tr>`).join('')}
+      </table></div>
+      <button class="sec" data-a="addp" style="margin-top:6px">+ Paso</button>
+      <h3 style="margin-top:14px">Registro</h3>
+      <div class="row">
+        <label>Estado <select id="er-estado">${opt({ pendiente: 'Pendiente', hecha: 'Hecha', omitida: 'No hecha' }, p.estado || 'pendiente')}</select></label>
+        <label>RPE (1-10) <select id="er-rpe">${opt(Object.assign({ '': '—' }, Object.fromEntries([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => [n, n]))), p.rpe ?? '')}</select></label>
+        <label>Minutos reales <input id="er-min" inputmode="numeric" value="${esc(p.duracion_real_min ?? '')}"></label>
+        <label>Km reales <input id="er-km" inputmode="decimal" value="${esc(p.km_reales ?? '')}"></label></div>
+      <label>Notas del cliente <textarea id="er-notas" rows="2">${esc(p.notas_atleta || '')}</textarea></label>
+      <label>Tu comentario (lo verá el cliente) <textarea id="er-com" rows="2">${esc(p.comentario_entrenador || '')}</textarea></label>
+      <div class="row" style="margin-top:12px"><button class="gold" data-a="guardar">Guardar cambios</button><button class="sec" data-a="cerrar">Cancelar</button><span class="msg" id="er-m"></span></div>`;
+  };
+  const guardarEstado = () => {   // conserva lo escrito al repintar
+    pasos = leerPasos();
+    p = Object.assign({}, p, { fecha: val('#er-fecha'), tipo: val('#er-tipo'), duracion_min: val('#er-dur'), estado: val('#er-estado'), rpe: val('#er-rpe'),
+      duracion_real_min: val('#er-min'), km_reales: val('#er-km'), notas_atleta: val('#er-notas'), comentario_entrenador: val('#er-com') });
+    partes[0] = val('#er-nombre'); partes[1] = ov.querySelector('#er-desc').value;
+  };
+  ov.onclick = async e => {
+    const b = e.target.closest('[data-a]'); if (!b) return;
+    const a = b.dataset.a;
+    if (a === 'cerrar') { ov.remove(); return; }
+    guardarEstado();
+    if (a === 'addp') { pasos.push({ nombre: '', rep: 1, cantidad: '', unidad: 'min', zona: '', rec: '' }); pintar(); return; }
+    if (a === 'delp') { pasos.splice(+b.dataset.i, 1); pintar(); return; }
+    if (a === 'guardar') {
+      const num = t => { if (t === '' || t == null) return null; const n = Number(String(t).replace(',', '.')); return Number.isFinite(n) ? n : NaN; };
+      const ps = pasos.filter(x => x.nombre || x.cantidad != null);
+      const dur = num(p.duracion_min) ?? durAuto(ps);
+      const cambios = {
+        fecha: p.fecha || null, tipo: p.tipo || 'otro',
+        descripcion: (partes[0] || RES_NOMBRE[p.tipo] || 'Sesión') + (partes[1].trim() ? ' — ' + partes[1].trim() : ''),
+        duracion_min: dur, pasos: ps.length ? ps : null,
+        estado: p.estado || 'pendiente', rpe: num(p.rpe), duracion_real_min: num(p.duracion_real_min), km_reales: num(p.km_reales),
+        notas_atleta: p.notas_atleta || null, comentario_entrenador: p.comentario_entrenador || null
+      };
+      const m = ov.querySelector('#er-m');
+      if (!cambios.fecha) { m.textContent = 'Pon una fecha'; m.className = 'msg err'; return; }
+      if ([cambios.duracion_min, cambios.duracion_real_min, cambios.km_reales].some(Number.isNaN)) { m.textContent = 'Duración, minutos y km tienen que ser números'; m.className = 'msg err'; return; }
+      try { await alGuardar(cambios); ov.remove(); }
+      catch (err) { m.textContent = err.message; m.className = 'msg err'; }
+    }
+  };
+  pintar();
 }
 
 </script>
