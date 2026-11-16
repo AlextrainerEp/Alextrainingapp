@@ -2930,10 +2930,20 @@ function isoDeTexto(t) {
   if (m) { let y = m[3] ? +m[3] : new Date().getFullYear(); if (y < 100) y += 2000; return `${y}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`; }
   return null;
 }
+// Una sesión guardada como fuerza pero que es de carrera/trail se pinta con su color de resistencia
+function tipoDeFuerza(s) {
+  const sinAc = t => String(t ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const t = sinAc([s.titulo, ...(s.bloques || []).flatMap(b => [b.nombre, ...(b.ejercicios || []).map(e => [e.ej || e.ejercicio, e.int, e.nota].join(' '))])].join(' '));
+  const carrera = /\b(rodaje|carrera|tirada|trail|fartlek|cuestas?|trote|series de|z[1-5]|fc ?\d|km|kms|ritmo|ritmos|bici|rodillo|ciclismo|continua|umbral|progresivo|desnivel)\b/.test(t);
+  const fuerza = /\b(fuerza|sentadilla|press|peso muerto|remo|dominadas?|zancadas?|hip thrust|curl|plancha|kettlebell|mancuernas?|barra|goblet|jalon|gemelos|estructural|core|pliometria|circuito)\b/.test(t);
+  if (!carrera || fuerza) return 'fuerza';
+  const tp = tipoDeCelda(s.titulo || '');
+  return tp === 'otro' || tp === 'fuerza' ? (tipoDeCelda(t) === 'fuerza' ? 'otro' : tipoDeCelda(t)) : tp;
+}
 async function sesionesFuerza(desde, hasta) {
   if (!atletaActual || !atletaActual.user_id) return [];
   const { data } = await sb.from('sesiones').select('*').eq('cliente_id', atletaActual.user_id);
-  return (data || []).map(s => ({ ...s, _fun: true, fecha: isoDeTexto(s.fecha), tipo: 'fuerza', descripcion: s.titulo || 'Fuerza',
+  return (data || []).map(s => ({ ...s, _fun: true, fecha: isoDeTexto(s.fecha), tipo: tipoDeFuerza(s), descripcion: s.titulo || 'Fuerza',
     estado: Object.keys(s.registro || {}).length ? 'hecha' : 'pendiente' }))
     .filter(s => s.fecha && s.fecha >= desde && s.fecha <= hasta);
 }
@@ -2977,8 +2987,9 @@ function verFuerza(s) {
 function tarjetaFuerza(s) {
   const card = document.createElement('div');
   card.className = 'tarjeta tarjeta-fuerza' + (s.estado === 'hecha' ? ' hecha' : '');
-  card.style.borderLeftColor = COLORES.fuerza; card.style.background = COLORES.fuerza + '26';
-  card.innerHTML = `<div class="tit">🏋️ ${escTxt(s.titulo || 'Fuerza')}</div><div class="det">Fuerza${s.estado === 'hecha' ? ' · ✓ registrada' : ''} · ver entrenamiento</div>`;
+  const col = COLORES[s.tipo] || COLORES.otro;
+  card.style.borderLeftColor = col; card.style.background = col + '26';
+  card.innerHTML = `<div class="tit">${s.tipo === 'fuerza' ? '🏋️' : '🏃'} ${escTxt(s.titulo || 'Fuerza')}</div><div class="det">${NOMBRES_TIPO[s.tipo] || 'Fuerza'}${s.estado === 'hecha' ? ' · ✓ registrada' : ''} · ver entrenamiento</div>`;
   card.onclick = e => { e.stopPropagation(); verFuerza(s); };
   return card;
 }
@@ -3022,7 +3033,7 @@ async function cargarMes() {
       t.className = 'mes-item';
       t.style.borderLeftColor = (typeof COLORES !== 'undefined' && COLORES[p.tipo]) || '#999';
       t.style.background = ((typeof COLORES !== 'undefined' && COLORES[p.tipo]) || '#999') + '26';
-      t.textContent = (p._fun ? '🏋️ ' : '') + (p.descripcion || p.tipo || '').split(' — ')[0];
+      t.textContent = (p._fun ? (p.tipo === 'fuerza' ? '🏋️ ' : '🏃 ') : '') + (p.descripcion || p.tipo || '').split(' — ')[0];
       ponerPunto(t, p);
       if (p._fun) { t.onclick = (e) => { if (modoBorrar) return; e.stopPropagation(); verFuerza(p); }; celda.appendChild(t); return; }
       t.draggable = true;
