@@ -1253,7 +1253,7 @@ async function pintarActividades(box, atletaId) {
     box.appendChild(pv);
     return;
   }
-  // Actividades extra (sin sesión hecha ese día): el atleta puede poner su esfuerzo (RPE) para que sumen carga
+  // El atleta puede poner su esfuerzo (RPE) en cada actividad para que sume carga
   const fechasAct = [...new Set(data.map(a => a.fecha).filter(Boolean))];
   let diasHechos = new Set();
   if (fechasAct.length) {
@@ -1279,11 +1279,10 @@ async function pintarActividades(box, atletaId) {
     box.appendChild(fila);
   });
 }
-// Selector de esfuerzo (RPE 1-10) para actividades de Strava que no van unidas a una sesión hecha
+// Selector de esfuerzo (RPE 1-10) en cada actividad de Strava de resistencia (cuenta en el control de carga)
 function cajaRpeActividad(a, diasHechos) {
   if (/Weight|Workout|Crossfit|Yoga|Pilates/i.test(a.tipo || '')) return null; // la fuerza se registra en la app
   const unida = diasHechos.has(String(a.fecha).slice(0, 10));
-  if (unida && a.rpe == null) return null; // ese día ya hay sesión hecha: su RPE se pone en la sesión
   const caja = document.createElement('div');
   caja.className = 'act-rpe';
   const et = document.createElement('label');
@@ -1294,7 +1293,7 @@ function cajaRpeActividad(a, diasHechos) {
   });
   const st = document.createElement('span');
   st.className = 'muted';
-  st.textContent = a.rpe == null ? 'Actividad extra: indica cómo de dura fue para que cuente en tu carga.' : '';
+  st.textContent = a.rpe != null ? '' : (unida ? 'Si ya pusiste el esfuerzo en la sesión de ese día, no hace falta.' : 'Indica cómo de dura fue para que cuente en tu carga.');
   sel.onchange = async () => {
     st.textContent = 'Guardando…';
     const { data: upd, error } = await sb.from('actividades').update({ rpe: sel.value ? Number(sel.value) : null })
@@ -2595,6 +2594,10 @@ async function cargarBiblioteca() {
 
   const select = $('cal-lib');
   select.innerHTML = '';
+  const vacia = document.createElement('option');
+  vacia.value = '';
+  vacia.textContent = data.length ? 'Elige una sesión de la biblioteca…' : 'La biblioteca está vacía: crea sesiones en «Biblioteca»';
+  select.appendChild(vacia);
   data.forEach(s => {
     const opt = document.createElement('option');
     opt.value = s.id;
@@ -2721,7 +2724,9 @@ $('btn-asignar').onclick = async () => {
   const fecha = $('cal-fecha').value;
   if (!libId || !fecha) return alert('Elige una sesión y una fecha');
 
-  const base = bibliotecaCache.find(s => s.id === libId);
+  // el valor del desplegable es texto y el id puede ser numérico: se comparan como texto
+  const base = (bibliotecaCache || []).find(s => String(s.id) === String(libId));
+  if (!base) return alert('No se encuentra esa sesión en la biblioteca. Recarga la página y vuelve a elegirla.');
   const { error } = await sb.from('sesiones_planificadas').insert({
     atleta_id: atletaActual.id,
     fecha,
