@@ -263,6 +263,8 @@ body:has(#login:not(.oculto))::after{background:linear-gradient(rgba(0,0,0,.30),
 body:has(#login:not(.oculto)) #login input:not([type=checkbox]){margin:0 0 8px}
 body:has(#login:not(.oculto)) #login label,body:has(#login:not(.oculto)) #login .muted,body:has(#login:not(.oculto)) #login .link,body:has(#login:not(.oculto)) #login .ver{color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.9)}
 body:has(#login:not(.oculto)) #login .row{margin-top:2px}
+.texto-claro .tl{margin:3px 0}
+.texto-claro .tl b{font-weight:700}
 </style>
 </head>
 <body>
@@ -563,7 +565,7 @@ body:has(#login:not(.oculto)) #login .row{margin-top:2px}
       <div id="detalle-atleta" class="card oculto">
         <div class="cab" id="det-titulo"></div>
         <div class="muted" id="det-meta"></div>
-        <p id="det-texto" style="white-space:pre-line;font-size:15px;line-height:1.5"></p>
+        <div id="det-texto" class="texto-claro" style="font-size:15px;line-height:1.5"></div>
         <div id="det-pasos"></div>
         <div id="det-comentario" class="nota-entrenador oculto"></div>
         <label>Estado
@@ -2118,11 +2120,20 @@ $('m-guardar').onclick = async () => {
   cargarTodoAtleta();
 };
 
+// Texto de la sesión en líneas claras: "Ritmos: 4:10" → «Ritmos» en negrita
+function escTxt(t) { return String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function textoClaro(t) {
+  return String(t || '').split(/\n+/).map(l => l.trim()).filter(Boolean).map(l => {
+    const m = l.match(/^([A-Za-zÁÉÍÓÚÜÑáéíóúüñ][A-Za-zÁÉÍÓÚÜÑáéíóúüñ ()\/.]{1,28}):\s*(.+)$/);
+    return m ? `<div class="tl"><b>${escTxt(m[1])}:</b> ${escTxt(m[2])}</div>` : `<div class="tl">${escTxt(l)}</div>`;
+  }).join('');
+}
 function mostrarDetalle(p) {
   const partes = (p.descripcion || '').split(' — ');
   $('det-titulo').textContent = partes[0] || p.tipo || 'Sesión';
-  $('det-meta').textContent = `${p.fecha} · ${p.tipo || ''} · ${p.duracion_min ?? '-'} min`;
-  $('det-texto').textContent = partes.slice(1).join(' — ') || 'Sin explicación adicional.';
+  $('det-meta').textContent = `${p.fecha} · ${NOMBRES_TIPO[p.tipo] || p.tipo || ''}${p.duracion_min ? ' · ' + p.duracion_min + ' min' : ''}`;
+  const txtDet = partes.slice(1).join(' — ');
+  $('det-texto').innerHTML = txtDet ? textoClaro(txtDet) : '<div class="tl">Sin explicación adicional.</div>';
   $('det-estado').value = p.estado || 'pendiente';
   $('det-rpe').value = p.rpe ?? '';
   $('det-km').value = p.km_reales ?? '';
@@ -2640,7 +2651,7 @@ $('btn-asignar').onclick = async () => {
 };
 
 const COLORES = { rodaje: '#1976d2', series: '#d32f2f', tirada: '#2e7d32', fuerza: '#7b1fa2', bici: '#f57c00', otro: '#607d8b' };
-const NOMBRES_TIPO = { rodaje: 'Rodaje', series: 'Series', tirada: 'Tirada larga', fuerza: 'Fuerza', bici: 'Bici', otro: 'Otro' };
+const NOMBRES_TIPO = { rodaje: 'Rodaje', series: 'Series', tirada: 'Tirada larga', fuerza: 'Fuerza', bici: 'Bici', test: 'Test', otro: 'Otro' };
 document.querySelectorAll('[data-leyenda]').forEach(el => {
   el.innerHTML = Object.keys(COLORES).map(k =>
     `<span class="leg"><i style="background:${COLORES[k]}"></i>${NOMBRES_TIPO[k]}</span>`).join('');
@@ -2941,12 +2952,13 @@ function tarjetaSesion(p) {
 
   const tit = document.createElement('div');
   tit.className = 'tit';
-  tit.textContent = p.descripcion || p.tipo || 'Sesión';
+  tit.textContent = (p.descripcion || '').split(' — ')[0] || NOMBRES_TIPO[p.tipo] || 'Sesión';
+  tit.title = p.descripcion || '';
   ponerPunto(tit, p);
 
   const det = document.createElement('div');
   det.className = 'det';
-  det.textContent = `${p.tipo || ''} · ${p.duracion_min ?? '-'} min` + (p.duracion_real_min ? ` · hechos ${p.duracion_real_min}` : '');
+  det.textContent = `${NOMBRES_TIPO[p.tipo] || p.tipo || ''}${p.duracion_min ? ' · ' + p.duracion_min + ' min' : ''}` + (p.duracion_real_min ? ` · hechos ${p.duracion_real_min} min` : '');
   const mv = document.createElement('button');
   mv.className = 'mover-btn';
   mv.textContent = '↔ mover';
