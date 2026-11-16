@@ -264,6 +264,15 @@ body:has(#login:not(.oculto)) #login input:not([type=checkbox]){margin:0 0 8px}
 body:has(#login:not(.oculto)) #login label,body:has(#login:not(.oculto)) #login .muted,body:has(#login:not(.oculto)) #login .link,body:has(#login:not(.oculto)) #login .ver{color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.9)}
 body:has(#login:not(.oculto)) #login .row{margin-top:2px}
 .texto-claro .tl{margin:3px 0}
+.modal-fuerza{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px}
+.mf-card{background:#fff;color:#1d1f21;border-radius:12px;max-width:620px;width:100%;max-height:88vh;overflow:auto;padding:18px;border-left:6px solid #7b1fa2}
+.mf-tipo{color:#7b1fa2;font-weight:800;font-size:13px;letter-spacing:.04em}
+.mf-card h3{margin:4px 0 10px}
+.mf-bn{font-weight:800;margin:10px 0 4px;text-transform:uppercase;font-size:13px;color:#555}
+.mf-card ul{margin:0;padding-left:18px;line-height:1.45}.mf-card li{margin:4px 0}
+.mf-card li span{color:#333}.mf-card small{color:#555}
+.mf-pie{display:flex;justify-content:space-between;align-items:center;margin-top:14px;gap:10px}
+.tarjeta-fuerza{cursor:pointer}
 .texto-claro .tl b{font-weight:700}
 </style>
 </head>
@@ -305,7 +314,7 @@ body:has(#login:not(.oculto)) #login .row{margin-top:2px}
   <div id="panel" class="oculto">
     <div id="badge-admin" class="oculto muted" style="margin:4px 0 10px">Modo administrador: gestionas los atletas de la cuenta principal</div>
     <nav class="tabs-t" id="tabs-t">
-      <a class="otra-app" href="../app/">🏋️ Ir a Funcional</a>
+      <a class="otra-app" href="../app/">🏠 Página general</a>
       <button class="tabt on" data-tab="atletas">Atletas</button>
       <button class="tabt" data-tab="ficha">Ficha</button>
       <button class="tabt" data-tab="biblio">Biblioteca y planes</button>
@@ -536,7 +545,7 @@ body:has(#login:not(.oculto)) #login .row{margin-top:2px}
 
   <div id="vista-atleta" class="oculto">
     <nav class="tabs-t" id="tabs-a">
-      <a class="otra-app oculto" id="ir-funcional" href="../app/">🏋️ Ir a Funcional</a>
+      <a class="otra-app oculto" id="ir-funcional" href="../app/">🏠 Página general</a>
       <button class="tabt on" data-ta="cal">Calendario</button>
       <button class="tabt" data-ta="hist">Historial</button>
       <button class="tabt" data-ta="carga">Carga</button>
@@ -804,7 +813,7 @@ async function mostrarSegunSesion() {
     const caducado = miPerfil.acceso_hasta && new Date(miPerfil.acceso_hasta) <= new Date();
     if (miPerfil.rol !== 'admin' && (!mods.includes('resistencia') || caducado)) { location.replace('../app/'); return; }
     const irF = $('ir-funcional');
-    if (irF) irF.classList.toggle('oculto', !(miPerfil.rol === 'admin' || mods.includes('funcional')));
+    if (irF) irF.classList.remove('oculto'); // todos pueden volver a la página general
   }
   $('login').classList.toggle('oculto', !!session);
   $('hdr').classList.toggle('oculto', !session);
@@ -1116,6 +1125,7 @@ function mostrarTabA(id) {
   document.querySelectorAll('#tabs-a .tabt').forEach(x => x.classList.toggle('on', x.dataset.ta === id));
 }
 document.querySelectorAll('#tabs-a .tabt').forEach(b => b.onclick = () => mostrarTabA(b.dataset.ta));
+setTimeout(function abrirStravaSiToca(n) { n = n || 0; if (location.hash !== '#strava') return; if ($('vista-atleta') && !$('vista-atleta').classList.contains('oculto')) mostrarTabA('strava'); else if (n < 40) setTimeout(() => abrirStravaSiToca(n + 1), 250); }, 300);
 
 /* ---------- STRAVA ---------- */
 const FUNCION_STRAVA = 'strava-funcion-ts';
@@ -2814,6 +2824,68 @@ function alternarVista() {
 $('btn-vista').onclick = alternarVista;
 $('btn-vista-a').onclick = alternarVista;
 
+/* ---------- Sesiones de FUERZA (apartado funcional) dentro del calendario de resistencia ---------- */
+function isoDeTexto(t) {
+  const x = String(t || '').trim();
+  let m = x.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+  m = x.replace(/^[a-záéíóúñ]+\.?,?\s+/i, '').match(/^(\d{1,2})[\/\-.](\d{1,2})(?:[\/\-.](\d{2,4}))?$/);
+  if (m) { let y = m[3] ? +m[3] : new Date().getFullYear(); if (y < 100) y += 2000; return `${y}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`; }
+  return null;
+}
+async function sesionesFuerza(desde, hasta) {
+  if (!atletaActual || !atletaActual.user_id) return [];
+  const { data } = await sb.from('sesiones').select('*').eq('cliente_id', atletaActual.user_id);
+  return (data || []).map(s => ({ ...s, _fun: true, fecha: isoDeTexto(s.fecha), tipo: 'fuerza', descripcion: s.titulo || 'Fuerza',
+    estado: Object.keys(s.registro || {}).length ? 'hecha' : 'pendiente' }))
+    .filter(s => s.fecha && s.fecha >= desde && s.fecha <= hasta);
+}
+// Igual que en la página general: "Sentadilla goblet 10kg RIR 2-3" se reparte en sus datos
+function repartirEj(o){
+  const N="\\d+(?:[.,]\\d+)?", RANGO=`${N}(?:\\s*(?:-|–|/|a)\\s*${N})?`;
+  const sacar=(campo,re)=>{const m=String(o[campo]||"").match(re);if(!m)return null;o[campo]=(o[campo].slice(0,m.index)+" "+o[campo].slice(m.index+m[0].length));return m};
+  const limpio=t=>String(t||"").replace(/\s{2,}/g," ").replace(/^[\s,;·\-–@|]+|[\s,;·\-–@|]+$/g,"").trim();
+  const sinEsp=t=>t.replace(/\s+/g,"").replace(/a/g,"-");
+  for(const campo of ["ej","int","rep"]){
+    let m;
+    if(!o.rir&&(m=sacar(campo,new RegExp(`\\bRIR\\s*[:=]?\\s*(${RANGO})`,"i")))) o.rir=sinEsp(m[1]);
+    if(!o.rpe&&(m=sacar(campo,new RegExp(`\\bRPE\\s*[:=]?\\s*(${RANGO})`,"i")))) o.rpe=sinEsp(m[1]);
+  }
+  let m;
+  if(!o.ser&&!o.rep&&(m=sacar("ej",/(?:^|\s)(\d{1,2})\s*[x×]\s*(\d{1,3}(?:\s*[-–\/]\s*\d{1,3})?)(?:\s*(?:reps?|repeticiones)\b)?/i))){o.ser=m[1];o.rep=m[2].replace(/\s+/g,"")}
+  if((m=sacar("ej",new RegExp(`(?:@\\s*)?(${RANGO})\\s*(kg|kgs|kilos?)\\b`,"i")))){
+    const kg=m[1].replace(/\s+/g,"")+" kg";
+    if(!o.int) o.int=kg; else if(!/kg/i.test(o.int)) o.int=kg+" · "+o.int;
+  }
+  if((m=sacar("ej",/\b(?:descanso|desc\.|rec\.|recuperaci[oó]n)\s*[:=]?\s*(\d+\s*(?:s|seg|segundos|min|minutos|''|"|')?)/i))){
+    const d="Descanso "+m[1].trim(); o.nota=o.nota?o.nota+" · "+d:d;
+  }
+  o.ej=limpio(o.ej); o.int=limpio(o.int); o.rep=limpio(o.rep);
+  return o;
+}
+function verFuerza(s) {
+  const ov = document.createElement('div');
+  ov.className = 'modal-fuerza';
+  const fila = e0 => {
+    const e = repartirEj({ cod: e0.cod || '', ej: e0.ej || e0.ejercicio || '', ser: e0.ser || e0.series || '', rep: e0.rep || e0.reps || '', int: e0.int || e0.intensidad || '', rpe: e0.rpe || '', rir: e0.rir || '', prog: e0.prog || '', nota: e0.nota || '' });
+    const datos = [e.ser && e.rep ? `${e.ser} × ${e.rep}` : (e.ser ? e.ser + ' series' : e.rep ? e.rep + ' reps' : ''), e.int, e.rir ? 'RIR ' + e.rir : '', e.rpe ? 'RPE ' + e.rpe : ''].filter(Boolean).join(' · ');
+    return `<li><b>${e.cod ? escTxt(e.cod) + ' ' : ''}${escTxt(e.ej || e.ejercicio || '')}</b>${datos ? `<br><span>${escTxt(datos)}</span>` : ''}${e.nota ? `<br><small>📝 ${escTxt(e.nota)}</small>` : ''}${e.prog ? `<br><small>📈 ${escTxt(e.prog)}</small>` : ''}</li>`;
+  };
+  ov.innerHTML = `<div class="mf-card"><div class="mf-tipo">🏋️ FUERZA · ${escTxt(s.fecha)}${s.estado === 'hecha' ? ' · ✓ registrada' : ''}</div><h3>${escTxt(s.titulo || 'Sesión de fuerza')}</h3>
+    ${(s.bloques || []).map(b => `<div class="mf-bloque"><div class="mf-bn">${escTxt(b.nombre || '')}</div><ul>${(b.ejercicios || []).map(fila).join('')}</ul></div>`).join('')}
+    <div class="mf-pie"><a href="../app/">Abrir en la página general →</a><button type="button" class="sec">Cerrar</button></div></div>`;
+  ov.onclick = e => { if (e.target === ov || e.target.tagName === 'BUTTON') ov.remove(); };
+  document.body.appendChild(ov);
+}
+function tarjetaFuerza(s) {
+  const card = document.createElement('div');
+  card.className = 'tarjeta tarjeta-fuerza' + (s.estado === 'hecha' ? ' hecha' : '');
+  card.style.borderLeftColor = COLORES.fuerza; card.style.background = COLORES.fuerza + '26';
+  card.innerHTML = `<div class="tit">🏋️ ${escTxt(s.titulo || 'Fuerza')}</div><div class="det">Fuerza${s.estado === 'hecha' ? ' · ✓ registrada' : ''} · ver entrenamiento</div>`;
+  card.onclick = e => { e.stopPropagation(); verFuerza(s); };
+  return card;
+}
+
 async function cargarMes() {
   const ini = mesActual;
   const fin = new Date(ini.getFullYear(), ini.getMonth() + 1, 0);
@@ -2823,6 +2895,7 @@ async function cargarMes() {
   const { data, error } = await sb.from('sesiones_planificadas').select('*')
     .eq('atleta_id', atletaActual.id).gte('fecha', iso(ini)).lte('fecha', iso(fin)).order('fecha');
   if (error) return alert(error.message);
+  data.push(...await sesionesFuerza(iso(lunesDe(ini)), iso(sumarDias(lunesDe(ini), 41))));
 
   const cont = $('semana' + sufijo);
   cont.innerHTML = '';
@@ -2851,8 +2924,9 @@ async function cargarMes() {
       t.className = 'mes-item';
       t.style.borderLeftColor = (typeof COLORES !== 'undefined' && COLORES[p.tipo]) || '#999';
       t.style.background = ((typeof COLORES !== 'undefined' && COLORES[p.tipo]) || '#999') + '26';
-      t.textContent = (p.descripcion || p.tipo || '').split(' — ')[0];
+      t.textContent = (p._fun ? '🏋️ ' : '') + (p.descripcion || p.tipo || '').split(' — ')[0];
       ponerPunto(t, p);
+      if (p._fun) { t.onclick = (e) => { e.stopPropagation(); verFuerza(p); }; celda.appendChild(t); return; }
       t.draggable = true;
       t.ondragstart = (e) => { arrastrando = p; e.dataTransfer.setData('text/plain', p.id || ''); };
       t.ondragend = () => { arrastrando = null; };
@@ -2894,6 +2968,7 @@ async function cargarSemana() {
     .lte('fecha', fin)
     .order('fecha');
   if (error) return alert(error.message);
+  data.push(...await sesionesFuerza(inicio, fin));
 
   const totalMin = data.reduce((a, p) => a + (p.duracion_min || 0), 0);
   const hechas = data.filter(p => p.estado === 'hecha').length;
@@ -2933,7 +3008,7 @@ async function cargarSemana() {
       vacio.textContent = 'Descanso';
       body.appendChild(vacio);
     }
-    delDia.forEach(p => body.appendChild(tarjetaSesion(p)));
+    delDia.forEach(p => body.appendChild(p._fun ? tarjetaFuerza(p) : tarjetaSesion(p)));
 
     col.append(head, body);
     grid.appendChild(col);
