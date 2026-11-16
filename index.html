@@ -223,6 +223,18 @@ body.cli .card{background:rgba(255,255,255,.85);backdrop-filter:none;-webkit-bac
 .cal-chip{display:block;width:100%;font-size:10px;line-height:1.2;padding:1px 3px;margin-top:2px;background:#f4f5f6;color:#1d1f21;border:1px solid #9a9ea2;border-radius:3px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
 .cal-chip.ok{background:#e4f2e4}
 .cal-chip.res{color:#fff!important;font-weight:700;border-radius:3px}
+.gsub{font-weight:500;font-size:12px;color:#444;margin-top:2px;line-height:1.3}
+.pick .obj{color:#8a8f94;font-style:italic}
+.pick small.obj{display:block;font-size:9px;line-height:1;font-style:normal;text-transform:uppercase;letter-spacing:.04em}
+.obj-ayuda{font-size:13px;color:#555;margin:8px 0 0;line-height:1.4}
+.res-desc .tl{margin:2px 0;line-height:1.45}
+.res-desc .tl b{color:#1d1f21}
+.borrado-bar{gap:8px;margin:0 0 10px}
+.sel-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;margin-bottom:10px;border:2px solid #c0392b}
+.sel-bar span{flex:1 1 220px}
+.borrado-panel{margin-bottom:10px;border:2px solid #c0392b}
+.borrado-panel h3{margin-top:0}
+.cal-d.selb{outline:3px solid #c0392b;outline-offset:-3px;background:#fdecea!important}
 .cal-chip.res.ok{opacity:.75}
 .res-leyenda{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:12px}
 .res-leyenda .leg{display:inline-flex;align-items:center;gap:5px}
@@ -789,7 +801,32 @@ function normEj(e){
   // Si en la celda de reps hay texto (p. ej. "8/6/6 lastre 10kg 2 primeras"), ese texto va a Intensidad
   const m=String(rep).match(/^(\d[\d\s+\/\-–.,"']*?)\s+([A-Za-zÁÉÍÓÚáéíóúñÑ].*)$/);
   if(m){rep=m[1].trim();int=[m[2].trim(),String(int).trim()].filter(Boolean).join(" · ")}
-  return {cod:e.cod??e.codigo??"",ej:e.ej??e.ejercicio??"",ser:e.ser??e.series??"",rep,int,rpe:e.rpe??e.rpe_objetivo??"",rir:e.rir??e.rir_objetivo??"",prog:e.prog??e.progresion??"",nota:e.nota??"",video:e.video??""};
+  const o={cod:e.cod??e.codigo??"",ej:e.ej??e.ejercicio??"",ser:e.ser??e.series??"",rep,int,rpe:e.rpe??e.rpe_objetivo??"",rir:e.rir??e.rir_objetivo??"",prog:e.prog??e.progresion??"",nota:e.nota??"",video:e.video??""};
+  return repartirEj(o);
+}
+// "Sentadilla goblet 10kg RIR 2-3" → Ejercicio: Sentadilla goblet · Intensidad: 10 kg · RIR obj.: 2-3
+// También entiende 3x10, RPE 7-8 y descanso 90 s. Solo rellena recuadros vacíos; no borra nada que ya esté puesto.
+function repartirEj(o){
+  const N="\\d+(?:[.,]\\d+)?", RANGO=`${N}(?:\\s*(?:-|–|/|a)\\s*${N})?`;
+  const sacar=(campo,re)=>{const m=String(o[campo]||"").match(re);if(!m)return null;o[campo]=(o[campo].slice(0,m.index)+" "+o[campo].slice(m.index+m[0].length));return m};
+  const limpio=t=>String(t||"").replace(/\s{2,}/g," ").replace(/^[\s,;·\-–@|]+|[\s,;·\-–@|]+$/g,"").trim();
+  const sinEsp=t=>t.replace(/\s+/g,"").replace(/a/g,"-");
+  for(const campo of ["ej","int","rep"]){
+    let m;
+    if(!o.rir&&(m=sacar(campo,new RegExp(`\\bRIR\\s*[:=]?\\s*(${RANGO})`,"i")))) o.rir=sinEsp(m[1]);
+    if(!o.rpe&&(m=sacar(campo,new RegExp(`\\bRPE\\s*[:=]?\\s*(${RANGO})`,"i")))) o.rpe=sinEsp(m[1]);
+  }
+  let m;
+  if(!o.ser&&!o.rep&&(m=sacar("ej",/(?:^|\s)(\d{1,2})\s*[x×]\s*(\d{1,3}(?:\s*[-–\/]\s*\d{1,3})?)(?:\s*(?:reps?|repeticiones)\b)?/i))){o.ser=m[1];o.rep=m[2].replace(/\s+/g,"")}
+  if((m=sacar("ej",new RegExp(`(?:@\\s*)?(${RANGO})\\s*(kg|kgs|kilos?)\\b`,"i")))){
+    const kg=m[1].replace(/\s+/g,"")+" kg";
+    if(!o.int) o.int=kg; else if(!/kg/i.test(o.int)) o.int=kg+" · "+o.int;
+  }
+  if((m=sacar("ej",/\b(?:descanso|desc\.|rec\.|recuperaci[oó]n)\s*[:=]?\s*(\d+\s*(?:s|seg|segundos|min|minutos|''|"|')?)/i))){
+    const d="Descanso "+m[1].trim(); o.nota=o.nota?o.nota+" · "+d:d;
+  }
+  o.ej=limpio(o.ej); o.int=limpio(o.int); o.rep=limpio(o.rep);
+  return o;
 }
 
 /* ---------- Excel ---------- */
@@ -943,9 +980,10 @@ function btnVideoMini(e){
   return u?` <a class="vid vmini" href="${esc(u)}" target="_blank" rel="noopener" title="Video explicativo">▶</a>`:` <span class="vid vid-no vmini" title="Sin vídeo">–</span>`;
 }
 function esSeguimiento(b){return true}
-function pick(k,f,val,color,editable){
+function pick(k,f,val,color,editable,obj){
   const c=color?colorRPE(val):["#fff","#1d1f21"];
-  const txt=(val===""||val==null)?"–":String(val).replace(".",",");
+  const vacio=(val===""||val==null);
+  const txt=vacio?(obj?`<small class="obj">obj.</small><span class="obj">${esc(String(obj).replace(".",","))}</span>`:"–"):String(val).replace(".",",");
   return `<button type="button" class="pick" data-k="${k}" data-f="${f}" data-v="${esc(val??"")}" data-c="${color?1:0}" ${editable?"":"disabled"} style="background:${c[0]};color:${c[1]}">${txt}</button>`;
 }
 let hojaPick=null;
@@ -994,15 +1032,16 @@ function sesionHTML(s,editable,conLeyenda=editable){
     const cab=`<div class="cab">${esc(g.nombre)}</div>`;
     const letra=x=>String((normEj(x).cod)||"").replace(/[^A-Za-z]/g,"").charAt(0).toUpperCase();
     return cab+cabeza+g.items.map(({x,bi,ei},idx)=>{const e=normEj(x),k=bi+"-"+ei,r=R[k]||{};const sep=idx>0&&letra(x)!==letra(g.items[idx-1].x)?" sep":"";return `<div class="grow${sep}">
-      <div class="gname">${e.cod?`<b>${esc(e.cod)}</b> `:""}${nombreVideo(e)}${btnVideoMini(e)}${e.nota?` <span class="nota">· ${esc(e.nota)}</span>`:""}</div>
+      <div class="gname">${e.cod?`<b>${esc(e.cod)}</b> `:""}${nombreVideo(e)}${btnVideoMini(e)}${e.nota?`<div class="gsub">📝 ${esc(e.nota)}</div>`:""}${e.prog?`<div class="gsub">📈 ${esc(e.prog)}</div>`:""}</div>
       <span>${esc(e.ser)}</span><span>${esc(e.rep)}</span>
       <input data-k="${k}" data-f="reps" value="${esc(r.reps)}" ${dis}>
       <div class="intb">${esc(e.int)}</div>
-      ${pick(k,"rir",r.rir,false,editable)}
-      ${pick(k,"rpe",r.rpe,true,editable)}
+      ${pick(k,"rir",r.rir,false,editable,e.rir)}
+      ${pick(k,"rpe",r.rpe,true,editable,e.rpe)}
     </div>`}).join("");
   }).join("");
-  return bloques+`<div class="rpe-tot"><b>RPE total del entrenamiento</b><div class="rpe-tot-pick">${pick("s","rpe",(R.s||{}).rpe,true,editable)}</div></div><div class="muted" style="margin-top:10px">Comentario del entrenamiento</div><textarea data-k="s" data-f="com" placeholder="Cómo ha ido la sesión" rows="2" ${dis}>${esc((R.s||{}).com)}</textarea>${conLeyenda?`<div style="margin-top:12px">${leyendaRPE()}</div>`:""}`;
+  const hayObj=grupos.some(g=>g.items.some(({x})=>{const e=normEj(x);return e.rir||e.rpe}));
+  return bloques+(hayObj?`<p class="obj-ayuda">En <b>RIR</b> y <b>RPE</b> ves en gris el <b>objetivo</b> que te marca tu entrenador. Tócalo para apuntar lo que has hecho de verdad.</p>`:"")+`<div class="rpe-tot"><b>RPE total del entrenamiento</b><div class="rpe-tot-pick">${pick("s","rpe",(R.s||{}).rpe,true,editable)}</div></div><div class="muted" style="margin-top:10px">Comentario del entrenamiento</div><textarea data-k="s" data-f="com" placeholder="Cómo ha ido la sesión" rows="2" ${dis}>${esc((R.s||{}).com)}</textarea>${conLeyenda?`<div style="margin-top:12px">${leyendaRPE()}</div>`:""}`;
 }
 function leerRegistro(raiz){
   const reg={};
@@ -1559,6 +1598,13 @@ async function sesionesResistencia(clienteId){
   }catch(e){return []}
 }
 const resHecha=p=>p.estado==="hecha";
+// Texto de una sesión de resistencia en líneas claras: "Ritmos: 4:10" → Ritmos en negrita
+function textoClaro(t){
+  return String(t||"").split(/\n+/).map(l=>l.trim()).filter(Boolean).map(l=>{
+    const m=l.match(/^([A-Za-zÁÉÍÓÚÜÑáéíóúüñ][A-Za-zÁÉÍÓÚÜÑáéíóúüñ ()\/.]{1,28}):\s*(.+)$/);
+    return m?`<div class="tl"><b>${esc(m[1])}:</b> ${esc(m[2])}</div>`:`<div class="tl">${esc(l)}</div>`;
+  }).join("");
+}
 const resPartes=p=>{const d=String(p.descripcion||""),i=d.indexOf(" — ");return i>0?[d.slice(0,i),d.slice(i+3)]:[d||RES_NOMBRE[p.tipo]||"Sesión",""]};
 const resChip=p=>{const c=RES_COLOR[p.tipo]||RES_COLOR.otro;return `<span class="cal-chip res${resHecha(p)?" ok":""}" style="background:${c};border-color:${c}" title="${esc(resPartes(p)[0])}">${resHecha(p)?"✓ ":""}${esc(RES_NOMBRE[p.tipo]||"Resistencia")}</span>`};
 const resTarjeta=p=>{
@@ -1567,7 +1613,7 @@ const resTarjeta=p=>{
   return `<div class="card sesion-res" style="border-left:6px solid ${c};background:${c}14">
     <div class="res-tipo" style="color:${c}">🏃 ${esc(RES_NOMBRE[p.tipo]||"Resistencia")}${resHecha(p)?' <span class="res-ok">✓ Hecha</span>':""}</div>
     <h3>${esc(tit)}</h3>
-    ${desc?`<p class="res-desc">${esc(desc)}</p>`:""}
+    ${desc?`<div class="res-desc">${textoClaro(desc)}</div>`:""}
     <p class="muted">${p.duracion_min?"Duración prevista: "+p.duracion_min+" min":""}${real?(p.duracion_min?" · ":"")+"Real: "+esc(real):""}</p>
     ${p.comentario_entrenador?`<p class="res-com"><b>Entrenador:</b> ${esc(p.comentario_entrenador)}</p>`:""}
     <a class="res-abrir" href="../resistencia/">Abrir en Resistencia →</a></div>`;
@@ -1733,6 +1779,7 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false){
   let diaSel=ref?isoLocal(ref.d):hoyIso;
   let arrastrado=false;
   let aviso="";
+  let modoSel=false; const selDias=new Set(); let verBorrado=false;
   const porDia=new Map();
   const meterRes=()=>resis.forEach(p=>porDia.set(p.fecha,[...(porDia.get(p.fecha)||[]),p]));
   conF.forEach(({s,d})=>{const k=isoLocal(d);porDia.set(k,[...(porDia.get(k)||[]),s])});
@@ -1756,6 +1803,15 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false){
       diaSel=val; mes=new Date(+ny,+nm-1,1); aviso="Sesión movida al "+txt; pintar();
     }catch(e){aviso="No se pudo mover: "+e.message; pintar()}
   };
+  const borrarSesiones=async(lista,txt)=>{
+    try{
+      const trozos=(ids,n=80)=>{const r=[];for(let i=0;i<ids.length;i+=n)r.push(ids.slice(i,i+n));return r};
+      for(const t of trozos(lista.filter(x=>!x._res).map(x=>x.id))) await db("DELETE","sesiones",`?id=in.(${t.join(",")})`,null,"return=minimal");
+      for(const t of trozos(lista.filter(x=>x._res).map(x=>x.id))) await db("DELETE","sesiones_planificadas",`?id=in.(${t.join(",")})`,null,"return=minimal");
+      await tabEntrenosCal(host,clienteId,admin);
+      const c=$(host); if(c) c.insertAdjacentHTML("afterbegin",`<p class="cal-aviso card">✓ ${esc(txt)}</p>`);
+    }catch(e){aviso="No se pudo borrar: "+e.message;pintar()}
+  };
   const pintar=()=>{
     const y=mes.getFullYear(), mo=mes.getMonth();
     const primer=(new Date(y,mo,1).getDay()+6)%7;
@@ -1767,7 +1823,7 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false){
       const lista=porDia.get(k)||[];
       const todasHechas=lista.length&&lista.every(esHecha);
       const chips=lista.slice(0,2).map(t=>t._res?resChip(t):`<button type="button" class="cal-chip${hecho(t)?" ok":""}" data-chip="${t.id}" title="${esc(t.titulo||"Sesión")}">${esc(diaCorto(t))}</button>`).join("");
-      celdas.push(`<div class="cal-d cal-dia${k===hoyIso?" hoy":""}${lista.length?" tiene":""}${k===diaSel?" sel":""}" data-dia="${k}"><span class="cal-num">${d}</span>${chips}${lista.length>2?`<span class="cal-mas">+${lista.length-2}</span>`:""}</div>`);
+      celdas.push(`<div class="cal-d cal-dia${k===hoyIso?" hoy":""}${lista.length?" tiene":""}${k===diaSel&&!modoSel?" sel":""}${selDias.has(k)?" selb":""}" data-dia="${k}"><span class="cal-num">${d}</span>${chips}${lista.length>2?`<span class="cal-mas">+${lista.length-2}</span>`:""}</div>`);
     }
     const delDia=porDia.get(diaSel)||[];
     const [ay,am,ad]=diaSel.split("-");
@@ -1775,8 +1831,25 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false){
     const proxTxt=pendFut?String(pendFut.d.getDate()).padStart(2,"0")+"/"+String(pendFut.d.getMonth()+1).padStart(2,"0"):"—";
     const cont=$(host);
     const msgAviso=aviso; aviso="";
+    const selSes=[...selDias].flatMap(k=>porDia.get(k)||[]);
+    const nF=selSes.filter(x=>!x._res).length, nR=selSes.filter(x=>x._res).length;
     cont.innerHTML=`
       ${msgAviso?`<p class="cal-aviso card">${esc(msgAviso)}</p>`:""}
+      ${admin?`<div class="borrado-bar row">
+        <button class="${modoSel?"gold":"sec"}" data-selmodo>${modoSel?"✓ Seleccionando días…":"☑ Seleccionar días para borrar"}</button>
+        <button class="sec" data-borrado>🗑 Borrar varias…</button></div>
+        ${modoSel?`<div class="card sel-bar"><span>${selDias.size?`<b>${selDias.size}</b> día(s) · <b>${selSes.length}</b> sesión(es)${nF&&nR?` (${nF} fuerza, ${nR} resistencia)`:""}`:"Toca los días del calendario que quieras borrar."}</span>
+          <button class="sec" data-selmes>Todo el mes</button>
+          <button class="danger" data-borrarsel${selSes.length?"":" disabled"}>Borrar seleccionadas</button>
+          <button class="sec" data-cancelsel>Cancelar</button></div>`:""}
+        ${verBorrado?`<div class="card borrado-panel">
+          <h3>Borrar varias sesiones</h3>
+          <div class="row"><label>Qué <select id="bQue"><option value="todo">Fuerza y resistencia</option><option value="f">Solo fuerza</option><option value="r">Solo resistencia</option></select></label>
+          <label>Cuáles <select id="bCual"><option value="todas">Todas</option><option value="desde">Desde una fecha</option><option value="entre">Entre dos fechas</option></select></label></div>
+          <div class="row" id="bFechas" style="display:none"><label>Desde <input type="date" id="bDesde" value="${hoyIso}"></label><label id="bHastaL">Hasta <input type="date" id="bHasta"></label></div>
+          <label class="mod-chk"><input type="checkbox" id="bConservar" checked> Conservar las ya completadas por el cliente</label>
+          <div class="row"><button class="danger" data-borrarvarias>Borrar</button><button class="sec" data-cerrarborrado>Cancelar</button></div>
+          <div class="msg" id="bMsg"></div></div>`:""}`:""}
       <div class="resumen"><div><b>${pend}</b><small>pendientes</small></div><div><b>${hechas}</b><small>completadas</small></div><div><b>${proxTxt}</b><small>próximo entreno</small></div></div>
       <div class="cal-wrap card">
         <div class="cal-head"><button class="sec" data-prev>‹</button><b>${MESES_CAL[mo]} ${y}</b><button class="sec" data-next>›</button></div>
@@ -1788,7 +1861,43 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false){
       ${sinFecha.length?`<details class="card"><summary><b>Sin fecha (${sinFecha.length})</b></summary>${sinFecha.map(s=>tarjeta(s,false)).join("")}</details>`:""}`;
     cont.querySelector("[data-prev]").onclick=()=>{mes=new Date(y,mo-1,1);pintar()};
     cont.querySelector("[data-next]").onclick=()=>{mes=new Date(y,mo+1,1);pintar()};
-    cont.querySelectorAll("[data-dia]").forEach(b=>b.onclick=()=>{diaSel=b.dataset.dia;pintar()});
+    cont.querySelectorAll("[data-dia]").forEach(b=>b.onclick=()=>{
+      if(modoSel){const k=b.dataset.dia;if(!(porDia.get(k)||[]).length)return;selDias.has(k)?selDias.delete(k):selDias.add(k);pintar();return}
+      diaSel=b.dataset.dia;pintar()});
+    if(admin){
+      const q=sel=>cont.querySelector(sel);
+      q("[data-selmodo]").onclick=()=>{modoSel=!modoSel;selDias.clear();verBorrado=false;pintar()};
+      q("[data-borrado]").onclick=()=>{verBorrado=!verBorrado;modoSel=false;selDias.clear();pintar()};
+      if(modoSel){
+        q("[data-cancelsel]").onclick=()=>{modoSel=false;selDias.clear();pintar()};
+        q("[data-selmes]").onclick=()=>{for(const k of porDia.keys()){const [yy,mm]=k.split("-");if(+yy===y&&+mm-1===mo)selDias.add(k)}pintar()};
+        q("[data-borrarsel]").onclick=()=>{
+          if(!confirm(`¿Borrar ${selSes.length} sesión(es) de ${selDias.size} día(s)?${selSes.some(esHecha)?"\nAlgunas ya están completadas: se perderán también sus registros.":""}`))return;
+          borrarSesiones(selSes,`${selSes.length} sesión(es) borradas`);
+        };
+      }
+      if(verBorrado){
+        const ajustar=()=>{const v=q("#bCual").value;q("#bFechas").style.display=v==="todas"?"none":"";q("#bHastaL").style.display=v==="entre"?"":"none"};
+        q("#bCual").onchange=ajustar; ajustar();
+        q("[data-cerrarborrado]").onclick=()=>{verBorrado=false;pintar()};
+        q("[data-borrarvarias]").onclick=()=>{
+          const que=q("#bQue").value, cual=q("#bCual").value, d=q("#bDesde").value, h=q("#bHasta").value, conservar=q("#bConservar").checked;
+          if(cual!=="todas"&&!d) return msg("#bMsg","Elige la fecha de inicio",false);
+          if(cual==="entre"&&(!h||h<d)) return msg("#bMsg","Elige una fecha final igual o posterior",false);
+          const iso=t=>t._res?t.fecha:(parseFecha(t.fecha)?isoLocal(parseFecha(t.fecha)):null);
+          const lista=[...(que==="r"?[]:todas),...(que==="f"?[]:resis)].filter(t=>{
+            if(conservar&&esHecha(t)) return false;
+            if(cual==="todas") return true;
+            const f=iso(t); if(!f) return false;
+            return f>=d&&(cual==="desde"||f<=h);
+          });
+          if(!lista.length) return msg("#bMsg","No hay sesiones que cumplan eso.",false);
+          const nf=lista.filter(x=>!x._res).length, nr=lista.length-nf;
+          if(!confirm(`Se van a borrar ${lista.length} sesión(es): ${nf} de fuerza y ${nr} de resistencia.\nNo se puede deshacer. ¿Continuar?`)) return;
+          borrarSesiones(lista,`${lista.length} sesión(es) borradas (${nf} fuerza, ${nr} resistencia)`);
+        };
+      }
+    }
 
     cont.querySelectorAll("[data-save]").forEach(b=>b.onclick=async()=>{
       const id=b.dataset.save, st=cont.querySelector(`[data-st="${id}"]`);
