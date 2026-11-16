@@ -246,6 +246,9 @@ body.cli .card{background:rgba(255,255,255,.85);backdrop-filter:none;-webkit-bac
 .sesion-res .res-com{margin:6px 0 0}
 .sesion-res .res-abrir{display:inline-block;margin-top:6px;font-weight:700}
 .res-pasos{margin:4px 0 8px 18px;padding:0;line-height:1.5}
+.emb-wrap{width:100%}
+iframe.emb{width:100%;min-height:500px;border:0;background:transparent;display:block}
+.cli-nav button.otra-app{width:100%;text-align:left;cursor:pointer;background:transparent}
 .res-reg{margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,0,0,.12)}
 .res-reg-t{font-weight:700;margin-bottom:6px}
 .res-campos{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
@@ -608,6 +611,8 @@ async function auth(path,body,method="POST",token){
   return j;
 }
 async function refrescar(){
+  try{const g=JSON.parse(sessionStorage.getItem("alex_s")||"null");
+    if(g&&g.refresh&&g.refresh!==S.refresh&&expDe(g.access)>Date.now()/1000+30){S.access=g.access;S.refresh=g.refresh;sesionCompartida();return}}catch(e){}
   const j=await auth("token?grant_type=refresh_token",{refresh_token:S.refresh});
   S.access=j.access_token;S.refresh=j.refresh_token;guardarSesion();
 }
@@ -775,7 +780,7 @@ function entrar(){
     const m=modulosDe(S.perfil);
     let ir="";try{ir=sessionStorage.getItem("ir")||"";sessionStorage.removeItem("ir")}catch(e){}
     if(!m.length) return pantallaSinModulos();
-    panelCliente("entrenamientos");
+    panelCliente(ir==="strava"?"strava":"entrenamientos");
   }
 }
 function pantallaSinModulos(){
@@ -1287,7 +1292,7 @@ async function fichaCliente(id){
   const [c]=await db("GET","perfiles",`?id=eq.${id}&select=*`);
   const ses=await db("GET","sesiones",`?cliente_id=eq.${id}&order=created_at.desc&select=*`);
   shell(`<div id="tab"></div>`,c);
-  $("#cnav").innerHTML=`<button id="volver">← Clientes</button><button id="ta" class="on">Entrenamientos</button><button id="tb">Anamnesis</button><button id="tc">Historial</button><button id="td">Mensajes<span class="badge-msg" data-bc="${id}"></span></button>`;
+  $("#cnav").innerHTML=`<button id="volver">← Clientes</button><button id="ta" class="on">Entrenamientos</button><button id="tr">🏃 Resistencia</button><button id="tb">Anamnesis</button><button id="tc">Historial</button><button id="td">Mensajes<span class="badge-msg" data-bc="${id}"></span></button>`;
   $("#volver").onclick=listaClientes;
 
   const verEntrenos=()=>{
@@ -1330,7 +1335,11 @@ async function fichaCliente(id){
   const verAnam=()=>subTabs([["Valoración inicial",()=>anValoracionEntrenador(c,"ini")],["Anamnesis",()=>anamnesisEntrenador(c)],["Valoración funcional",()=>anValoracionEntrenador(c,"fun")],["Test FMS",()=>anValoracionEntrenador(c,"fms")]]);
   const verHist=()=>{$("#tab").innerHTML=tabHistorial(ses)};
   const verMsgs=()=>tabMensajes(id,true);
-  pestanas(["ta","tb","tc","td"],[verEntrenos,verAnam,verHist,verMsgs]);
+  const verRes=()=>{
+    if(!modulosDe(c).includes("resistencia")){$("#tab").innerHTML=`<div class="card"><h3>Resistencia</h3><p class="muted">${esc(c.nombre||"Este cliente")} no tiene activado el apartado de Resistencia. Actívalo en Entrenamientos → «Apartados de la app».</p></div>`;return}
+    embebido("#tab","atleta="+id);
+  };
+  pestanas(["ta","tr","tb","tc","td"],[verEntrenos,verRes,verAnam,verHist,verMsgs]);
   verEntrenos();
   refrescarBadges();
 }
@@ -1657,6 +1666,21 @@ const resLeyenda=lista=>{
   const tipos=[...new Set(lista.map(p=>p.tipo||"otro"))];
   return `<div class="res-leyenda"><span class="leg"><i style="background:#fff;border:1px solid var(--acento,#e0b43a)"></i>Fuerza (funcional)</span>${tipos.map(t=>`<span class="leg"><i style="background:${RES_COLOR[t]||RES_COLOR.otro}"></i>${RES_NOMBRE[t]||t}</span>`).join("")}</div>`;
 };
+
+/* ---------- Resistencia integrada en la página general ---------- */
+function embebido(host,ruta){
+  $(host).innerHTML=`<div class="emb-wrap"><iframe class="emb" src="../resistencia/?embed=1&${ruta}" title="Resistencia" loading="eager"></iframe></div>`;
+}
+window.addEventListener("message",ev=>{
+  if(ev.origin!==location.origin||!ev.data||!ev.data.alexAltura) return;
+  document.querySelectorAll("iframe.emb").forEach(f=>{if(f.contentWindow===ev.source) f.style.height=Math.max(500,ev.data.alexAltura+20)+"px"});
+});
+function panelResEntrenador(sec){
+  shell(`<div id="tab"></div>`);
+  $("#cnav").innerHTML=`<button id="volver">← Clientes</button><button class="on">🏃 Planes y biblioteca</button>`;
+  $("#volver").onclick=listaClientes;
+  embebido("#tab","sec="+(sec||"biblio"));
+}
 
 /* ---------- Calendario de entrenamientos ---------- */
 const DIAS_SEM=["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
@@ -2157,10 +2181,11 @@ async function panelCliente(tab,sub){
   const limpiarTab=()=>{$("#tab").innerHTML=`<div id="sub"></div>`};
   const lista=[["Entrenamientos",()=>{limpiarTab();return tabEntrenosCal("#sub")}],["Historial",()=>{limpiarTab();return tabHistorialCliente("#sub")}]];
   if(subs.length) lista.push(["Valoración inicial",()=>subTabs(subs)]);
+  if(modulosDe(S.perfil).includes("resistencia")) lista.push(["Strava y zonas",()=>{limpiarTab();embebido("#sub","tab=strava")}]);
   lista.push(["Mensajes",()=>{limpiarTab();return tabMensajes(S.user.id,false,"#sub")}],["Foto y contraseña",()=>{limpiarTab();return tabPerfil()}]);
-  const claves={entrenamientos:"Entrenamientos",calendario:"Entrenamientos",historial:"Historial",valoracion:"Valoración inicial",mensajes:"Mensajes",anamnesis:"Valoración inicial",perfil:"Foto y contraseña"};
+  const claves={strava:"Strava y zonas",entrenamientos:"Entrenamientos",calendario:"Entrenamientos",historial:"Historial",valoracion:"Valoración inicial",mensajes:"Mensajes",anamnesis:"Valoración inicial",perfil:"Foto y contraseña"};
   const key=tab==="perfil"?(sub||"perfil"):(tab||"entrenamientos");
-  const iconos={"Entrenamientos":"🏋️","Historial":"🕘","Valoración inicial":"📋","Mensajes":"💬","Foto y contraseña":"👤"};
+  const iconos={"Strava y zonas":"🔗","Entrenamientos":"🏋️","Historial":"🕘","Valoración inicial":"📋","Mensajes":"💬","Foto y contraseña":"👤"};
   shell(`<div id="tab"><div id="sub"></div></div>`);
   let idx=lista.findIndex(n=>n[0]===claves[key]);
   if(idx<0) idx=0;
@@ -2818,7 +2843,7 @@ function textoErrorEnlace(code,desc){
 async function init(){
   const h=new URLSearchParams(location.hash.slice(1));
   const q=new URLSearchParams(location.search);
-  if(q.get("ir")==="resistencia"){try{sessionStorage.setItem("ir","resistencia")}catch(e){} history.replaceState(null,"",location.pathname+location.hash);}
+  if(q.get("ir")){try{sessionStorage.setItem("ir",q.get("ir"))}catch(e){} history.replaceState(null,"",location.pathname+location.hash);}
   // Enlace del correo con error (caducado, ya usado…): avisar con un mensaje claro
   const errCode=h.get("error_code")||q.get("error_code"), errDesc=h.get("error_description")||q.get("error_description");
   if(h.get("error")||q.get("error")||errCode){
@@ -2893,10 +2918,11 @@ colocarAcceso();
 /* Menú lateral: paso al apartado de resistencia (entrenador, y clientes que lo tengan activado) */
 (function(){
   function ponerOtraApp(){
-    try{ if(!(S&&S.perfil&&(S.perfil.rol==="admin"||modulosDe(S.perfil).includes("resistencia")))) return; }catch(e){ return; }
+    try{ if(!(S&&S.perfil&&S.perfil.rol==="admin")) return; }catch(e){ return; }
     var n=document.getElementById('cnav');
     var esAdmin=S.perfil.rol==="admin";
-    if(n&&!n.querySelector('.otra-app')) n.insertAdjacentHTML('beforeend',esAdmin?'<a class="otra-app" href="../resistencia/">🏃 Planificar resistencia</a>':'<a class="otra-app" href="../resistencia/#strava">🔗 Strava y mis zonas</a>');
+    if(!esAdmin) return;
+    if(n&&!n.querySelector('.otra-app')){ n.insertAdjacentHTML('beforeend','<button class="otra-app" type="button">🏃 Planes y biblioteca</button>'); n.querySelector('.otra-app').onclick=function(){panelResEntrenador("biblio")}; }
   }
   var app=document.getElementById('app');
   if(app&&window.MutationObserver) new MutationObserver(ponerOtraApp).observe(app,{childList:true,subtree:true});
