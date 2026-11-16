@@ -189,6 +189,9 @@ h3{margin:12px 0 6px;font-size:15px}
 .paso-row>*{flex:1 1 70px;margin:0;min-width:0;padding:8px}
 .paso-row>input[type=text]{flex:3 1 170px}
 .paso-row>button{flex:0 0 38px;width:38px}
+.ms-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+.ms-grid label,#modal-sesion label{display:block;margin:6px 0}
+#modal-sesion input,#modal-sesion select,#modal-sesion textarea{width:100%}
 .pasos-lista{margin:6px 0 10px;padding-left:22px;font-size:14px;line-height:1.55}
 .forma-leyenda{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;margin-top:4px}
 .forma-leyenda i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:4px}
@@ -1793,26 +1796,93 @@ function pintarPasos(el, pasos, zonas) {
   el.appendChild(ol);
 }
 
-/* ---------- DETALLE DE SESIÓN (ENTRENADOR) ---------- */
+/* ---------- DETALLE Y EDICIÓN DE SESIÓN (ENTRENADOR): se puede cambiar cualquier campo ---------- */
+let msPasos = [];
+function pintarPasosModal() {
+  const box = $('ms-pasos-ed');
+  box.innerHTML = '';
+  msPasos.forEach((ps, i) => {
+    const row = document.createElement('div');
+    row.className = 'paso-row';
+    const campo = (k, tipo, ph) => {
+      const el = document.createElement('input');
+      el.type = tipo; el.placeholder = ph; el.value = ps[k] ?? '';
+      if (tipo === 'number') { el.min = '0'; el.step = 'any'; }
+      el.oninput = () => { ps[k] = tipo === 'number' ? (el.value === '' ? null : Number(el.value)) : el.value; };
+      return el;
+    };
+    const lista = (k, ops) => {
+      const el = document.createElement('select');
+      ops.forEach(([v, t]) => { const o = document.createElement('option'); o.value = v; o.textContent = t; if (String(ps[k] ?? '') === String(v)) o.selected = true; el.appendChild(o); });
+      el.onchange = () => { ps[k] = k === 'zona' ? (el.value ? Number(el.value) : null) : el.value; };
+      return el;
+    };
+    const quitar = document.createElement('button');
+    quitar.type = 'button'; quitar.className = 'danger'; quitar.textContent = '✕';
+    quitar.onclick = () => { msPasos.splice(i, 1); pintarPasosModal(); };
+    row.append(campo('nombre', 'text', 'Paso (ej. Calentamiento)'), campo('rep', 'number', 'Repeticiones'), campo('cantidad', 'number', 'Cantidad'),
+      lista('unidad', [['min', 'min'], ['m', 'm'], ['km', 'km']]), lista('zona', [['', 'Zona'], [1, 'Z1'], [2, 'Z2'], [3, 'Z3'], [4, 'Z4'], [5, 'Z5']]),
+      campo('rec', 'number', 'Recup. (min)'), quitar);
+    box.appendChild(row);
+  });
+}
+$('ms-add-paso').onclick = () => { msPasos.push({ nombre: '', rep: 1, cantidad: null, unidad: 'min', zona: null, rec: null }); pintarPasosModal(); };
+
 async function abrirDetalleSesion(p) {
-  const partes = (p.descripcion || p.tipo || 'Sesión').split(' — ');
+  const desc = String(p.descripcion || ''), i = desc.indexOf(' — ');
+  const nombre = i > 0 ? desc.slice(0, i) : (desc || NOMBRES_TIPO[p.tipo] || 'Sesión');
+  const explicacion = i > 0 ? desc.slice(i + 3) : '';
   const c = cumplimiento(p);
-  $('ms-titulo').textContent = partes[0];
-  $('ms-meta').textContent = `${p.fecha} · ${p.tipo || ''} · plan ${p.duracion_min ?? '-'} min` + (c ? ` · ${c.texto}` : '');
-  $('ms-texto').textContent = partes.slice(1).join(' — ');
-  $('ms-atleta').textContent = `Estado: ${p.estado || 'pendiente'} · ${p.duracion_real_min ?? '-'} min reales · ${p.km_reales ?? '-'} km · esfuerzo ${p.rpe ?? '-'}` +
-    (p.notas_atleta ? `\nNotas: ${p.notas_atleta}` : '\nSin notas.');
+  $('ms-meta').textContent = c ? c.texto : '';
+  $('ms-fecha').value = p.fecha || '';
+  $('ms-tipo').innerHTML = '';
+  Object.entries(NOMBRES_TIPO).forEach(([v, t]) => { const o = document.createElement('option'); o.value = v; o.textContent = t; if ((p.tipo || 'otro') === v) o.selected = true; $('ms-tipo').appendChild(o); });
+  $('ms-dur').value = p.duracion_min ?? '';
+  $('ms-nombre').value = nombre;
+  $('ms-desc').value = explicacion;
+  msPasos = Array.isArray(p.pasos) ? p.pasos.map(ps => ({ nombre: ps.nombre || '', rep: ps.rep || 1, cantidad: ps.cantidad ?? null, unidad: ps.unidad || 'min', zona: ps.zona || null, rec: ps.rec ?? null })) : [];
+  pintarPasosModal();
+  $('ms-estado').value = p.estado || 'pendiente';
+  $('ms-rpe').value = p.rpe != null ? String(p.rpe) : '';
+  $('ms-min').value = p.duracion_real_min ?? '';
+  $('ms-km').value = p.km_reales ?? '';
+  $('ms-notas').value = p.notas_atleta || '';
   $('ms-comentario').value = p.comentario_entrenador || '';
-  $('ms-pasos').innerHTML = '';
+  $('ms-msg').textContent = '';
   $('modal-sesion').classList.remove('oculto');
+  const numero = t => { t = String(t ?? '').trim().replace(',', '.'); if (!t) return null; const n = Number(t); return Number.isFinite(n) ? n : NaN; };
   $('ms-guardar').onclick = async () => {
-    const { error } = await sb.from('sesiones_planificadas')
-      .update({ comentario_entrenador: $('ms-comentario').value.trim() || null }).eq('id', p.id);
-    if (error) return alert(error.message);
+    const pasos = msPasos.filter(ps => ps.cantidad).map(ps => ({ nombre: (ps.nombre || '').trim(), rep: ps.rep || 1, cantidad: ps.cantidad, unidad: ps.unidad || 'min', zona: ps.zona || null, rec: ps.rec || null }));
+    const durPasos = duracionPasos(pasos);
+    const nom = $('ms-nombre').value.trim() || NOMBRES_TIPO[$('ms-tipo').value] || 'Sesión', ex = $('ms-desc').value.trim();
+    const cambios = {
+      fecha: $('ms-fecha').value || p.fecha,
+      tipo: $('ms-tipo').value,
+      descripcion: nom + (ex ? ' — ' + ex : ''),
+      duracion_min: durPasos ?? numero($('ms-dur').value),
+      pasos: pasos.length ? pasos : null,
+      estado: $('ms-estado').value,
+      rpe: numero($('ms-rpe').value),
+      duracion_real_min: numero($('ms-min').value),
+      km_reales: numero($('ms-km').value),
+      notas_atleta: $('ms-notas').value.trim() || null,
+      comentario_entrenador: $('ms-comentario').value.trim() || null
+    };
+    if ([cambios.duracion_min, cambios.duracion_real_min, cambios.km_reales].some(Number.isNaN)) { $('ms-msg').textContent = 'Duración, minutos y km tienen que ser números.'; return; }
+    $('ms-msg').textContent = 'Guardando…';
+    const { error } = await sb.from('sesiones_planificadas').update(cambios).eq('id', p.id);
+    if (error) { $('ms-msg').textContent = 'No se pudo guardar: ' + error.message; return; }
+    Object.assign(p, cambios);
     $('modal-sesion').classList.add('oculto');
     cargarSemana();
   };
-  pintarPasos($('ms-pasos'), p.pasos, await zonasDe(p.atleta_id));
+  $('ms-borrar').onclick = async () => {
+    if (!confirm('¿Borrar esta sesión? No se puede deshacer.')) return;
+    const { error } = await sb.from('sesiones_planificadas').delete().eq('id', p.id);
+    if (error) { $('ms-msg').textContent = 'No se pudo borrar: ' + error.message; return; }
+    $('modal-sesion').classList.add('oculto');
+    cargarSemana();
+  };
 }
 $('ms-cerrar').onclick = () => $('modal-sesion').classList.add('oculto');
 
@@ -3204,8 +3274,8 @@ function tarjetaSesion(p) {
   card.onclick = (e) => { if (!seleccion) e.stopPropagation(); };
   const ver = document.createElement('button');
   ver.className = 'mover-btn';
-  ver.textContent = p.notas_atleta ? 'detalle ●' : 'detalle';
-  ver.title = p.notas_atleta ? 'El atleta ha dejado notas' : 'Ver pasos, datos del atleta y comentar';
+  ver.textContent = p.notas_atleta ? 'editar ●' : 'editar';
+  ver.title = p.notas_atleta ? 'Editar la sesión (el atleta ha dejado notas)' : 'Editar cualquier campo de la sesión';
   ver.onclick = (e) => { e.stopPropagation(); abrirDetalleSesion(p); };
   det.appendChild(ver);
   const acc = document.createElement('div');
@@ -3446,19 +3516,36 @@ await recogerSesionFuncional();
 mostrarSegunSesion();
 </script>
 <div id="modal-sesion" class="oculto modal">
-  <div class="modal-caja" style="max-width:520px;max-height:90vh;overflow:auto">
-    <div class="cab" id="ms-titulo"></div>
+  <div class="modal-caja" style="max-width:640px;max-height:90vh;overflow:auto">
+    <div class="cab">Editar sesión</div>
     <div class="muted" id="ms-meta"></div>
-    <p id="ms-texto" style="white-space:pre-line;font-size:14px"></p>
-    <div id="ms-pasos"></div>
-    <h3>Lo que ha registrado el atleta</h3>
-    <div id="ms-atleta" style="white-space:pre-line;font-size:14px"></div>
+    <div class="ms-grid">
+      <label>Fecha <input id="ms-fecha" type="date"></label>
+      <label>Tipo <select id="ms-tipo"></select></label>
+      <label>Duración prevista (min) <input id="ms-dur" type="number" min="0" inputmode="numeric"></label>
+    </div>
+    <label>Nombre <input id="ms-nombre" type="text"></label>
+    <label>Explicación (una idea por línea; «Ritmos: 4:30» sale en negrita) <textarea id="ms-desc" rows="4"></textarea></label>
+    <h3>Pasos por zona</h3>
+    <p class="muted" style="margin-top:0">Si todos los pasos van en minutos, la duración prevista se calcula sola.</p>
+    <div id="ms-pasos-ed"></div>
+    <button id="ms-add-paso" class="sec" type="button">+ Paso</button>
+    <h3>Registro del atleta</h3>
+    <div class="ms-grid">
+      <label>Estado <select id="ms-estado"><option value="pendiente">Pendiente</option><option value="hecha">Hecha</option><option value="omitida">No la ha hecho</option></select></label>
+      <label>Esfuerzo (RPE 1-10) <select id="ms-rpe"><option value="">–</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select></label>
+      <label>Minutos reales <input id="ms-min" type="number" min="0" inputmode="numeric"></label>
+      <label>Km <input id="ms-km" type="text" inputmode="decimal"></label>
+    </div>
+    <label>Notas del atleta <textarea id="ms-notas" rows="2"></textarea></label>
     <h3>Tu comentario</h3>
     <textarea id="ms-comentario" rows="3" placeholder="El atleta lo verá al abrir la sesión"></textarea>
     <div class="acciones">
-      <button id="ms-guardar">Guardar comentario</button>
+      <button id="ms-guardar" class="gold">Guardar cambios</button>
+      <button id="ms-borrar" class="danger" type="button">Borrar sesión</button>
       <button id="ms-cerrar" class="sec">Cerrar</button>
     </div>
+    <p id="ms-msg" class="muted"></p>
   </div>
 </div>
 <div id="banner-mover" class="oculto banner-mover">
