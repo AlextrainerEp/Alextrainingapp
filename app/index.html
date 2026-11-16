@@ -245,6 +245,14 @@ body.cli .card{background:rgba(255,255,255,.85);backdrop-filter:none;-webkit-bac
 .sesion-res .res-desc{white-space:pre-line;margin:0 0 6px}
 .sesion-res .res-com{margin:6px 0 0}
 .sesion-res .res-abrir{display:inline-block;margin-top:6px;font-weight:700}
+.res-pasos{margin:4px 0 8px 18px;padding:0;line-height:1.5}
+.res-reg{margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,0,0,.12)}
+.res-reg-t{font-weight:700;margin-bottom:6px}
+.res-campos{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.res-campos label,.res-notas{display:flex;flex-direction:column;gap:3px;font-size:13px;font-weight:600}
+.res-campos select,.res-campos input,.res-notas textarea,.res-notas input{margin:0;background:rgba(255,255,255,.9)}
+.res-notas{margin-top:8px}
+.res-editar{margin-top:10px;padding-top:10px;border-top:1px dashed rgba(0,0,0,.25)}
 .cal-mas{display:block;font-size:10px;color:#333}
 [data-ses]{touch-action:none;cursor:grab}
 .cal-d.destino{outline:2px solid #2e3133;background:rgba(255,255,255,.95)}
@@ -766,8 +774,7 @@ function entrar(){
   else {
     const m=modulosDe(S.perfil);
     let ir="";try{ir=sessionStorage.getItem("ir")||"";sessionStorage.removeItem("ir")}catch(e){}
-    if(m.includes("resistencia")&&(ir==="resistencia"||!m.includes("funcional"))) return location.replace("../resistencia/");
-    if(!m.includes("funcional")) return pantallaSinModulos();
+    if(!m.length) return pantallaSinModulos();
     panelCliente("entrenamientos");
   }
 }
@@ -1607,16 +1614,44 @@ function textoClaro(t){
 }
 const resPartes=p=>{const d=String(p.descripcion||""),i=d.indexOf(" — ");return i>0?[d.slice(0,i),d.slice(i+3)]:[d||RES_NOMBRE[p.tipo]||"Sesión",""]};
 const resChip=p=>{const c=RES_COLOR[p.tipo]||RES_COLOR.otro;return `<span class="cal-chip res${resHecha(p)?" ok":""}" style="background:${c};border-color:${c}" title="${esc(resPartes(p)[0])}">${resHecha(p)?"✓ ":""}${esc(RES_NOMBRE[p.tipo]||"Resistencia")}</span>`};
-const resTarjeta=p=>{
+const fmtSeg=seg=>{const m=Math.floor(seg/60),x=Math.round(seg%60);return `${m}:${String(x).padStart(2,"0")}`};
+function rangoZonaF(n,zonas){
+  const r=zonas.find(z=>z.tipo==="ritmo"&&Number(z.zona)===Number(n)), f=zonas.find(z=>z.tipo==="fc"&&Number(z.zona)===Number(n));
+  const partes=[]; if(r) partes.push(`${fmtSeg(r.minimo)}–${fmtSeg(r.maximo)} /km`); if(f) partes.push(`${f.minimo}–${f.maximo} ppm`);
+  return partes.length?` (${partes.join(" · ")})`:"";
+}
+const textoPasoF=(ps,zonas)=>{const r=ps.rep||1;let t=(ps.nombre?ps.nombre+": ":"")+(r>1?`${r} × `:"")+`${ps.cantidad} ${ps.unidad||"min"}`;if(ps.zona)t+=` en Z${ps.zona}`+rangoZonaF(ps.zona,zonas||[]);if(ps.rec&&r>1)t+=` · recuperación ${ps.rec} min`;return t};
+const ESTADOS_RES={pendiente:"Pendiente",hecha:"Hecha ✓",omitida:"No la he hecho"};
+const resTarjeta=(p,admin,zonas)=>{
   const c=RES_COLOR[p.tipo]||RES_COLOR.otro, [tit,desc]=resPartes(p);
-  const real=resHecha(p)?[p.km_reales?p.km_reales+" km":"",p.duracion_real_min?p.duracion_real_min+" min":""].filter(Boolean).join(" · "):"";
-  return `<div class="card sesion-res" style="border-left:6px solid ${c};background:${c}14">
-    <div class="res-tipo" style="color:${c}">🏃 ${esc(RES_NOMBRE[p.tipo]||"Resistencia")}${resHecha(p)?' <span class="res-ok">✓ Hecha</span>':""}</div>
+  const sel=(v,o)=>Object.entries(o).map(([k,t])=>`<option value="${k}"${String(v??"")===k?" selected":""}>${t}</option>`).join("");
+  const pasos=Array.isArray(p.pasos)&&p.pasos.length?`<ol class="res-pasos">${p.pasos.map(ps=>`<li>${esc(textoPasoF(ps,zonas))}</li>`).join("")}</ol>`:"";
+  return `<div class="card sesion-res" data-res="${p.id}" style="border-left:6px solid ${c};background:${c}14">
+    <div class="res-tipo" style="color:${c}">🏃 ${esc(RES_NOMBRE[p.tipo]||"Resistencia")}${p.duracion_min?` · ${p.duracion_min} min`:""}${resHecha(p)?' <span class="res-ok">✓ Hecha</span>':""}</div>
     <h3>${esc(tit)}</h3>
     ${desc?`<div class="res-desc">${textoClaro(desc)}</div>`:""}
-    <p class="muted">${p.duracion_min?"Duración prevista: "+p.duracion_min+" min":""}${real?(p.duracion_min?" · ":"")+"Real: "+esc(real):""}</p>
-    ${p.comentario_entrenador?`<p class="res-com"><b>Entrenador:</b> ${esc(p.comentario_entrenador)}</p>`:""}
-    <a class="res-abrir" href="../resistencia/">Abrir en Resistencia →</a></div>`;
+    ${pasos}
+    ${p.comentario_entrenador&&!admin?`<p class="res-com"><b>Tu entrenador:</b> ${esc(p.comentario_entrenador)}</p>`:""}
+    <div class="res-reg">
+      <div class="res-reg-t">${admin?"Lo que ha registrado el cliente":"Apunta cómo te ha ido"}</div>
+      <div class="res-campos">
+        <label>Estado <select data-rf="estado">${sel(p.estado||"pendiente",ESTADOS_RES)}</select></label>
+        <label>Esfuerzo (RPE 1-10) <select data-rf="rpe"><option value="">–</option>${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option${String(p.rpe)===String(n)?" selected":""}>${n}</option>`).join("")}</select></label>
+        <label>Km <input data-rf="km_reales" inputmode="decimal" value="${esc(p.km_reales??"")}"></label>
+        <label>Minutos <input data-rf="duracion_real_min" inputmode="numeric" value="${esc(p.duracion_real_min??"")}"></label>
+      </div>
+      <label class="res-notas">Notas ${admin?"del cliente":"para tu entrenador"} <textarea data-rf="notas_atleta" rows="2">${esc(p.notas_atleta||"")}</textarea></label>
+      ${admin?`<label class="res-notas">Tu comentario (lo verá el cliente) <textarea data-rf="comentario_entrenador" rows="2">${esc(p.comentario_entrenador||"")}</textarea></label>`:""}
+      <div class="row"><button class="gold" data-resguardar="${p.id}">Guardar</button>${admin?`<button class="sec" data-reseditar="${p.id}">Editar sesión</button><button class="danger" data-resborrar="${p.id}">Borrar</button>`:""}<span class="muted" data-resst="${p.id}"></span></div>
+    </div>
+    ${admin?`<div class="res-editar" data-resform="${p.id}" style="display:none">
+      <div class="res-campos"><label>Tipo <select data-re="tipo">${sel(p.tipo||"otro",RES_NOMBRE)}</select></label>
+      <label>Duración (min) <input data-re="duracion_min" inputmode="numeric" value="${esc(p.duracion_min??"")}"></label>
+      <label>Fecha <input type="date" data-re="fecha" value="${esc(p.fecha)}"></label></div>
+      <label class="res-notas">Nombre <input data-re="nombre" value="${esc(tit)}"></label>
+      <label class="res-notas">Explicación (una idea por línea; «Ritmos: 4:30» sale en negrita) <textarea data-re="desc" rows="5">${esc(desc)}</textarea></label>
+      <div class="row"><button class="gold" data-resguardaredit="${p.id}">Guardar sesión</button></div></div>`:""}
+  </div>`;
 };
 const resLeyenda=lista=>{
   const tipos=[...new Set(lista.map(p=>p.tipo||"otro"))];
@@ -1768,6 +1803,8 @@ async function tabCalendario(clienteId,puedeMover,host="#tab"){
 /* ---------- Entrenamientos del cliente: calendario + día seleccionado ---------- */
 async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false){
   const [todas,resis]=await Promise.all([db("GET","sesiones",`?cliente_id=eq.${clienteId}&order=created_at.desc&select=*`),sesionesResistencia(clienteId)]);
+  let zonasRes=[];
+  if(resis.length){try{zonasRes=await db("GET","zonas",`?atleta_id=eq.${resis[0].atleta_id}&select=*`)}catch(e){}}
   const hoy=new Date(), hoyIso=isoLocal(hoy);
   const conF=todas.map(s=>({s,d:parseFecha(s.fecha)})).filter(x=>x.d);
   const resF=resis.map(p=>({s:p,d:new Date(p.fecha+"T00:00:00")}));
@@ -1857,7 +1894,7 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false){
         ${resis.length?resLeyenda(resis):""}
       </div>
       <h2 class="dia-tit">${+ad} de ${MESES_CAL[+am-1]}</h2>
-      ${delDia.length?delDia.map(s=>s._res?resTarjeta(s):tarjeta(s,delDia.length===1)).join(""):'<p class="muted">Día sin entrenamiento. Toca otro día del calendario.</p>'}
+      ${delDia.length?delDia.map(s=>s._res?resTarjeta(s,admin,zonasRes):tarjeta(s,delDia.length===1)).join(""):'<p class="muted">Día sin entrenamiento. Toca otro día del calendario.</p>'}
       ${sinFecha.length?`<details class="card"><summary><b>Sin fecha (${sinFecha.length})</b></summary>${sinFecha.map(s=>tarjeta(s,false)).join("")}</details>`:""}`;
     cont.querySelector("[data-prev]").onclick=()=>{mes=new Date(y,mo-1,1);pintar()};
     cont.querySelector("[data-next]").onclick=()=>{mes=new Date(y,mo+1,1);pintar()};
@@ -1910,6 +1947,35 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false){
       }catch(e){st.textContent="Error: "+e.message}
     });
     // Mover con la fecha elegida (ambas pestañas)
+    // Sesiones de resistencia: guardar registro (cliente) o comentario/edición (entrenador)
+    cont.querySelectorAll("[data-resguardar]").forEach(b=>b.onclick=async()=>{
+      const id=b.dataset.resguardar, card=cont.querySelector(`[data-res="${id}"]`), st=cont.querySelector(`[data-resst="${id}"]`);
+      const v=f=>{const el=card.querySelector(`[data-rf="${f}"]`);return el?el.value.trim():undefined};
+      const num=t=>{if(t===""||t===undefined)return null;const n=Number(String(t).replace(",","."));return Number.isFinite(n)?n:NaN};
+      const cambios={estado:v("estado"),rpe:num(v("rpe")),km_reales:num(v("km_reales")),duracion_real_min:num(v("duracion_real_min")),notas_atleta:v("notas_atleta")||null};
+      if(admin) cambios.comentario_entrenador=v("comentario_entrenador")||null;
+      if([cambios.km_reales,cambios.duracion_real_min].some(Number.isNaN)){st.textContent="Km y minutos tienen que ser números";return}
+      try{
+        await db("PATCH","sesiones_planificadas",`?id=eq.${id}`,cambios,"return=minimal");
+        Object.assign(resis.find(x=>x.id===id)||{},cambios);
+        aviso=admin?"Sesión guardada":(cambios.estado==="hecha"?"¡Bien hecho! Sesión registrada ✓":"Guardado ✓"); pintar();
+      }catch(e){st.textContent="Error: "+e.message}
+    });
+    if(admin){
+      cont.querySelectorAll("[data-reseditar]").forEach(b=>b.onclick=()=>{const f=cont.querySelector(`[data-resform="${b.dataset.reseditar}"]`);f.style.display=f.style.display==="none"?"":"none"});
+      cont.querySelectorAll("[data-resguardaredit]").forEach(b=>b.onclick=async()=>{
+        const id=b.dataset.resguardaredit, f=cont.querySelector(`[data-resform="${id}"]`), g=k=>f.querySelector(`[data-re="${k}"]`).value.trim();
+        const nombre=g("nombre")||RES_NOMBRE[g("tipo")]||"Sesión", desc=g("desc");
+        const cambios={tipo:g("tipo"),duracion_min:g("duracion_min")?parseInt(g("duracion_min"),10):null,fecha:g("fecha"),descripcion:nombre+(desc?" — "+desc:"")};
+        try{await db("PATCH","sesiones_planificadas",`?id=eq.${id}`,cambios,"return=minimal");await tabEntrenosCal(host,clienteId,admin)}
+        catch(e){alert(e.message)}
+      });
+      cont.querySelectorAll("[data-resborrar]").forEach(b=>b.onclick=async()=>{
+        if(!confirm("¿Borrar esta sesión de resistencia?"))return;
+        try{await db("DELETE","sesiones_planificadas",`?id=eq.${b.dataset.resborrar}`,null,"return=minimal");await tabEntrenosCal(host,clienteId,admin)}
+        catch(e){alert(e.message)}
+      });
+    }
     cont.querySelectorAll("[data-mover]").forEach(b=>b.onclick=()=>{
       const id=b.dataset.mover, val=cont.querySelector(`[data-mover-in="${id}"]`).value;
       if(!val){aviso="Elige una fecha en el selector";pintar();return}
@@ -2829,7 +2895,8 @@ colocarAcceso();
   function ponerOtraApp(){
     try{ if(!(S&&S.perfil&&(S.perfil.rol==="admin"||modulosDe(S.perfil).includes("resistencia")))) return; }catch(e){ return; }
     var n=document.getElementById('cnav');
-    if(n&&!n.querySelector('.otra-app')) n.insertAdjacentHTML('beforeend','<a class="otra-app" href="../resistencia/">🏃 Ir a Resistencia</a>');
+    var esAdmin=S.perfil.rol==="admin";
+    if(n&&!n.querySelector('.otra-app')) n.insertAdjacentHTML('beforeend',esAdmin?'<a class="otra-app" href="../resistencia/">🏃 Planificar resistencia</a>':'<a class="otra-app" href="../resistencia/#strava">🔗 Strava y mis zonas</a>');
   }
   var app=document.getElementById('app');
   if(app&&window.MutationObserver) new MutationObserver(ponerOtraApp).observe(app,{childList:true,subtree:true});
