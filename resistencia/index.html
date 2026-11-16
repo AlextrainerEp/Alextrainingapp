@@ -264,6 +264,7 @@ body:has(#login:not(.oculto)) #login input:not([type=checkbox]){margin:0 0 8px}
 body:has(#login:not(.oculto)) #login label,body:has(#login:not(.oculto)) #login .muted,body:has(#login:not(.oculto)) #login .link,body:has(#login:not(.oculto)) #login .ver{color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.9)}
 body:has(#login:not(.oculto)) #login .row{margin-top:2px}
 .texto-claro .tl{margin:3px 0}
+html.embed,html.embed body{min-height:0!important;height:auto!important}
 html.embed body{background:transparent!important;padding:0!important}
 html.embed .fondo,html.embed #hdr,html.embed #tabs-t,html.embed #tabs-a,html.embed #badge-admin,html.embed #btn-menu{display:none!important}
 html.embed main{margin:0!important;padding:0!important;max-width:none!important;left:0!important}
@@ -742,7 +743,17 @@ const EMBED = new URLSearchParams(location.search).has('embed');
 const PARAMS_EMBED = new URLSearchParams(location.search);
 if (EMBED) {
   document.documentElement.classList.add('embed');
-  const avisarAltura = () => { try { parent.postMessage({ alexAltura: document.documentElement.scrollHeight }, location.origin); } catch (e) {} };
+  // Se mide solo el contenido (no la ventana), para que el recuadro no crezca sin fin
+  let ultimaAltura = 0;
+  const avisarAltura = () => {
+    try {
+      const cajas = [document.querySelector('main'), ...document.querySelectorAll('.modal:not(.oculto) .modal-caja, .mf-card, .banner-mover')].filter(Boolean);
+      const h = Math.ceil(Math.max(0, ...cajas.map(el => el.getBoundingClientRect().bottom + window.scrollY)));
+      if (Math.abs(h - ultimaAltura) < 3) return;
+      ultimaAltura = h;
+      parent.postMessage({ alexAltura: h }, location.origin);
+    } catch (e) {}
+  };
   window.addEventListener('load', avisarAltura);
   if (window.ResizeObserver) new ResizeObserver(avisarAltura).observe(document.documentElement);
   setInterval(avisarAltura, 1500);
