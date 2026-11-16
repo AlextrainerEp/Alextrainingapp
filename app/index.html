@@ -358,6 +358,15 @@ html.oscuro .stat{background:rgba(43,49,55,.55)}
 
 /* ---- Calendario fijo arriba para poder arrastrar sesiones desde la lista (móvil y ordenador) ---- */
 .cal-wrap{position:sticky;top:6px;z-index:20;box-shadow:0 4px 12px rgba(0,0,0,.18)}
+/* Calendario oculto: barra pequeña con el día elegido y saltos al entreno anterior/siguiente */
+.cal-mini{display:flex;align-items:center;gap:8px;padding:8px!important}
+.cal-mini .sec{flex:0 0 auto;min-width:44px;font-size:20px;line-height:1;padding:8px 12px;margin:0}
+.cal-mini-ver{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;margin:0;padding:6px 8px;background:rgba(255,255,255,.85);border:1px solid #bbb;border-radius:8px;color:#1d1f21;cursor:pointer;font-size:15px}
+.cal-mini-ver span{font-size:12px;color:#666}
+.cal-ocultar{display:block;margin:10px 0 0 auto;font-size:13px;padding:6px 12px}
+.dia-tit{scroll-margin-top:100px}
+/* Móvil en horizontal o pantallas bajas: el calendario completo no se queda fijo tapando el entreno */
+@media (max-height:600px){.cal-wrap:not(.cal-mini){position:static!important;box-shadow:none}}
 
 /* ---- Pantalla de acceso: sin el logo de fondo, así no se superpone con el logo de login ---- */
 body:not(.cli) .fondo{background-size:min(70vw,460px) auto;background-repeat:no-repeat;background-position:center 36px}
@@ -1546,9 +1555,20 @@ async function leerExcelResistencia(file){
     const ws=libro.Sheets[nombreHoja]; if(!ws["!ref"]) continue;
     const m=XLSX.utils.sheet_to_json(ws,{header:1,defval:"",raw:true});
     const visto=XLSX.utils.sheet_to_json(ws,{header:1,defval:"",raw:false});
-    const cab=m.slice(0,20).findIndex(f=>f.some(esF)&&f.some(c=>sinAc(c).startsWith("tipo")));
+    // La plantilla de fuerza de siempre nunca es de resistencia
+    try{ if(leerPlantilla(ws).length) continue; }catch(e){}
+    const cab=m.slice(0,20).findIndex(f=>f.some(esF)&&f.filter(c=>String(c).trim()!=="").length>=2);
     if(cab<0) continue;
-    if(m[cab].some(c=>sinAc(c)==="ejercicio")) continue;
+    if(m[cab].some(c=>/^ejercicios?$/.test(sinAc(c)))) continue;
+    // ¿Es de resistencia? Tiene columna «Tipo», o el contenido habla de rodajes, series, ritmos, km… y no de ejercicios de gimnasio
+    const tieneTipo=m[cab].some(c=>sinAc(c).startsWith("tipo"));
+    if(!tieneTipo){
+      const texto=sinAc(visto.slice(cab+1).map(f=>f.join(" ")).join(" "));
+      const cuenta=re=>(texto.match(re)||[]).length;
+      const run=cuenta(/\b(rodaje|rodajes|series de|tirada|fartlek|cuestas?|ritmo|ritmos|z[1-5]\b|zona [1-5]|km\b|kms\b|min\/km|\/km|carrera|trail|trote|bici|ciclismo|rodillo|umbral|tempo run|progresivo|ppm|pulsaciones|continua|vo2|aerobic[oa]|desnivel)/g);
+      const fuerza=cuenta(/\b(sentadilla|press|peso muerto|remo|dominadas?|zancadas?|hip thrust|curl|plancha|kettlebell|mancuernas?|barra|rir|goblet|jalon|fondos|gemelos|core)\b/g);
+      if(!(run>=2&&run>fuerza)) continue;
+    }
     esRes=true;
     const titulos=m[cab].map(c=>String(c??"").trim());
     m.slice(cab+1).forEach((f,n)=>{
@@ -1825,6 +1845,9 @@ async function tabCalendario(clienteId,puedeMover,host="#tab"){
 
 
 /* ---------- Entrenamientos del cliente: calendario + día seleccionado ---------- */
+// El calendario se puede ocultar (en móvil se oculta solo al elegir un día con entreno) y se recuerda
+let CAL_OCULTO=false;
+const pantallaPequena=()=>window.innerWidth<760||window.innerHeight<720;
 async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false){
   const [todas,resis]=await Promise.all([db("GET","sesiones",`?cliente_id=eq.${clienteId}&order=created_at.desc&select=*`),sesionesResistencia(clienteId)]);
   let zonasRes=[];
@@ -1912,22 +1935,44 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false){
           <div class="row"><button class="danger" data-borrarvarias>Borrar</button><button class="sec" data-cerrarborrado>Cancelar</button></div>
           <div class="msg" id="bMsg"></div></div>`:""}`:""}
       <div class="resumen"><div><b>${pend}</b><small>pendientes</small></div><div><b>${hechas}</b><small>completadas</small></div><div><b>${proxTxt}</b><small>próximo entreno</small></div></div>
-      <div class="cal-wrap card">
+      ${CAL_OCULTO&&!modoSel?`<div class="cal-wrap card cal-mini">
+        <button class="sec" data-diaant title="Entreno anterior" aria-label="Entreno anterior">‹</button>
+        <button class="cal-mini-ver" data-calver>📅 <b>${+ad} ${MESES_CAL[+am-1]}</b><span>Ver calendario ▼</span></button>
+        <button class="sec" data-diasig title="Entreno siguiente" aria-label="Entreno siguiente">›</button>
+      </div>`:`<div class="cal-wrap card">
         <div class="cal-head"><button class="sec" data-prev>‹</button><b>${MESES_CAL[mo]} ${y}</b><button class="sec" data-next>›</button></div>
         <div class="cal-grid">${DIAS_SEM.map(d=>`<div class="cal-dh">${d}</div>`).join("")}${celdas.join("")}</div>
         ${resis.length?resLeyenda(resis):""}
-      </div>
+        ${modoSel?"":`<button class="sec cal-ocultar" data-calocultar>▲ Ocultar calendario</button>`}
+      </div>`}
       <h2 class="dia-tit">${+ad} de ${MESES_CAL[+am-1]}</h2>
       ${delDia.length?delDia.map(s=>s._res?resTarjeta(s,admin,zonasRes):tarjeta(s,delDia.length===1)).join(""):'<p class="muted">Día sin entrenamiento. Toca otro día del calendario.</p>'}
       ${sinFecha.length?`<details class="card"><summary><b>Sin fecha (${sinFecha.length})</b></summary>${sinFecha.map(s=>tarjeta(s,false)).join("")}</details>`:""}`;
-    cont.querySelector("[data-prev]").onclick=()=>{mes=new Date(y,mo-1,1);pintar()};
-    cont.querySelector("[data-next]").onclick=()=>{mes=new Date(y,mo+1,1);pintar()};
+    const irTitulo=()=>{const t=cont.querySelector(".dia-tit");if(t)t.scrollIntoView({block:"start",behavior:"smooth"})};
+    if(cont.querySelector("[data-prev]")){
+      cont.querySelector("[data-prev]").onclick=()=>{mes=new Date(y,mo-1,1);pintar()};
+      cont.querySelector("[data-next]").onclick=()=>{mes=new Date(y,mo+1,1);pintar()};
+    }
+    const oc=cont.querySelector("[data-calocultar]"); if(oc) oc.onclick=()=>{CAL_OCULTO=true;pintar();irTitulo()};
+    const cv=cont.querySelector("[data-calver]"); if(cv) cv.onclick=()=>{CAL_OCULTO=false;pintar()};
+    // ‹ › en la barra pequeña: salta al entreno anterior o siguiente
+    const saltar=dir=>{
+      const dias=[...porDia.keys()].filter(k=>(porDia.get(k)||[]).length).sort();
+      const k=dir<0?dias.filter(d=>d<diaSel).pop():dias.find(d=>d>diaSel);
+      if(!k){aviso=dir<0?"No hay entrenos anteriores":"No hay más entrenos programados";pintar();return}
+      diaSel=k;const [yy,mm]=k.split("-");mes=new Date(+yy,+mm-1,1);pintar();
+    };
+    const da=cont.querySelector("[data-diaant]"); if(da) da.onclick=()=>saltar(-1);
+    const ds=cont.querySelector("[data-diasig]"); if(ds) ds.onclick=()=>saltar(1);
     cont.querySelectorAll("[data-dia]").forEach(b=>b.onclick=()=>{
       if(modoSel){const k=b.dataset.dia;if(!(porDia.get(k)||[]).length)return;selDias.has(k)?selDias.delete(k):selDias.add(k);pintar();return}
-      diaSel=b.dataset.dia;pintar()});
+      diaSel=b.dataset.dia;
+      const conEntreno=(porDia.get(diaSel)||[]).length>0;
+      if(conEntreno&&pantallaPequena()){CAL_OCULTO=true;pintar();irTitulo();return}
+      pintar()});
     if(admin){
       const q=sel=>cont.querySelector(sel);
-      q("[data-selmodo]").onclick=()=>{modoSel=!modoSel;selDias.clear();verBorrado=false;pintar()};
+      q("[data-selmodo]").onclick=()=>{modoSel=!modoSel;selDias.clear();verBorrado=false;if(modoSel)CAL_OCULTO=false;pintar()};
       q("[data-borrado]").onclick=()=>{verBorrado=!verBorrado;modoSel=false;selDias.clear();pintar()};
       if(modoSel){
         q("[data-cancelsel]").onclick=()=>{modoSel=false;selDias.clear();pintar()};
