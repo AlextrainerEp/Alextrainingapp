@@ -1064,7 +1064,7 @@ function sesionHTML(s,editable,conLeyenda=editable){
     </div>`}).join("");
   }).join("");
   const hayObj=grupos.some(g=>g.items.some(({x})=>{const e=normEj(x);return e.rir||e.rpe}));
-  return bloques+(hayObj?`<p class="obj-ayuda">En <b>RIR</b> y <b>RPE</b> ves en gris el <b>objetivo</b> que te marca tu entrenador. Tócalo para apuntar lo que has hecho de verdad.</p>`:"")+`<div class="rpe-tot"><b>RPE total del entrenamiento</b><div class="rpe-tot-pick">${pick("s","rpe",(R.s||{}).rpe,true,editable)}</div></div><div class="muted" style="margin-top:10px">Comentario del entrenamiento</div><textarea data-k="s" data-f="com" placeholder="Cómo ha ido la sesión" rows="2" ${dis}>${esc((R.s||{}).com)}</textarea>${conLeyenda?`<div style="margin-top:12px">${leyendaRPE()}</div>`:""}`;
+  return bloques+(hayObj?`<p class="obj-ayuda">En <b>RIR</b> y <b>RPE</b> ves en gris el <b>objetivo</b> que te marca tu entrenador. Tócalo para apuntar lo que has hecho de verdad.</p>`:"")+`<div class="rpe-tot"><b>RPE total del entrenamiento</b><div class="rpe-tot-pick">${pick("s","rpe",(R.s||{}).rpe,true,editable)}</div></div><div class="rpe-tot"><b>Duración del entrenamiento (min)</b><div class="rpe-tot-pick"><input data-k="s" data-f="min" inputmode="numeric" placeholder="min" value="${esc((R.s||{}).min??"")}" ${dis} style="margin:0;text-align:center;font-weight:700"></div></div><div class="muted" style="margin-top:10px">Comentario del entrenamiento</div><textarea data-k="s" data-f="com" placeholder="Cómo ha ido la sesión" rows="2" ${dis}>${esc((R.s||{}).com)}</textarea>${conLeyenda?`<div style="margin-top:12px">${leyendaRPE()}</div>`:""}`;
 }
 function leerRegistro(raiz){
   const reg={};
@@ -1303,7 +1303,7 @@ async function fichaCliente(id){
   const [c]=await db("GET","perfiles",`?id=eq.${id}&select=*`);
   const ses=await db("GET","sesiones",`?cliente_id=eq.${id}&order=created_at.desc&select=*`);
   shell(`<div id="tab"></div>`,c);
-  $("#cnav").innerHTML=`<button id="volver">← Clientes</button><button id="ta" class="on">Entrenamientos</button><button id="tr">🏃 Resistencia</button><button id="tb">Anamnesis</button><button id="tc">Historial</button><button id="td">Mensajes<span class="badge-msg" data-bc="${id}"></span></button>`;
+  $("#cnav").innerHTML=`<button id="volver">← Clientes</button><button id="ta" class="on">Entrenamientos</button><button id="tr">🏃 Resistencia</button><button id="tf">📈 Carga</button><button id="tb">Anamnesis</button><button id="tc">Historial</button><button id="td">Mensajes<span class="badge-msg" data-bc="${id}"></span></button>`;
   $("#volver").onclick=listaClientes;
 
   const verEntrenos=()=>{
@@ -1361,7 +1361,8 @@ async function fichaCliente(id){
     if(!modulosDe(c).includes("resistencia")){$("#tab").innerHTML=`<div class="card"><h3>Resistencia</h3><p class="muted">${esc(c.nombre||"Este cliente")} no tiene activado el apartado de Resistencia. Actívalo en Entrenamientos → «Apartados de la app».</p></div>`;return}
     embebido("#tab","atleta="+id);
   };
-  pestanas(["ta","tr","tb","tc","td"],[verEntrenos,verRes,verAnam,verHist,verMsgs]);
+  const verCarga=()=>tabCarga("#tab",id,c.nombre);
+  pestanas(["ta","tr","tf","tb","tc","td"],[verEntrenos,verRes,verCarga,verAnam,verHist,verMsgs]);
   verEntrenos();
   refrescarBadges();
 }
@@ -3028,6 +3029,911 @@ colocarAcceso();
   var app=document.getElementById('app');
   if(app&&window.MutationObserver) new MutationObserver(ponerOtraApp).observe(app,{childList:true,subtree:true});
 })();
+</script>
+<style>
+/* ===== Control de carga (ECOs + sRPE): integrado con la apariencia de la app ===== */
+html:not(.oscuro) body .atl-carga{color-scheme:light;--surface:rgba(255,255,255,.62);--plane:rgba(255,255,255,.85);--ink:#1d1f21;--ink2:#52514e;--muted:#6f6d68;--grid:rgba(0,0,0,.08);--axis:#b9b8b0;--ring:rgba(0,0,0,.08);
+--s-real:#2a78d6;--s-plan:#eb6834;--s-res:#1baf7a;--s-fza:#eda100;--band:rgba(42,120,214,.12);--good-text:#006300}
+html.oscuro body .atl-carga{color-scheme:dark;--surface:rgba(38,43,48,.88);--plane:#2b3137;--ink:#e4e7ea;--ink2:#c3c2b7;--muted:#9aa3ab;--grid:#2f353b;--axis:#454b51;--ring:rgba(255,255,255,.10);
+--s-real:#3987e5;--s-plan:#d95926;--s-res:#199e70;--s-fza:#c98500;--band:rgba(57,135,229,.18);--good-text:#0ca30c}
+.atl-carga label{display:inline}
+.atl-carga input,.atl-carga select{width:auto;margin:0}
+.atl-carga th,.atl-carga td{vertical-align:middle}
+.atl-carga .seg button{border-radius:0;padding:6px 10px}
+.atl-carga .tip{backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+html:not(.oscuro) body .atl-carga .tip{background:rgba(255,255,255,.95)}
+html.oscuro body .atl-carga .tip{background:#262b30}
+.atl-carga .nota-datos{font-size:12px}
+</style>
+<script>
+/* =====================================================================
+ * Alex Training Lab · Módulo de CARGA (motor de cálculo)
+ * ECOs (Cejuela y Esteve-Lanao) + sRPE (Foster) + métricas de control.
+ * Sin dependencias. Se expone como window.ATLCarga (y module.exports en Node).
+ * ===================================================================== */
+(function (global) {
+  'use strict';
+
+  // ---------- Escala ECOs (valor por minuto en cada zona) ----------
+  const ZONAS = [
+    { id: 'z1', valor: 1,  corto: 'Z1',  nombre: 'Por debajo de VT1',      ejemplo: 'Rodaje suave, calentamiento',  app: 'Z1' },
+    { id: 'z2', valor: 2,  corto: 'Z2',  nombre: 'Umbral aeróbico (VT1)',  ejemplo: 'Rodaje medio, tirada larga',   app: 'Z2' },
+    { id: 'z3', valor: 3,  corto: 'Z3',  nombre: 'Entre umbrales',         ejemplo: 'Ritmo maratón',                app: 'Z3' },
+    { id: 'z4', valor: 4,  corto: 'Z4',  nombre: 'Umbral anaeróbico (VT2)',ejemplo: 'Continuo a umbral, ritmo media', app: 'Z4' },
+    { id: 'z5', valor: 6,  corto: 'Z5a', nombre: 'VT2 – VAM',              ejemplo: 'Series 3–5 min (ritmo 5–10K)', app: 'Z5' },
+    { id: 'z6', valor: 9,  corto: 'Z5b', nombre: 'VAM / VO2máx',           ejemplo: 'Series a VAM',                 app: 'Z5' },
+    { id: 'z7', valor: 15, corto: 'Z6',  nombre: 'Capacidad láctica',      ejemplo: 'Series anaeróbicas largas',    app: '—'  },
+    { id: 'z8', valor: 50, corto: 'Z7',  nombre: 'Potencia láctica',       ejemplo: 'Esfuerzos máximos cortos',     app: '—'  }
+  ];
+
+  // Coeficiente por deporte (carrera = referencia). Fuerza no tiene ECOs: se controla con sRPE.
+  const DEPORTES = {
+    carrera:  { nombre: 'Carrera',  coef: 1 },
+    trail:    { nombre: 'Trail',    coef: 1 },     // en trail, zonas por FC (no por ritmo)
+    ciclismo: { nombre: 'Ciclismo', coef: 0.5 },
+    natacion: { nombre: 'Natación', coef: 0.75 },
+    fuerza:   { nombre: 'Fuerza',   coef: null },
+    otro:     { nombre: 'Otro',     coef: null }
+  };
+
+  // Umbrales orientativos (coinciden con el Método ATL: subidas ≤10–15 %/sem, A:C 0,8–1,3, descarga cada 3–4 sem)
+  const UMBRALES = {
+    subidaSemanalMax: 0.15,
+    acMin: 0.8, acMax: 1.3, acAlto: 1.5,
+    monotoniaMax: 2.0,
+    costeSubida: 0.15,            // sRPE/ECO > 15 % sobre su media de 4 semanas → fatiga
+    cumplimientoMin: 0.8, cumplimientoMax: 1.15,
+    semanasSubiendoParaDescarga: 3
+  };
+
+  // ---------- utilidades de fecha (siempre en local, formato AAAA-MM-DD) ----------
+  const pad = n => String(n).padStart(2, '0');
+  const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const parse = s => { const [y, m, d] = String(s).slice(0, 10).split('-').map(Number); return new Date(y, m - 1, d); };
+  const sumarDias = (s, n) => { const d = parse(s); d.setDate(d.getDate() + n); return iso(d); };
+  const lunes = s => { const d = parse(s); const wd = (d.getDay() + 6) % 7; d.setDate(d.getDate() - wd); return iso(d); };
+  const hoyISO = () => iso(new Date());
+  const r1 = x => (x == null || !isFinite(x)) ? null : Math.round(x * 10) / 10;
+  const r2 = x => (x == null || !isFinite(x)) ? null : Math.round(x * 100) / 100;
+
+  // ---------- cálculos por sesión ----------
+  function calcularECOs(minutosZona, deporte) {
+    const coef = (DEPORTES[deporte] || DEPORTES.carrera).coef;
+    if (coef == null) return null;
+    let base = 0;
+    for (const z of ZONAS) base += (Number(minutosZona && minutosZona[z.id]) || 0) * z.valor;
+    return r1(base * coef);
+  }
+
+  function calcularSRPE(duracionMin, rpe) {
+    if (rpe == null || rpe === '') return null;
+    return r1((Number(duracionMin) || 0) * Number(rpe));
+  }
+
+  function minutosTotales(minutosZona) {
+    return ZONAS.reduce((a, z) => a + (Number(minutosZona && minutosZona[z.id]) || 0), 0);
+  }
+
+  /** Completa ecos/srpe de una sesión (no muta el original). */
+  function normalizarSesion(s) {
+    const out = Object.assign({ estado: 'realizada', deporte: 'carrera', minutos_zona: {} }, s);
+    if (!out.duracion_min) out.duracion_min = minutosTotales(out.minutos_zona);
+    // Recalcula ECOs si no vienen y hay minutos por zona (sin zonas, p. ej. Strava sin FC, quedan en null)
+    if (out.ecos == null) out.ecos = minutosTotales(out.minutos_zona) > 0 ? calcularECOs(out.minutos_zona, out.deporte) : null;
+    out.srpe = calcularSRPE(out.duracion_min, out.rpe);
+    return out;
+  }
+
+  // ---------- series diarias ----------
+  /** Devuelve [{fecha, valor}] día a día entre desde y hasta (ambos incluidos), con 0 en días sin sesión. */
+  function serieDiaria(sesiones, desde, hasta, campo = 'srpe', estado = 'realizada') {
+    const mapa = {};
+    for (const s of sesiones) {
+      if (s.estado !== estado) continue;
+      const v = Number(s[campo]);
+      if (!isFinite(v)) continue;
+      const f = String(s.fecha).slice(0, 10);
+      mapa[f] = (mapa[f] || 0) + v;
+    }
+    const out = [];
+    for (let f = desde; f <= hasta; f = sumarDias(f, 1)) out.push({ fecha: f, valor: mapa[f] || 0 });
+    return out;
+  }
+
+  const media = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
+  const desv = a => { if (a.length < 2) return 0; const m = media(a); return Math.sqrt(a.reduce((s, x) => s + (x - m) ** 2, 0) / (a.length - 1)); };
+
+  // ---------- resumen semanal (lunes a domingo) ----------
+  function resumenSemanal(sesiones, { semanas = 12, hasta = hoyISO() } = {}) {
+    const ses = sesiones.map(normalizarSesion);
+    const ultimoLunes = lunes(hasta);
+    const primerLunes = sumarDias(ultimoLunes, -7 * (semanas - 1));
+    const dSrpe = serieDiaria(ses, primerLunes, sumarDias(ultimoLunes, 6), 'srpe');
+    const out = [];
+    for (let i = 0; i < semanas; i++) {
+      const ini = sumarDias(primerLunes, 7 * i), fin = sumarDias(ini, 6);
+      const enSemana = ses.filter(s => s.fecha >= ini && s.fecha <= fin);
+      const real = enSemana.filter(s => s.estado === 'realizada');
+      const plan = enSemana.filter(s => s.estado === 'planificada');
+      const diarios = dSrpe.slice(i * 7, i * 7 + 7).map(d => d.valor);
+      const srpe = real.reduce((a, s) => a + (s.srpe || 0), 0);
+      const ecosReal = real.reduce((a, s) => a + (s.ecos || 0), 0);
+      const ecosPlan = plan.reduce((a, s) => a + (s.ecos || 0), 0);
+      const enCurso = hasta < fin;
+      // en la semana en curso, el cumplimiento se mide solo contra lo planificado hasta hoy
+      const ecosPlanHastaHoy = plan.filter(s => s.fecha <= hasta).reduce((a, s) => a + (s.ecos || 0), 0);
+      const ecosRealConPlan = real.filter(s => s.ecos != null).reduce((a, s) => a + s.ecos, 0);
+      const srpeConEcos = real.filter(s => s.ecos != null && s.srpe != null).reduce((a, s) => a + s.srpe, 0);
+      const sd = desv(diarios);
+      const monotonia = sd > 0 ? media(diarios) / sd : (srpe > 0 ? null : 0);
+      out.push({
+        semana: ini, fin,
+        sesiones: real.length, sesionesPlan: plan.length,
+        minutos: r1(real.reduce((a, s) => a + (Number(s.duracion_min) || 0), 0)),
+        km: r1(real.reduce((a, s) => a + (Number(s.distancia_km) || 0), 0)),
+        desnivel: Math.round(real.reduce((a, s) => a + (Number(s.desnivel_m) || 0), 0)),
+        ecosPlan: r1(ecosPlan), ecosReal: r1(ecosReal),
+        cumplimiento: ecosPlanHastaHoy > 0 ? r2(ecosRealConPlan / ecosPlanHastaHoy) : null,
+        enCurso,
+        srpe: r1(srpe),
+        srpeFuerza: r1(real.filter(s => s.deporte === 'fuerza').reduce((a, s) => a + (s.srpe || 0), 0)),
+        monotonia: r2(monotonia),
+        strain: monotonia == null ? null : Math.round(srpe * monotonia),
+        coste: ecosRealConPlan > 0 && srpeConEcos > 0 ? r2(srpeConEcos / ecosRealConPlan) : null, // UA de sRPE por cada ECO
+        variacion: null, sobreMax4: null
+      });
+    }
+    for (let i = 1; i < out.length; i++) {
+      if (out[i].enCurso) continue; // una semana a medias no se compara
+      const prev = out[i - 1].srpe, cur = out[i].srpe;
+      out[i].variacion = prev > 0 ? r2((cur - prev) / prev) : null;
+      // subida respecto a la semana más alta de las 4 anteriores (evita falsos avisos al volver de una descarga)
+      const max4 = Math.max(0, ...out.slice(Math.max(0, i - 4), i).map(w => w.srpe || 0));
+      out[i].sobreMax4 = max4 > 0 ? r2((cur - max4) / max4) : null;
+    }
+    return out;
+  }
+
+  // ---------- agudo:crónico y fitness/fatiga ----------
+  /** Ratio agudo:crónico diario. metodo 'media' (7 d / media de 4 semanas) o 'ewma'. */
+  function agudoCronico(diario, { metodo = 'ewma', aguda = 7, cronica = 28 } = {}) {
+    const out = [];
+    if (metodo === 'ewma') {
+      const la = 2 / (aguda + 1), lc = 2 / (cronica + 1);
+      let a = 0, c = 0;
+      diario.forEach((d, i) => {
+        a = d.valor * la + (1 - la) * a;
+        c = d.valor * lc + (1 - lc) * c;
+        out.push({ fecha: d.fecha, aguda: r1(a), cronica: r1(c), ratio: i >= cronica - 1 && c > 0 ? r2(a / c) : null });
+      });
+    } else {
+      diario.forEach((d, i) => {
+        if (i < cronica - 1) { out.push({ fecha: d.fecha, aguda: null, cronica: null, ratio: null }); return; }
+        const a = diario.slice(i - aguda + 1, i + 1).reduce((s, x) => s + x.valor, 0);
+        const c = diario.slice(i - cronica + 1, i + 1).reduce((s, x) => s + x.valor, 0) / (cronica / aguda);
+        out.push({ fecha: d.fecha, aguda: r1(a), cronica: r1(c), ratio: c > 0 ? r2(a / c) : null });
+      });
+    }
+    return out;
+  }
+
+  /** Modelo de Banister simplificado: forma (CTL 42 d), fatiga (ATL 7 d) y balance (TSB = CTL − ATL). */
+  function formaFatiga(diario, { ctl = 42, atl = 7 } = {}) {
+    let C = 0, A = 0;
+    const kc = 1 - Math.exp(-1 / ctl), ka = 1 - Math.exp(-1 / atl);
+    return diario.map(d => {
+      const tsb = C - A; // balance del día (antes de entrenar)
+      C = C + (d.valor - C) * kc;
+      A = A + (d.valor - A) * ka;
+      return { fecha: d.fecha, forma: r1(C), fatiga: r1(A), balance: r1(tsb) };
+    });
+  }
+
+  // ---------- alertas para el entrenador ----------
+  function alertas(semanal, ac, u = UMBRALES) {
+    const res = [];
+    const n = semanal.length;
+    if (!n) return res;
+    const enCurso = semanal[n - 1];
+    const iRef = enCurso.enCurso && n > 1 ? n - 2 : n - 1;   // métricas semanales: última semana completa
+    const act = semanal[iRef];
+    const ultimaRatio = [...ac].reverse().find(x => x.ratio != null);
+    const fmtPct = x => `${Math.round(x * 100)} %`;
+    const n2 = x => String(x).replace('.', ',');
+
+    if (act.sobreMax4 != null && act.sobreMax4 > u.subidaSemanalMax)
+      res.push({ nivel: 'alto', texto: `La semana pasada la carga superó en un ${fmtPct(act.sobreMax4)} a la semana más alta del último mes (máximo recomendado ${fmtPct(u.subidaSemanalMax)}).` });
+    if (ultimaRatio) {
+      if (ultimaRatio.ratio > u.acAlto) res.push({ nivel: 'alto', texto: `Ratio agudo:crónico de ${n2(ultimaRatio.ratio)}: pico brusco de carga. Conviene suavizar los próximos días.` });
+      else if (ultimaRatio.ratio > u.acMax) res.push({ nivel: 'medio', texto: `Ratio agudo:crónico de ${n2(ultimaRatio.ratio)}, por encima de ${n2(u.acMax)}. Vigila la recuperación.` });
+      else if (ultimaRatio.ratio < u.acMin) res.push({ nivel: 'info', texto: `Ratio agudo:crónico de ${n2(ultimaRatio.ratio)}: está entrenando por debajo de su base (bien si es descarga; si no, te quedas corto).` });
+    }
+    if (act.monotonia != null && act.monotonia > u.monotoniaMax)
+      res.push({ nivel: 'medio', texto: `Monotonía de ${n2(act.monotonia)} la semana pasada (> ${n2(u.monotoniaMax)}): todos los días se parecen demasiado. Alterna días duros y suaves.` });
+    const costesPrev = semanal.slice(Math.max(0, iRef - 4), iRef).map(s => s.coste).filter(x => x != null);
+    if (act.coste != null && costesPrev.length >= 2) {
+      const m = media(costesPrev);
+      if (act.coste > m * (1 + u.costeSubida))
+        res.push({ nivel: 'alto', texto: `La semana pasada, la misma carga objetiva le costó un ${fmtPct(act.coste / m - 1)} más (sRPE/ECO ${n2(act.coste)} frente a ${n2(r2(m))}): posible fatiga acumulada.` });
+      else if (act.coste < m * (1 - u.costeSubida))
+        res.push({ nivel: 'ok', texto: `La semana pasada le costó un ${fmtPct(1 - act.coste / m)} menos que su media para la misma carga: buena adaptación, puedes progresar.` });
+    }
+    const cu = enCurso.cumplimiento, cuTxt = enCurso.enCurso ? 'en lo que va de semana' : 'esta semana';
+    if (cu != null) {
+      if (cu < u.cumplimientoMin) res.push({ nivel: 'info', texto: `Ha completado el ${fmtPct(cu)} de los ECOs planificados ${cuTxt}.` });
+      else if (cu > u.cumplimientoMax) res.push({ nivel: 'medio', texto: `Ha hecho el ${fmtPct(cu)} de los ECOs planificados ${cuTxt}: se está pasando de lo previsto.` });
+    }
+    let subidas = 0;
+    for (let i = iRef; i > 0 && semanal[i].variacion != null && semanal[i].variacion > 0; i--) subidas++;
+    if (subidas >= u.semanasSubiendoParaDescarga)
+      res.push({ nivel: 'medio', texto: `Lleva ${subidas} semanas seguidas subiendo carga: toca planificar una semana de descarga.` });
+    if (!res.length) res.push({ nivel: 'ok', texto: 'Carga dentro de rangos. Sin avisos esta semana.' });
+    return res;
+  }
+
+  // ---------- Strava → sesión ----------
+  const MAPA_STRAVA = {
+    Run: 'carrera', VirtualRun: 'carrera', TrailRun: 'trail', Hike: 'trail',
+    Ride: 'ciclismo', VirtualRide: 'ciclismo', GravelRide: 'ciclismo', MountainBikeRide: 'ciclismo', EBikeRide: 'ciclismo',
+    Swim: 'natacion', WeightTraining: 'fuerza', Workout: 'fuerza', Crossfit: 'fuerza'
+  };
+
+  /** Límites superiores de FC (lpm) para z1..z5 a partir de FC reposo/máx (Karvonen). Editables por atleta. */
+  function limitesFCKarvonen(fcReposo, fcMax, pct = [0.70, 0.78, 0.85, 0.90, 0.95]) {
+    return pct.map(p => Math.round(fcReposo + (fcMax - fcReposo) * p));
+  }
+
+  /** Minutos por zona desde los streams de Strava (heartrate + time). Por encima del último límite → z6. */
+  function minutosZonaDesdeFC(fc, tiempo, limites) {
+    const mz = { z1: 0, z2: 0, z3: 0, z4: 0, z5: 0, z6: 0, z7: 0, z8: 0 };
+    if (!fc || !tiempo || fc.length !== tiempo.length) return mz;
+    for (let i = 1; i < fc.length; i++) {
+      const dt = Math.min(Math.max(tiempo[i] - tiempo[i - 1], 0), 30); // ignora pausas largas
+      const h = fc[i];
+      let k = limites.findIndex(l => h <= l);
+      if (k === -1) k = 5;
+      mz['z' + (k + 1)] += dt / 60;
+    }
+    for (const k in mz) mz[k] = r1(mz[k]);
+    return mz;
+  }
+
+  /** Convierte una actividad de Strava (DetailedActivity) en sesión del módulo. */
+  function sesionDesdeStrava(act, { atletaId, limitesFC, streams } = {}) {
+    const deporte = MAPA_STRAVA[act.sport_type || act.type] || 'otro';
+    const minutos = r1((act.moving_time || act.elapsed_time || 0) / 60);
+    let mz = {};
+    if (streams && streams.heartrate && streams.time && limitesFC)
+      mz = minutosZonaDesdeFC(streams.heartrate.data || streams.heartrate, streams.time.data || streams.time, limitesFC);
+    const tieneZonas = minutosTotales(mz) > 0;
+    return normalizarSesion({
+      atleta_id: atletaId,
+      fecha: String(act.start_date_local || act.start_date).slice(0, 10),
+      estado: 'realizada', origen: 'strava', strava_id: act.id,
+      deporte, titulo: act.name,
+      duracion_min: minutos,
+      minutos_zona: tieneZonas ? mz : {},                       // sin FC no se inventan ECOs (queda sRPE)
+      rpe: act.perceived_exertion != null ? Number(act.perceived_exertion) : null, // RPE que el atleta pone en Strava (1–10), si existe
+      distancia_km: act.distance ? r2(act.distance / 1000) : null,
+      desnivel_m: act.total_elevation_gain != null ? Math.round(act.total_elevation_gain) : null
+    });
+  }
+
+  const API = {
+    ZONAS, DEPORTES, UMBRALES, ESCALA_RPE: [
+      [0, 'Reposo'], [1, 'Muy, muy fácil'], [2, 'Fácil'], [3, 'Moderado'], [4, 'Algo duro'],
+      [5, 'Duro'], [6, ''], [7, 'Muy duro'], [8, ''], [9, ''], [10, 'Máximo']
+    ],
+    calcularECOs, calcularSRPE, minutosTotales, normalizarSesion,
+    serieDiaria, resumenSemanal, agudoCronico, formaFatiga, alertas,
+    limitesFCKarvonen, minutosZonaDesdeFC, sesionDesdeStrava,
+    fecha: { iso, parse, sumarDias, lunes, hoyISO }
+  };
+  if (typeof module !== 'undefined' && module.exports) module.exports = API;
+  global.ATLCarga = API;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* =====================================================================
+ * Alex Training Lab · Módulo de CARGA (interfaz)
+ * Requiere carga-core.js (window.ATLCarga). Sin dependencias.
+ *   ATLCargaUI.panelEntrenador(el, { sesiones, atleta, semanas, hasta, metodoAC })
+ *   ATLCargaUI.formularioRPE(el, { sesion, onGuardar })
+ *   ATLCargaUI.planificador(el, { atletaId, fecha, onGuardar })
+ *   ATLCargaUI.repositorioSupabase(supabaseClient)
+ * ===================================================================== */
+(function (global) {
+  'use strict';
+  const C = global.ATLCarga;
+  const NS = 'http://www.w3.org/2000/svg';
+
+  // ---------- estilos (una sola vez) ----------
+  const CSS = `
+.atl-carga{color-scheme:light;--surface:#fcfcfb;--plane:#f9f9f7;--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;
+--grid:#e1e0d9;--axis:#c3c2b7;--ring:rgba(11,11,11,.10);
+--s-real:#2a78d6;--s-plan:#eb6834;--s-res:#1baf7a;--s-fza:#eda100;--band:rgba(42,120,214,.10);
+--good:#0ca30c;--warn:#fab219;--serious:#ec835a;--crit:#d03b3b;--good-text:#006300;
+font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink)}
+@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])) .atl-carga{color-scheme:dark;--surface:#1a1a19;--plane:#0d0d0d;--ink:#f0efec;--ink2:#c3c2b7;--grid:#2c2c2a;--axis:#383835;--ring:rgba(255,255,255,.10);--s-real:#3987e5;--s-plan:#d95926;--s-res:#199e70;--s-fza:#c98500;--band:rgba(57,135,229,.16);--good-text:#0ca30c}}
+:root[data-theme="dark"] .atl-carga{color-scheme:dark;--surface:#1a1a19;--plane:#0d0d0d;--ink:#f0efec;--ink2:#c3c2b7;--grid:#2c2c2a;--axis:#383835;--ring:rgba(255,255,255,.10);--s-real:#3987e5;--s-plan:#d95926;--s-res:#199e70;--s-fza:#c98500;--band:rgba(57,135,229,.16);--good-text:#0ca30c}
+.atl-carga *{box-sizing:border-box}
+.atl-carga h2{font-size:18px;margin:0 0 4px}.atl-carga h3{font-size:15px;margin:0 0 2px}
+.atl-carga .sub{color:var(--ink2);font-size:13px;margin:0 0 12px}
+.atl-carga .card{background:var(--surface);border:1px solid var(--ring);border-radius:12px;padding:16px;margin-bottom:16px}
+.atl-carga .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.atl-carga .kpi{background:var(--surface);border:1px solid var(--ring);border-radius:12px;padding:12px 14px}
+.atl-carga .kpi .l{font-size:12px;color:var(--ink2)}.atl-carga .kpi .v{font-size:24px;font-weight:600;margin-top:2px}
+.atl-carga .kpi .d{font-size:12px;color:var(--muted)}
+.atl-carga .alertas{list-style:none;margin:0;padding:0}
+.atl-carga .alertas li{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-top:1px solid var(--grid)}
+.atl-carga .alertas li:first-child{border-top:0}
+.atl-carga .chip{flex:none;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;color:#fff;white-space:nowrap}
+.atl-carga .chip.alto{background:var(--crit)}.atl-carga .chip.medio{background:var(--warn);color:#0b0b0b}
+.atl-carga .chip.info{background:var(--axis);color:var(--ink)}.atl-carga .chip.ok{background:var(--good)}
+.atl-carga .legend{display:flex;gap:16px;font-size:12px;color:var(--ink2);margin:4px 0 6px}
+.atl-carga .legend span{display:inline-flex;align-items:center;gap:6px}
+.atl-carga .legend i{display:inline-block;width:10px;height:10px;border-radius:2px}
+.atl-carga .legend i.line{height:2px;width:14px;border-radius:1px}
+.atl-carga svg{display:block;width:100%;height:auto;overflow:visible}
+.atl-carga svg text{font-size:11px;fill:var(--muted)}
+.atl-carga .hit{fill:transparent;cursor:default}.atl-carga .hit:focus{outline:none}
+.atl-carga .bar{transition:opacity .1s}.atl-carga .grp:hover .bar,.atl-carga .grp:focus-within .bar{opacity:.8}
+.atl-carga .tip{position:fixed;pointer-events:none;z-index:50;background:var(--surface);color:var(--ink);border:1px solid var(--ring);
+border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 4px 16px rgba(0,0,0,.12);display:none;min-width:150px}
+.atl-carga .tip .t{color:var(--ink2);margin-bottom:4px}.atl-carga .tip .row{display:flex;align-items:center;gap:6px}
+.atl-carga .tip .row b{font-weight:600}.atl-carga .tip .row i{width:10px;height:2px;display:inline-block}
+.atl-carga .tip .row span{color:var(--ink2)}
+.atl-carga table{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+.atl-carga th,.atl-carga td{padding:6px 8px;text-align:right;border-bottom:1px solid var(--grid);white-space:nowrap}
+.atl-carga th{color:var(--ink2);font-weight:500}.atl-carga th:first-child,.atl-carga td:first-child{text-align:left}
+.atl-carga .tabla{overflow-x:auto}
+.atl-carga .warn{color:var(--crit);font-weight:600}
+.atl-carga .row2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+.atl-carga .row2 .card{margin-bottom:0}
+.atl-carga .seg{display:inline-flex;border:1px solid var(--ring);border-radius:8px;overflow:hidden}
+.atl-carga .seg button{border:0;background:transparent;color:var(--ink2);padding:5px 10px;font:inherit;font-size:12px;cursor:pointer}
+.atl-carga .seg button[aria-pressed="true"]{background:var(--plane);color:var(--ink);font-weight:600}
+.atl-carga .filtros{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:0}
+.atl-carga .cab-carga .sub{margin-bottom:8px}
+.atl-carga label{font-size:13px;color:var(--ink2)}
+.atl-carga input,.atl-carga select,.atl-carga textarea{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--axis);border-radius:8px;padding:6px 8px}
+.atl-carga input[type=range]{width:100%;padding:0;accent-color:var(--s-real)}
+.atl-carga .btn{font:inherit;font-weight:600;border:0;border-radius:8px;padding:9px 16px;background:var(--s-real);color:#fff;cursor:pointer}
+.atl-carga .rpe-num{font-size:40px;font-weight:600;text-align:center}.atl-carga .rpe-txt{text-align:center;color:var(--ink2);margin-bottom:8px}
+.atl-carga .zonas{display:grid;grid-template-columns:1fr 80px 50px;gap:6px 10px;align-items:center;font-size:13px}
+.atl-carga .zonas .zn{color:var(--ink)}.atl-carga .zonas .zx{color:var(--muted);font-size:12px}
+.atl-carga .total{display:flex;gap:20px;margin:12px 0;font-size:14px}.atl-carga .total b{font-size:20px}
+`;
+  function estilos() {
+    if (document.getElementById('atl-carga-css')) return;
+    const s = document.createElement('style'); s.id = 'atl-carga-css'; s.textContent = CSS; document.head.appendChild(s);
+  }
+
+  // ---------- helpers ----------
+  const h = (tag, attrs = {}, ...hijos) => {
+    const e = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v;
+      else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else if (v != null) e.setAttribute(k, v);
+    }
+    hijos.flat().forEach(x => x != null && e.append(x.nodeType ? x : document.createTextNode(String(x))));
+    return e;
+  };
+  const s = (tag, attrs = {}) => { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); return e; };
+  const fmt = (x, d = 0) => x == null ? '—' : Number(x).toLocaleString('es-ES', { maximumFractionDigits: d, minimumFractionDigits: d });
+  const fmtSem = iso => { const d = C.fecha.parse(iso); return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).replace('.', ''); };
+  const niceMax = v => { if (v <= 0) return 1; const p = 10 ** Math.floor(Math.log10(v)); const n = v / p; return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * p; };
+  // barra con esquinas superiores redondeadas (4px) y base recta
+  const barPath = (x, y, w, hgt, r = 4) => { if (hgt <= 0) return ''; r = Math.min(r, hgt, w / 2);
+    return `M${x},${y + hgt}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + hgt}Z`; };
+
+  function crearTooltip(raiz) {
+    const t = h('div', { class: 'tip', role: 'status' }); raiz.append(t);
+    return {
+      mostrar(ev, titulo, filas) {
+        t.replaceChildren(h('div', { class: 't', text: titulo }),
+          ...filas.map(f => h('div', { class: 'row' }, h('i', { style: `background:${f.color || 'var(--axis)'}` }), h('b', { text: f.valor }), h('span', { text: f.nombre }))));
+        t.style.display = 'block';
+        const r = ev.target.getBoundingClientRect ? ev.target.getBoundingClientRect() : { left: 0, top: 0, width: 0 };
+        const x = ev.clientX || (r.left + r.width / 2), y = ev.clientY || r.top;
+        const w = t.offsetWidth; t.style.left = Math.min(Math.max(8, x + 12), innerWidth - w - 8) + 'px'; t.style.top = Math.max(8, y - t.offsetHeight - 12) + 'px';
+      },
+      ocultar() { t.style.display = 'none'; }
+    };
+  }
+
+  // ---------- gráficas ----------
+  const W = 640, H = 220, M = { t: 10, r: 8, b: 26, l: 44 };
+
+  function ejes(svg, max, n, etiquetas, cada = 1) {
+    const ih = H - M.t - M.b;
+    for (let i = 0; i <= 4; i++) {
+      const v = max * i / 4, y = M.t + ih - ih * i / 4;
+      svg.append(s('line', { x1: M.l, x2: W - M.r, y1: y, y2: y, stroke: i ? 'var(--grid)' : 'var(--axis)', 'stroke-width': 1 }));
+      const t = s('text', { x: M.l - 6, y: y + 4, 'text-anchor': 'end' }); t.textContent = fmt(v); svg.append(t);
+    }
+    const iw = (W - M.l - M.r) / n;
+    etiquetas.forEach((e, i) => { if (i % cada) return; const t = s('text', { x: M.l + iw * i + iw / 2, y: H - 8, 'text-anchor': 'middle' }); t.textContent = e; svg.append(t); });
+    return { ih, iw };
+  }
+
+  /** Barras agrupadas (series lado a lado) por semana. */
+  function barrasAgrupadas(datos, series, tip, titulo) {
+    const svg = s('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': titulo });
+    const max = niceMax(Math.max(1, ...datos.flatMap(d => series.map(x => d[x.key] || 0))));
+    const { ih, iw } = ejes(svg, max, datos.length, datos.map(d => fmtSem(d.semana)), datos.length > 8 ? 2 : 1);
+    const bw = Math.min(24, (iw * 0.7 - 2 * (series.length - 1)) / series.length);
+    datos.forEach((d, i) => {
+      const g = s('g', { class: 'grp' });
+      const x0 = M.l + iw * i + (iw - (bw * series.length + 2 * (series.length - 1))) / 2;
+      series.forEach((se, k) => {
+        const v = d[se.key] || 0, bh = ih * v / max;
+        g.append(s('path', { class: 'bar', d: barPath(x0 + k * (bw + 2), M.t + ih - bh, bw, bh), fill: se.color }));
+      });
+      const hit = s('rect', { class: 'hit', x: M.l + iw * i, y: M.t, width: iw, height: ih, tabindex: 0 });
+      const show = ev => tip.mostrar(ev, `Semana del ${fmtSem(d.semana)}`, series.map(se => ({ color: se.color, valor: fmt(d[se.key]), nombre: se.label })));
+      hit.addEventListener('pointermove', show); hit.addEventListener('focus', show);
+      hit.addEventListener('pointerleave', tip.ocultar); hit.addEventListener('blur', tip.ocultar);
+      g.append(hit); svg.append(g);
+    });
+    return svg;
+  }
+
+  /** Barras apiladas por semana. */
+  function barrasApiladas(datos, series, tip, titulo) {
+    const svg = s('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': titulo });
+    const max = niceMax(Math.max(1, ...datos.map(d => series.reduce((a, x) => a + (d[x.key] || 0), 0))));
+    const { ih, iw } = ejes(svg, max, datos.length, datos.map(d => fmtSem(d.semana)), datos.length > 8 ? 2 : 1);
+    const bw = Math.min(24, iw * 0.6);
+    datos.forEach((d, i) => {
+      const g = s('g', { class: 'grp' }); const x = M.l + iw * i + (iw - bw) / 2;
+      let acc = 0; const vis = series.filter(se => (d[se.key] || 0) > 0);
+      vis.forEach((se, k) => {
+        const v = d[se.key], bh = ih * v / max, y = M.t + ih - ih * (acc + v) / max;
+        const top = k === vis.length - 1;
+        const hh = Math.max(0, bh - (k > 0 ? 2 : 0)); // 2px de separación entre segmentos
+        g.append(s(top ? 'path' : 'rect', top ? { class: 'bar', d: barPath(x, y, bw, hh), fill: se.color } : { class: 'bar', x, y, width: bw, height: hh, fill: se.color }));
+        acc += v;
+      });
+      const hit = s('rect', { class: 'hit', x: M.l + iw * i, y: M.t, width: iw, height: ih, tabindex: 0 });
+      const show = ev => tip.mostrar(ev, `Semana del ${fmtSem(d.semana)}`, [
+        ...series.map(se => ({ color: se.color, valor: fmt(d[se.key]), nombre: se.label })),
+        { valor: fmt(series.reduce((a, se) => a + (d[se.key] || 0), 0)), nombre: 'Total' }]);
+      hit.addEventListener('pointermove', show); hit.addEventListener('focus', show);
+      hit.addEventListener('pointerleave', tip.ocultar); hit.addEventListener('blur', tip.ocultar);
+      g.append(hit); svg.append(g);
+    });
+    return svg;
+  }
+
+  /** Línea del ratio agudo:crónico con la franja 0,8–1,3 sombreada. */
+  function lineaRatio(datos, tip, u = C.UMBRALES) {
+    const W = 1000, H = 240;
+    const svg = s('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Ratio agudo:crónico diario' });
+    const vals = datos.map(d => d.ratio).filter(v => v != null);
+    const max = Math.max(2, Math.ceil(Math.max(0, ...vals) * 2) / 2);
+    const ih = H - M.t - M.b, iw = W - M.l - M.r, n = datos.length;
+    const X = i => M.l + (n > 1 ? iw * i / (n - 1) : iw / 2), Y = v => M.t + ih - ih * v / max;
+    svg.append(s('rect', { x: M.l, y: Y(u.acMax), width: iw, height: Y(u.acMin) - Y(u.acMax), fill: 'var(--band)' }));
+    for (let v = 0; v <= max + 1e-9; v += 0.5) {
+      svg.append(s('line', { x1: M.l, x2: W - M.r, y1: Y(v), y2: Y(v), stroke: v ? 'var(--grid)' : 'var(--axis)' }));
+      const t = s('text', { x: M.l - 6, y: Y(v) + 4, 'text-anchor': 'end' }); t.textContent = fmt(v, 1); svg.append(t);
+    }
+    const paso = Math.ceil(n / 8);
+    datos.forEach((d, i) => { if (i % paso) return; const t = s('text', { x: X(i), y: H - 8, 'text-anchor': 'middle' }); t.textContent = fmtSem(d.fecha); svg.append(t); });
+    let dstr = '', on = false;
+    datos.forEach((d, i) => { if (d.ratio == null) { on = false; return; } dstr += (on ? 'L' : 'M') + X(i) + ',' + Y(Math.min(d.ratio, max)); on = true; });
+    svg.append(s('path', { d: dstr, fill: 'none', stroke: 'var(--s-real)', 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+    const ult = [...datos.keys()].reverse().find(i => datos[i].ratio != null);
+    if (ult != null) {
+      svg.append(s('circle', { cx: X(ult), cy: Y(Math.min(datos[ult].ratio, max)), r: 4, fill: 'var(--s-real)', stroke: 'var(--surface)', 'stroke-width': 2 }));
+      const t = s('text', { x: X(ult) - 6, y: Y(Math.min(datos[ult].ratio, max)) - 8, 'text-anchor': 'end', style: 'fill:var(--ink);font-weight:600' }); t.textContent = fmt(datos[ult].ratio, 2); svg.append(t);
+    }
+    const cross = s('line', { y1: M.t, y2: M.t + ih, stroke: 'var(--axis)', visibility: 'hidden' }); svg.append(cross);
+    const dot = s('circle', { r: 4, fill: 'var(--s-real)', stroke: 'var(--surface)', 'stroke-width': 2, visibility: 'hidden' }); svg.append(dot);
+    const hit = s('rect', { class: 'hit', x: M.l, y: M.t, width: iw, height: ih, tabindex: 0 });
+    const show = (ev, iForzado) => {
+      let i = iForzado;
+      if (i == null) { const pt = svg.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY; const p = pt.matrixTransform(svg.getScreenCTM().inverse()); i = Math.round((p.x - M.l) / iw * (n - 1)); }
+      i = Math.max(0, Math.min(n - 1, i)); const d = datos[i];
+      cross.setAttribute('x1', X(i)); cross.setAttribute('x2', X(i)); cross.setAttribute('visibility', 'visible');
+      if (d.ratio != null) { dot.setAttribute('cx', X(i)); dot.setAttribute('cy', Y(Math.min(d.ratio, max))); dot.setAttribute('visibility', 'visible'); } else dot.setAttribute('visibility', 'hidden');
+      tip.mostrar(ev, C.fecha.parse(d.fecha).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }), [
+        { color: 'var(--s-real)', valor: fmt(d.ratio, 2), nombre: 'Ratio agudo:crónico' },
+        { valor: fmt(d.aguda), nombre: 'Carga aguda (sRPE)' }, { valor: fmt(d.cronica), nombre: 'Carga crónica (sRPE)' }]);
+    };
+    hit.addEventListener('pointermove', e => show(e)); hit.addEventListener('focus', e => show(e, ult));
+    const hide = () => { tip.ocultar(); cross.setAttribute('visibility', 'hidden'); dot.setAttribute('visibility', 'hidden'); };
+    hit.addEventListener('pointerleave', hide); hit.addEventListener('blur', hide);
+    svg.append(hit);
+    return svg;
+  }
+
+  const leyenda = items => h('div', { class: 'legend' }, items.map(it => h('span', {}, h('i', { class: it.linea ? 'line' : '', style: `background:${it.color}` }), it.label)));
+
+  // ---------- PANEL DEL ENTRENADOR ----------
+  function panelEntrenador(el, opts) {
+    estilos();
+    const estado = Object.assign({ semanas: 12, hasta: C.fecha.hoyISO(), metodoAC: 'ewma' }, opts);
+    const raiz = h('div', { class: 'atl-carga' }); el.replaceChildren(raiz);
+    const tip = crearTooltip(raiz);
+
+    function pintar() {
+      const sesiones = estado.sesiones.map(C.normalizarSesion);
+      const sem = C.resumenSemanal(sesiones, { semanas: estado.semanas, hasta: estado.hasta });
+      const desde = C.fecha.sumarDias(sem[0].semana, -56); // historial extra para la carga crónica
+      const diario = C.serieDiaria(sesiones, desde, sem[sem.length - 1].fin > estado.hasta ? estado.hasta : sem[sem.length - 1].fin, 'srpe');
+      const ac = C.agudoCronico(diario, { metodo: estado.metodoAC });
+      const ff = C.formaFatiga(diario);
+      const acVis = ac.filter(d => d.fecha >= sem[0].semana);
+      const act = sem[sem.length - 1], ant = sem[sem.length - 2] || {};
+      const ref = act.enCurso && sem.length > 1 ? ant : act; // última semana completa
+      const ultAC = [...ac].reverse().find(d => d.ratio != null);
+      const ultFF = ff[ff.length - 1];
+      const alertas = C.alertas(sem, ac);
+
+      const filtros = h('div', { class: 'filtros' },
+        h('label', { text: 'Periodo' }),
+        h('div', { class: 'seg' }, [6, 12, 24].map(n => h('button', { 'aria-pressed': String(estado.semanas === n), text: `${n} sem`, onclick: () => { estado.semanas = n; pintar(); } }))),
+        h('label', { text: 'Ratio A:C' }),
+        h('div', { class: 'seg' }, [['ewma', 'EWMA'], ['media', 'Media móvil']].map(([k, t]) => h('button', { 'aria-pressed': String(estado.metodoAC === k), text: t, onclick: () => { estado.metodoAC = k; pintar(); } }))));
+
+      const kpi = (l, v, d) => h('div', { class: 'kpi' }, h('div', { class: 'l', text: l }), h('div', { class: 'v', text: v }), h('div', { class: 'd', text: d }));
+      const kpis = h('div', { class: 'kpis' },
+        kpi('ECOs esta semana', fmt(act.ecosReal), act.ecosPlan ? `de ${fmt(act.ecosPlan)} planificados${act.cumplimiento != null ? ` · ${fmt(act.cumplimiento * 100)} % de lo previsto hasta hoy` : ''}` : 'sin planificación'),
+        kpi('sRPE esta semana', fmt(act.srpe) + ' UA', ant.srpe != null ? `semana pasada ${fmt(ant.srpe)} UA` : ''),
+        kpi('Ratio agudo:crónico', ultAC ? fmt(ultAC.ratio, 2) : '—', `orientativo ${fmt(C.UMBRALES.acMin, 1)}–${fmt(C.UMBRALES.acMax, 1)}`),
+        kpi('Monotonía (sem. pasada)', fmt(ref.monotonia, 2), `strain ${fmt(ref.strain)} · aviso > ${fmt(C.UMBRALES.monotoniaMax, 1)}`),
+        kpi('Coste percibido (sem. pasada)', ref.coste != null ? fmt(ref.coste, 2) : '—', 'UA de sRPE por cada ECO'),
+        kpi('Balance forma-fatiga', fmt(ultFF && ultFF.balance), `forma ${fmt(ultFF && ultFF.forma)} · fatiga ${fmt(ultFF && ultFF.fatiga)}`));
+
+      const sAlert = h('div', { class: 'card' }, h('h3', { text: 'Avisos de la semana' }), h('p', { class: 'sub', text: 'Para decidir si subir, mantener o bajar la carga.' }),
+        h('ul', { class: 'alertas' }, alertas.map(a => h('li', {}, h('span', { class: 'chip ' + a.nivel, text: { alto: 'Alto', medio: 'Atención', info: 'Info', ok: 'OK' }[a.nivel] }), h('span', { text: a.texto })))));
+
+      const serECO = [{ key: 'ecosPlan', label: 'Planificado', color: 'var(--s-plan)' }, { key: 'ecosReal', label: 'Realizado', color: 'var(--s-real)' }];
+      const serSRPE = [{ key: 'srpeRes', label: 'Resistencia', color: 'var(--s-res)' }, { key: 'srpeFuerza', label: 'Fuerza', color: 'var(--s-fza)' }];
+      const semS = sem.map(w => Object.assign({}, w, { srpeRes: Math.max(0, (w.srpe || 0) - (w.srpeFuerza || 0)) }));
+
+      const g1 = h('div', { class: 'card' }, h('h3', { text: 'Carga objetiva (ECOs) por semana' }), h('p', { class: 'sub', text: 'Lo que planificas frente a lo que ha hecho.' }),
+        leyenda(serECO), barrasAgrupadas(sem, serECO, tip, 'ECOs planificados y realizados por semana'));
+      const g2 = h('div', { class: 'card' }, h('h3', { text: 'Carga interna (sRPE) por semana' }), h('p', { class: 'sub', text: 'Minutos × RPE, sumando carrera y fuerza.' }),
+        leyenda(serSRPE), barrasApiladas(semS, serSRPE, tip, 'sRPE semanal de resistencia y fuerza'));
+      const g3 = h('div', { class: 'card' }, h('h3', { text: 'Ratio agudo:crónico (sRPE)' }),
+        h('p', { class: 'sub', text: 'Carga de los últimos 7 días frente a las 4 últimas semanas. Franja sombreada: zona orientativa 0,8–1,3. Sirve para detectar picos bruscos, no predice lesiones.' }),
+        lineaRatio(acVis, tip));
+
+      const cols = [['Semana', w => fmtSem(w.semana) + (w.enCurso ? ' (en curso)' : '')], ['Hechas/plan.', w => `${w.sesiones}${w.sesionesPlan ? '/' + w.sesionesPlan : ''}`], ['Min', w => fmt(w.minutos)], ['Km', w => fmt(w.km, 1)],
+        ['D+ (m)', w => fmt(w.desnivel)], ['ECOs plan', w => fmt(w.ecosPlan)], ['ECOs real', w => fmt(w.ecosReal)], ['Cumpl.', w => w.cumplimiento == null ? '—' : fmt(w.cumplimiento * 100) + ' %'],
+        ['sRPE', w => fmt(w.srpe)], ['Var.', w => w.variacion == null ? '—' : (w.variacion > 0 ? '+' : '') + fmt(w.variacion * 100) + ' %'],
+        ['Monot.', w => fmt(w.monotonia, 2)], ['Strain', w => fmt(w.strain)], ['sRPE/ECO', w => fmt(w.coste, 2)]];
+      const tabla = h('div', { class: 'card' }, h('h3', { text: 'Tabla semanal' }), h('div', { class: 'tabla' }, h('table', {},
+        h('thead', {}, h('tr', {}, cols.map(c => h('th', { text: c[0] })))),
+        h('tbody', {}, [...sem].reverse().map(w => h('tr', {}, cols.map(([n, f]) => {
+          const td = h('td', { text: f(w) });
+          if ((n === 'Var.' && w.sobreMax4 > C.UMBRALES.subidaSemanalMax) || (n === 'Monot.' && w.monotonia > C.UMBRALES.monotoniaMax)) td.className = 'warn';
+          return td;
+        })))))));
+
+      const cabecera = h('div', { class: 'card cab-carga' },
+        h('h2', { text: `Control de carga${estado.atleta ? ' · ' + estado.atleta : ''}` }),
+        h('p', { class: 'sub', text: 'ECOs = carga objetiva (minutos × valor de zona × deporte). sRPE = carga interna (minutos × RPE 0–10). Fuerza solo con sRPE.' }),
+        estado.nota ? h('p', { class: 'sub nota-datos', text: estado.nota }) : null,
+        filtros);
+      raiz.replaceChildren(...[
+        cabecera, kpis, sAlert, h('div', { class: 'row2' }, g1, g2), h('div', { style: 'height:16px' }), g3, tabla, tipEl].filter(Boolean));
+      tip.ocultar();
+    }
+    const tipEl = raiz.querySelector('.tip');
+    pintar();
+    return { actualizar(nuevas) { if (nuevas) estado.sesiones = nuevas; pintar(); } };
+  }
+
+  // ---------- FORMULARIO RPE (atleta, tras la sesión) ----------
+  function formularioRPE(el, { sesion = {}, onGuardar } = {}) {
+    estilos();
+    let rpe = sesion.rpe != null ? Number(sesion.rpe) : 5;
+    const num = h('div', { class: 'rpe-num' }), txt = h('div', { class: 'rpe-txt' });
+    const dur = h('input', { type: 'number', min: 0, step: 1, value: sesion.duracion_min || '', style: 'width:100px' });
+    const res = h('div', { class: 'sub' });
+    const etiqueta = v => (C.ESCALA_RPE.slice().reverse().find(([n, t]) => n <= v && t) || [0, ''])[1];
+    const upd = () => { num.textContent = rpe; txt.textContent = etiqueta(rpe); const sr = C.calcularSRPE(dur.value, rpe); res.textContent = sr != null && dur.value ? `Carga de la sesión: ${fmt(sr)} UA` : ''; };
+    const rango = h('input', { type: 'range', min: 0, max: 10, step: 1, value: rpe, 'aria-label': 'Esfuerzo percibido de 0 a 10', oninput: e => { rpe = Number(e.target.value); upd(); } });
+    dur.addEventListener('input', upd);
+    const card = h('div', { class: 'atl-carga' }, h('div', { class: 'card' },
+      h('h3', { text: '¿Cómo de dura ha sido la sesión en conjunto?' }),
+      h('p', { class: 'sub', text: 'Contesta unos 30 minutos después de terminar, pensando en toda la sesión, no solo en el final.' }),
+      num, txt, rango,
+      h('div', { style: 'display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin:2px 0 12px' }, h('span', { text: '0 Reposo' }), h('span', { text: '5 Duro' }), h('span', { text: '10 Máximo' })),
+      h('label', {}, 'Duración (min) ', dur), res,
+      h('div', { style: 'margin-top:12px' }, h('button', { class: 'btn', text: 'Guardar', onclick: () => onGuardar && onGuardar(C.normalizarSesion(Object.assign({}, sesion, { rpe, duracion_min: Number(dur.value) || 0, estado: 'realizada' }))) }))));
+    el.replaceChildren(card); upd();
+  }
+
+  // ---------- PLANIFICADOR DE SESIÓN (entrenador) ----------
+  function planificador(el, { atletaId, fecha = C.fecha.hoyISO(), sesion = {}, onGuardar } = {}) {
+    estilos();
+    const mz = Object.assign({}, sesion.minutos_zona || {});
+    const dep = h('select', {}, Object.entries(C.DEPORTES).map(([k, d]) => h('option', { value: k, text: d.nombre })));
+    dep.value = sesion.deporte || 'carrera';
+    const f = h('input', { type: 'date', value: sesion.fecha || fecha });
+    const tit = h('input', { type: 'text', placeholder: 'p. ej. 5 × 4\' a ritmo 10K', value: sesion.titulo || '', style: 'flex:1;min-width:200px' });
+    const durF = h('input', { type: 'number', min: 0, value: sesion.duracion_min || '', style: 'width:90px' });
+    const tot = h('div', { class: 'total' });
+    const zonas = h('div', { class: 'zonas' });
+    const upd = () => {
+      const fuerza = C.DEPORTES[dep.value].coef == null;
+      zonas.style.display = fuerza ? 'none' : ''; durF.parentElement.style.display = fuerza ? '' : 'none';
+      const min = fuerza ? Number(durF.value) || 0 : C.minutosTotales(mz);
+      const ecos = fuerza ? null : C.calcularECOs(mz, dep.value);
+      tot.replaceChildren(h('span', {}, 'Duración ', h('b', { text: fmt(min) }), ' min'), h('span', {}, 'ECOs ', h('b', { text: fuerza ? '—' : fmt(ecos) })),
+        fuerza ? h('span', { class: 'sub', text: 'La fuerza se controla con sRPE (min × RPE) al registrarla.' }) : '');
+    };
+    C.ZONAS.forEach(z => {
+      const inp = h('input', { type: 'number', min: 0, step: 1, value: mz[z.id] || '', 'aria-label': `Minutos en ${z.nombre}`, oninput: e => { mz[z.id] = Number(e.target.value) || 0; upd(); } });
+      zonas.append(h('div', {}, h('div', { class: 'zn', text: `${z.corto} · ${z.nombre}` }), h('div', { class: 'zx', text: z.ejemplo })), inp, h('div', { class: 'zx', text: `× ${z.valor}` }));
+    });
+    dep.addEventListener('change', upd); durF.addEventListener('input', upd);
+    el.replaceChildren(h('div', { class: 'atl-carga' }, h('div', { class: 'card' },
+      h('h3', { text: 'Planificar sesión' }),
+      h('div', { class: 'filtros' }, f, dep, tit),
+      h('label', {}, 'Duración (min) ', durF),
+      h('p', { class: 'sub', text: 'Minutos en cada zona (incluye calentamiento, recuperaciones y vuelta a la calma).' }), zonas, tot,
+      h('button', { class: 'btn', text: 'Guardar en el plan', onclick: () => {
+        const fuerza = C.DEPORTES[dep.value].coef == null;
+        onGuardar && onGuardar(C.normalizarSesion({ id: sesion.id, atleta_id: atletaId, fecha: f.value, estado: 'planificada', origen: 'plan', deporte: dep.value, titulo: tit.value,
+          minutos_zona: fuerza ? {} : mz, duracion_min: fuerza ? Number(durF.value) || 0 : C.minutosTotales(mz) }));
+      } }))));
+    upd();
+  }
+
+  // ---------- acceso a Supabase ----------
+  function repositorioSupabase(sb, tabla = 'carga_sesiones') {
+    const limpiar = x => { const o = Object.assign({}, x); delete o.srpe; if (!o.id) delete o.id; return o; }; // srpe lo calcula la BD
+    return {
+      async cargar(atletaId, desde) {
+        let q = sb.from(tabla).select('*').eq('atleta_id', atletaId).order('fecha');
+        if (desde) q = q.gte('fecha', desde);
+        const { data, error } = await q; if (error) throw error; return data;
+      },
+      async guardar(sesion) {
+        const { data, error } = await sb.from(tabla).upsert(limpiar(sesion)).select().single(); if (error) throw error; return data;
+      },
+      async guardarRPE(id, rpe, duracionMin) {
+        const cambios = { rpe }; if (duracionMin != null) cambios.duracion_min = duracionMin;
+        const { data, error } = await sb.from(tabla).update(cambios).eq('id', id).select().single(); if (error) throw error; return data;
+      },
+      /** Guarda actividades de Strava ya convertidas con ATLCarga.sesionDesdeStrava (no duplica: strava_id único). */
+      async importarStrava(sesiones) {
+        const { data, error } = await sb.from(tabla).upsert(sesiones.map(limpiar), { onConflict: 'strava_id', ignoreDuplicates: false }).select(); if (error) throw error; return data;
+      },
+      async borrar(id) { const { error } = await sb.from(tabla).delete().eq('id', id); if (error) throw error; }
+    };
+  }
+
+  global.ATLCargaUI = { panelEntrenador, formularioRPE, planificador, repositorioSupabase };
+})(window);
+
+</script>
+<script>
+/* =====================================================================
+ * Alex Training Lab · Control de carga dentro del index general
+ * Lee las tablas que ya usa la app y las convierte en sesiones para ATLCarga:
+ *   - sesiones_planificadas (resistencia): pasos por zona → ECOs; estado «hecha» + RPE + minutos reales → sRPE
+ *   - zonas (ritmo por zona) → convierte pasos en km a minutos
+ *   - sesiones (fuerza): registro.s.rpe (RPE total) × registro.s.min (duración) → sRPE
+ *   - actividades (Strava) → completan la sesión hecha de ese día o suman como actividad extra
+ * Usa las funciones de la app: db, parseFecha, isoLocal, hecho, esCarrera, aResistencia, esc.
+ * ===================================================================== */
+
+// Tipo de sesión de resistencia → deporte del módulo
+const CARGA_DEPORTE = { rodaje: 'carrera', series: 'carrera', tirada: 'carrera', test: 'carrera', otro: 'carrera', bici: 'ciclismo', fuerza: 'fuerza', trail: 'trail' };
+// Zona de la app (1–5) → zona ECOs (Z5 de la app = VT2–VAM, valor 6)
+const CARGA_ZONA = { 1: 'z1', 2: 'z2', 3: 'z3', 4: 'z4', 5: 'z5', 6: 'z6' };
+// Reparto por defecto cuando la sesión no tiene pasos con zona (marcado como «estimado»)
+const CARGA_ESTIMACION = { rodaje: { z1: 1 }, tirada: { z1: 0.7, z2: 0.3 }, bici: { z1: 1 } };
+const CARGA_FUERZA_MIN = 60; // si el cliente no apunta la duración de una sesión de fuerza
+
+/* Strava: la app de resistencia guarda las actividades en la tabla «actividades»
+   (atleta_id, strava_id, fecha, inicio, nombre, tipo, distancia_m, duracion_s, desnivel_m, fc_media).
+   Al sincronizar, la Edge Function también marca como «hecha» la sesión planificada de ese día.
+   Para no contar dos veces:
+     - si ese día hay una sesión de resistencia hecha → la actividad la completa (minutos, km, D+ y zona por FC)
+     - si no la hay (actividad extra) → cuenta como sesión realizada aparte
+   Los ECOs salen de los pasos de la sesión planificada; si no tiene pasos, de la FC media de la actividad
+   comparada con las zonas de FC del atleta (aproximación: toda la actividad en esa zona). */
+const CARGA_STRAVA_DEPORTE = t => {
+  t = String(t || '');
+  if (/TrailRun|Hike/i.test(t)) return 'trail';
+  if (/Run/i.test(t)) return 'carrera';
+  if (/Ride|Bike|Cycl/i.test(t)) return 'ciclismo';
+  if (/Swim/i.test(t)) return 'natacion';
+  if (/Weight|Workout|Crossfit|Strength|Yoga|Pilates/i.test(t)) return 'fuerza';
+  return 'otro';
+};
+const cargaCompatibles = (a, b) => a === b || (['carrera', 'trail'].includes(a) && ['carrera', 'trail'].includes(b));
+
+function cargaZonaPorFC(fc, zonasApp) {
+  const zs = zonasApp.filter(z => z.tipo === 'fc').map(z => ({ n: Number(z.zona), lo: Number(z.minimo), hi: Number(z.maximo) })).sort((a, b) => a.n - b.n);
+  if (!fc || !zs.length) return null;
+  const dentro = zs.find(z => fc >= z.lo && fc <= z.hi);
+  if (dentro) return dentro.n;
+  if (fc < zs[0].lo) return zs[0].n;
+  if (fc > zs[zs.length - 1].hi) return zs[zs.length - 1].n + 1; // por encima de Z5 → Z5b (VAM)
+  return zs.reduce((m, z) => Math.abs((z.lo + z.hi) / 2 - fc) < Math.abs((m.lo + m.hi) / 2 - fc) ? z : m).n;
+}
+
+async function cargaAplicarStrava(out, realesRes, atletaIds, zonasApp, info) {
+  if (!atletaIds.length) return;
+  const desde = isoLocal(new Date(Date.now() - 200 * 86400000));
+  let acts = [];
+  try { acts = await db('GET', 'actividades', `?atleta_id=in.(${atletaIds.join(',')})&fecha=gte.${desde}&select=*&order=inicio.asc`); } catch (e) { return; }
+  const usadas = new Set();
+  for (const a of acts || []) {
+    const fecha = String(a.fecha || a.inicio || '').slice(0, 10); if (!fecha) continue;
+    const deporte = CARGA_STRAVA_DEPORTE(a.tipo);
+    const min = a.duracion_s ? Math.round(a.duracion_s / 6) / 10 : 0;
+    const km = a.distancia_m ? Math.round(a.distancia_m / 10) / 100 : null;
+    const zonaFC = cargaZonaPorFC(Number(a.fc_media), zonasApp);
+    const rpeStrava = a.rpe ?? a.perceived_exertion ?? null;
+    if (deporte === 'fuerza' || deporte === 'otro') continue; // la fuerza se cuenta desde su registro en la app
+    // ¿Completa una sesión de resistencia hecha ese día?
+    const s = realesRes.find(r => !usadas.has(r) && r.fecha === fecha && cargaCompatibles(r.deporte, deporte));
+    if (s) {
+      usadas.add(s);
+      if (!s._durManual && min) {
+        const base = ATLCarga.minutosTotales(s.minutos_zona);
+        if (base) s.minutos_zona = cargaEscalar(s.minutos_zona, min / base);
+        s.duracion_min = min;
+      }
+      if (!ATLCarga.minutosTotales(s.minutos_zona) || s._estimado) {
+        if (zonaFC) { s.minutos_zona = { [CARGA_ZONA[zonaFC] || 'z1']: s.duracion_min }; if (s._estimado) { s._estimado = false; info.estimadas--; } info.porFC++; }
+      }
+      if (s.distancia_km == null && km != null) s.distancia_km = km;
+      if (a.desnivel_m != null) s.desnivel_m = Math.round(a.desnivel_m);
+      if (s.rpe == null && rpeStrava != null) s.rpe = Number(rpeStrava);
+      s.origen = 'strava';
+      Object.assign(s, ATLCarga.normalizarSesion(Object.assign({}, s, { ecos: null })));
+      info.stravaUnidas++;
+      continue;
+    }
+    // Actividad extra (sin sesión planificada ese día)
+    const mz = zonaFC ? { [CARGA_ZONA[zonaFC] || 'z1']: min } : {};
+    if (zonaFC) info.porFC++;
+    const ses = ATLCarga.normalizarSesion({ id: 'st-' + (a.strava_id || a.id), fecha, estado: 'realizada', origen: 'strava', deporte,
+      titulo: a.nombre || 'Actividad de Strava', duracion_min: min, minutos_zona: mz,
+      rpe: rpeStrava != null ? Number(rpeStrava) : null, distancia_km: km, desnivel_m: a.desnivel_m != null ? Math.round(a.desnivel_m) : null });
+    out.push(ses);
+    info.stravaExtra++;
+    if (ses.rpe == null) { info.stravaSinRPE++; info.sinRPE++; }
+    if (ses.ecos == null) info.sinEcos++;
+  }
+}
+
+function cargaMinutosDePasos(pasos, zonasApp) {
+  const mz = {}; let estimado = false;
+  const ritmo = n => { const z = zonasApp.find(z => z.tipo === 'ritmo' && Number(z.zona) === Number(n)); return z ? (Number(z.minimo) + Number(z.maximo)) / 2 : null; }; // seg/km
+  const sumar = (zona, min) => { const k = CARGA_ZONA[zona] || 'z1'; mz[k] = (mz[k] || 0) + min; };
+  for (const ps of pasos) {
+    const rep = Number(ps.rep) || 1, cant = parseFloat(String(ps.cantidad ?? '').replace(',', '.')) || 0;
+    const u = String(ps.unidad || 'min').toLowerCase();
+    let min;
+    if (/^(km|kms)$/.test(u) || /^m$|metro/.test(u)) {
+      const km = /^m$|metro/.test(u) ? cant / 1000 : cant;
+      let seg = ritmo(ps.zona || 1);
+      if (!seg) { seg = 330; estimado = true; } // sin zona de ritmo: 5:30 /km
+      min = km * seg / 60;
+    } else if (/^s|seg/.test(u)) min = cant / 60;
+    else if (/^h/.test(u)) min = cant * 60;
+    else min = cant;
+    if (!ps.zona) estimado = true;
+    sumar(ps.zona || 1, min * rep);
+    if (ps.rec && rep > 1) sumar(1, (parseFloat(ps.rec) || 0) * (rep - 1)); // recuperaciones al trote
+  }
+  for (const k in mz) mz[k] = Math.round(mz[k] * 10) / 10;
+  return { mz, estimado };
+}
+
+function cargaEscalar(mz, factor) {
+  const o = {}; for (const k in mz) o[k] = Math.round(mz[k] * factor * 10) / 10; return o;
+}
+
+async function cargaSesionesCliente(clienteId) {
+  const out = [], realesRes = [];
+  const info = { estimadas: 0, sinRPE: 0, sinEcos: 0, fuerzaSinMin: 0, porFC: 0, stravaUnidas: 0, stravaExtra: 0, stravaSinRPE: 0 };
+  // ---- Resistencia ----
+  let atletaIds = [], zonasApp = [];
+  try {
+    const at = await db('GET', 'atletas', `?user_id=eq.${clienteId}&select=id`);
+    atletaIds = at.map(a => a.id);
+  } catch (e) {}
+  if (atletaIds.length) {
+    const ids = atletaIds.join(',');
+    const [ps, zs] = await Promise.all([
+      db('GET', 'sesiones_planificadas', `?atleta_id=in.(${ids})&select=*&order=fecha.asc`).catch(() => []),
+      db('GET', 'zonas', `?atleta_id=in.(${ids})&select=*`).catch(() => [])
+    ]);
+    zonasApp = zs || [];
+    for (const p of ps || []) {
+      if (!p.fecha) continue;
+      const fecha = String(p.fecha).slice(0, 10);
+      const tipo = p.tipo || 'otro', deporte = CARGA_DEPORTE[tipo] || 'carrera';
+      const titulo = String(p.descripcion || '').split(' — ')[0] || tipo;
+      let mz = {}, estimado = false;
+      if (Array.isArray(p.pasos) && p.pasos.length) ({ mz, estimado } = cargaMinutosDePasos(p.pasos, zonasApp));
+      const minPlanPasos = ATLCarga.minutosTotales(mz);
+      const durPlan = Number(p.duracion_min) || minPlanPasos || 0;
+      if (!minPlanPasos && durPlan && CARGA_ESTIMACION[tipo]) { mz = cargaEscalar(CARGA_ESTIMACION[tipo], durPlan); estimado = true; }
+      const conZonas = ATLCarga.minutosTotales(mz) > 0;
+      out.push(ATLCarga.normalizarSesion({ id: 'rp-' + p.id, fecha, estado: 'planificada', deporte, titulo, minutos_zona: conZonas ? mz : {}, duracion_min: durPlan }));
+      if (p.estado === 'hecha') {
+        const durReal = Number(p.duracion_real_min) || durPlan;
+        const base = ATLCarga.minutosTotales(mz);
+        const mzReal = conZonas && base ? cargaEscalar(mz, durReal / base) : {};
+        const s = ATLCarga.normalizarSesion({ id: 'rr-' + p.id, fecha, estado: 'realizada', deporte, titulo, minutos_zona: mzReal, duracion_min: durReal,
+          rpe: p.rpe != null && p.rpe !== '' ? Number(p.rpe) : null, distancia_km: p.km_reales != null ? Number(p.km_reales) : null, origen: 'app' });
+        s._estimado = estimado; s._durManual = p.duracion_real_min != null && p.duracion_real_min !== '';
+        if (estimado) info.estimadas++;
+        out.push(s); realesRes.push(s);
+      }
+    }
+  }
+  // ---- Fuerza (y sesiones de carrera escritas con formato de fuerza) ----
+  try {
+    const ses = await db('GET', 'sesiones', `?cliente_id=eq.${clienteId}&select=id,fecha,titulo,bloques,registro`);
+    for (const s of ses || []) {
+      const d = parseFecha(s.fecha); if (!d) continue;
+      const fecha = isoLocal(d);
+      const carrera = typeof esCarrera === 'function' && esCarrera(s);
+      const reg = (s.registro || {}).s || {};
+      const rpe = parseFloat(String(reg.rpe ?? '').replace(',', '.'));
+      let min = parseFloat(String(reg.min ?? '').replace(',', '.'));
+      if (carrera) {
+        const r = aResistencia(s); const dur = r.duracion_min || null;
+        out.push(ATLCarga.normalizarSesion({ id: 'fp-' + s.id, fecha, estado: 'planificada', deporte: 'carrera', titulo: r.nombre, duracion_min: dur || 0 }));
+        if (hecho(s)) out.push(ATLCarga.normalizarSesion({ id: 'fr-' + s.id, fecha, estado: 'realizada', deporte: 'carrera', titulo: r.nombre, duracion_min: isNaN(min) ? (dur || 0) : min, rpe: isNaN(rpe) ? null : rpe }));
+        continue;
+      }
+      out.push(ATLCarga.normalizarSesion({ id: 'fp-' + s.id, fecha, estado: 'planificada', deporte: 'fuerza', titulo: s.titulo || 'Fuerza', duracion_min: 0 }));
+      if (hecho(s)) {
+        if (isNaN(min)) { min = CARGA_FUERZA_MIN; info.fuerzaSinMin++; }
+        if (isNaN(rpe)) info.sinRPE++;
+        out.push(ATLCarga.normalizarSesion({ id: 'fr-' + s.id, fecha, estado: 'realizada', deporte: 'fuerza', titulo: s.titulo || 'Fuerza', duracion_min: min, rpe: isNaN(rpe) ? null : rpe }));
+      }
+    }
+  } catch (e) {}
+  // ---- Strava (completa las sesiones hechas o suma actividades extra) ----
+  await cargaAplicarStrava(out, realesRes, atletaIds, zonasApp, info);
+  // recuento final de datos que faltan en resistencia
+  for (const r of realesRes) { if (r.rpe == null) info.sinRPE++; if (r.ecos == null) info.sinEcos++; }
+  return { sesiones: out, info };
+}
+
+function cargaNota(info) {
+  const p = [];
+  if (info.stravaUnidas || info.stravaExtra) p.push(`Strava: ${info.stravaUnidas} actividad(es) unidas a su sesión${info.stravaExtra ? ` y ${info.stravaExtra} extra` : ''}`);
+  if (info.porFC) p.push(`${info.porFC} con zona según la FC media de Strava (aproximado)`);
+  if (info.sinRPE) p.push(`${info.sinRPE} sesión(es) hecha(s) sin RPE (no suman sRPE${info.stravaSinRPE ? `; ${info.stravaSinRPE} son actividades extra de Strava` : ''})`);
+  if (info.estimadas) p.push(`${info.estimadas} con ECOs estimados (sin pasos por zona: rodaje = Z1, tirada = 70 % Z1 / 30 % Z2)`);
+  if (info.sinEcos) p.push(`${info.sinEcos} de resistencia sin ECOs (sin pasos por zona ni FC)`);
+  if (info.fuerzaSinMin) p.push(`${info.fuerzaSinMin} de fuerza sin duración (se cuentan ${CARGA_FUERZA_MIN} min)`);
+  return p.length ? 'Datos: ' + p.join(' · ') + '.' : '';
+}
+
+async function tabCarga(host, clienteId, nombre) {
+  $(host).innerHTML = '<div class="card"><p class="muted">Calculando la carga…</p></div>';
+  try {
+    const { sesiones, info } = await cargaSesionesCliente(clienteId);
+    if (!sesiones.some(s => s.estado === 'realizada')) {
+      $(host).innerHTML = `<div class="card"><h3>Control de carga</h3><p class="muted">${esc(nombre || 'Este cliente')} todavía no tiene sesiones hechas. En cuanto marque sesiones como hechas con su RPE y sus minutos, aparecerá aquí su carga.</p></div>`;
+      return;
+    }
+    ATLCargaUI.panelEntrenador($(host), { sesiones, atleta: nombre, nota: cargaNota(info) });
+  } catch (e) {
+    $(host).innerHTML = `<div class="card"><p class="muted">No se pudo calcular la carga: ${esc(e.message)}</p></div>`;
+  }
+}
+
 </script>
 </body>
 </html>
