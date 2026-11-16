@@ -223,6 +223,8 @@ body.cli .card{background:rgba(255,255,255,.85);backdrop-filter:none;-webkit-bac
 .cal-chip{display:block;width:100%;font-size:10px;line-height:1.2;padding:1px 3px;margin-top:2px;background:#f4f5f6;color:#1d1f21;border:1px solid #9a9ea2;border-radius:3px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
 .cal-chip.ok{background:#e4f2e4}
 .cal-chip.res{color:#fff!important;font-weight:700;border-radius:3px}
+.conv-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 12px;margin-bottom:10px;border:2px solid #1976d2}
+.conv-bar span{flex:1 1 240px}
 .gsub{font-weight:500;font-size:12px;color:#444;margin-top:2px;line-height:1.3}
 .pick .obj{color:#8a8f94;font-style:italic}
 .pick small.obj{display:block;font-size:9px;line-height:1;font-style:normal;text-transform:uppercase;letter-spacing:.04em}
@@ -1327,8 +1329,19 @@ async function fichaCliente(id){
           tabEntrenosCal("#sub",id,true);
           return;
         }
-        const lote=await leerExcel(f);
+        let lote=await leerExcel(f);
         if(!lote.length) throw new Error("No encuentro datos en el archivo.");
+        const deCarrera=lote.filter(esCarrera);
+        if(deCarrera.length){
+          const conv=deCarrera.map(aResistencia).filter(x=>x.fecha);
+          const cuenta={};conv.forEach(v=>cuenta[v.tipo]=(cuenta[v.tipo]||0)+1);
+          const resumen=Object.entries(cuenta).map(([t,n])=>`${n} ${RES_NOMBRE[t]||t}`).join(", ");
+          const nF=lote.length-deCarrera.length;
+          if(!confirm(`En este Excel hay ${deCarrera.length} sesión(es) de carrera/trail (${resumen})${nF?` y ${nF} de fuerza`:""}.\n\nLas de carrera irán a Resistencia con sus colores${nF?" y las de fuerza a Fuerza":""}. Si ya había sesiones esos días, se sustituyen. ¿Continuar?`)) return;
+          if(conv.length) await importarResistencia(c,conv);
+          lote=lote.filter(s=>!esCarrera(s));
+          if(!lote.length){ev.target.value="";fichaCliente(id);return}
+        }
         const fechas=new Set(lote.map(s=>s.fecha));
         const previas=ses.filter(s=>fechas.has(s.fecha));
         if(previas.length){
@@ -1617,10 +1630,34 @@ async function asegurarFichaRes(c,preguntar=true){
   const [nueva]=await db("POST","atletas","",{user_id:c.id,entrenador_id:S.user.id,nombre:c.nombre||"Sin nombre"},"return=representation");
   return nueva.id;
 }
+// ¿Esta sesión (con formato de fuerza) es en realidad de carrera/trail/bici?
+const RE_CARRERA=/\b(rodaje|carrera|tirada|trail|fartlek|cuestas?|trote|series de|z[1-5]|fc ?\d|km|kms|ritmo|ritmos|bici|rodillo|ciclismo|continua|umbral|progresivo|desnivel)\b/;
+const RE_FUERZA=/\b(fuerza|sentadilla|press|peso muerto|remo|dominadas?|zancadas?|hip thrust|curl|plancha|kettlebell|mancuernas?|barra|goblet|jalon|gemelos|estructural|core|pliometria|circuito)\b/;
+const textoSesion=s=>sinAc([s.titulo,...(s.bloques||[]).flatMap(b=>[b.nombre,...(b.ejercicios||[]).map(e=>{const x=normEj(e);return [x.ej,x.int,x.nota].join(" ")})])].join(" "));
+const esCarrera=s=>{const t=textoSesion(s);return RE_CARRERA.test(t)&&!RE_FUERZA.test(t)};
+function aResistencia(s){
+  const tit=String(s.titulo||"").replace(/\s*[·\-–]\s*\d{1,2}\/\d{1,2}(\/\d{2,4})?\s*$/,"").trim();
+  const lineas=[]; let min=0;
+  (s.bloques||[]).forEach(b=>{
+    const nb=String(b.nombre||"").trim(); if(nb&&!/^parte principal$/i.test(nb)) lineas.push(nb+":");
+    (b.ejercicios||[]).forEach(e0=>{
+      const e=normEj(e0), rp=String(e.rep||"").trim(), se=String(e.ser||"").trim();
+      const vol=se&&se!=="1"&&rp?`${se} × ${rp}`:(rp||(se&&se!=="1"?se+" series":""));
+      const m=rp.match(/^(\d+)\s*(?:'|’|min)/i); if(m) min+=(+m[1])*(se&&+se>1?+se:1);
+      const datos=[vol,e.int,e.rir?"RIR "+e.rir:"",e.rpe?"RPE "+e.rpe:"",e.nota,e.prog].filter(Boolean).join(" · ");
+      lineas.push((e.ej||"Trabajo")+(datos?": "+datos:""));
+    });
+  });
+  let tipo=resTipo(tit); if(tipo==="otro"||tipo==="fuerza") tipo=resTipo(lineas.join(" ")); if(tipo==="fuerza") tipo="otro";
+  const d=parseFecha(s.fecha);
+  return {fecha:d?isoLocal(d):null,tipo,nombre:tit||RES_NOMBRE[tipo]||"Sesión",desc:lineas.join("\n"),duracion_min:min||null};
+}
 async function importarResistencia(c,validas){
   const atletaId=await asegurarFichaRes(c);
   const mods=modulosDe(c);
   if(!mods.includes("resistencia")){ const nuevos=[...mods,"resistencia"]; await db("PATCH","perfiles",`?id=eq.${c.id}`,{modulos:nuevos},"return=minimal"); c.modulos=nuevos; }
+  const dias=[...new Set(validas.map(v=>v.fecha))];
+  await db("DELETE","sesiones_planificadas",`?atleta_id=eq.${atletaId}&estado=neq.hecha&fecha=in.(${dias.join(",")})`,null,"return=minimal");
   const [bloque]=await db("POST","bloques","",{atleta_id:atletaId,nombre:`Importado de Excel el ${isoLocal(new Date())}`,fecha_inicio:validas[0].fecha,fecha_fin:validas[validas.length-1].fecha},"return=representation");
   await db("POST","sesiones_planificadas","",validas.map(v=>({atleta_id:atletaId,bloque_id:bloque.id,fecha:v.fecha,tipo:v.tipo,descripcion:v.nombre+(v.desc?" — "+v.desc:""),duracion_min:v.duracion_min})),"return=minimal");
 }
@@ -1684,7 +1721,8 @@ const resTarjeta=(p,admin,zonas)=>{
 };
 const resLeyenda=lista=>{
   const tipos=[...new Set(lista.map(p=>p.tipo||"otro"))];
-  return `<div class="res-leyenda"><span class="leg"><i style="background:#fff;border:1px solid var(--acento,#e0b43a)"></i>Fuerza (funcional)</span>${tipos.map(t=>`<span class="leg"><i style="background:${RES_COLOR[t]||RES_COLOR.otro}"></i>${RES_NOMBRE[t]||t}</span>`).join("")}</div>`;
+  const todos=["rodaje","series","tirada","fuerza","bici","otro"].filter(t=>t==="fuerza"||tipos.includes(t)||["rodaje","series","tirada"].includes(t));
+  return `<div class="res-leyenda">${todos.map(t=>`<span class="leg"><i style="background:${RES_COLOR[t]}"></i>${RES_NOMBRE[t]}</span>`).join("")}</div>`;
 };
 
 /* ---------- Resistencia integrada en la página general ---------- */
@@ -1906,7 +1944,11 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false){
       const k=isoLocal(new Date(y,mo,d));
       const lista=porDia.get(k)||[];
       const todasHechas=lista.length&&lista.every(esHecha);
-      const chips=lista.slice(0,2).map(t=>t._res?resChip(t):`<button type="button" class="cal-chip${hecho(t)?" ok":""}" data-chip="${t.id}" title="${esc(t.titulo||"Sesión")}">${esc(diaCorto(t))}</button>`).join("");
+      const chips=lista.slice(0,2).map(t=>{
+        if(t._res) return resChip(t);
+        const tp=esCarrera(t)?aResistencia(t).tipo:"fuerza", col=RES_COLOR[tp]||RES_COLOR.otro;
+        return `<button type="button" class="cal-chip res${hecho(t)?" ok":""}" style="background:${col};border-color:${col}" data-chip="${t.id}" title="${esc(t.titulo||"Sesión")}">${hecho(t)?"✓ ":""}${esc(RES_NOMBRE[tp]||"Fuerza")}</button>`;
+      }).join("");
       celdas.push(`<div class="cal-d cal-dia${k===hoyIso?" hoy":""}${lista.length?" tiene":""}${k===diaSel&&!modoSel?" sel":""}${selDias.has(k)?" selb":""}" data-dia="${k}"><span class="cal-num">${d}</span>${chips}${lista.length>2?`<span class="cal-mas">+${lista.length-2}</span>`:""}</div>`);
     }
     const delDia=porDia.get(diaSel)||[];
@@ -1916,6 +1958,7 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false){
     const cont=$(host);
     const msgAviso=aviso; aviso="";
     const selSes=[...selDias].flatMap(k=>porDia.get(k)||[]);
+    const carreraTodas=todas.filter(esCarrera), carreraF=carreraTodas.filter(t=>!Object.keys(t.registro||{}).length), carreraConReg=carreraTodas.length-carreraF.length;
     const nF=selSes.filter(x=>!x._res).length, nR=selSes.filter(x=>x._res).length;
     cont.innerHTML=`
       ${msgAviso?`<p class="cal-aviso card">${esc(msgAviso)}</p>`:""}
@@ -1934,6 +1977,7 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false){
           <label class="mod-chk"><input type="checkbox" id="bConservar" checked> Conservar las ya completadas por el cliente</label>
           <div class="row"><button class="danger" data-borrarvarias>Borrar</button><button class="sec" data-cerrarborrado>Cancelar</button></div>
           <div class="msg" id="bMsg"></div></div>`:""}`:""}
+      ${admin&&carreraF.length?`<div class="card conv-bar"><span>🏃 Hay <b>${carreraF.length}</b> sesión(es) de carrera/trail guardadas como fuerza${carreraConReg?` (${carreraConReg} ya registradas por el cliente se quedan como están)`:""}.</span><button class="gold" data-convertir>Pasarlas a Resistencia</button></div>`:""}
       <div class="resumen"><div><b>${pend}</b><small>pendientes</small></div><div><b>${hechas}</b><small>completadas</small></div><div><b>${proxTxt}</b><small>próximo entreno</small></div></div>
       ${CAL_OCULTO&&!modoSel?`<div class="cal-wrap card cal-mini">
         <button class="sec" data-diaant title="Entreno anterior" aria-label="Entreno anterior">‹</button>
@@ -1942,7 +1986,7 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false){
       </div>`:`<div class="cal-wrap card">
         <div class="cal-head"><button class="sec" data-prev>‹</button><b>${MESES_CAL[mo]} ${y}</b><button class="sec" data-next>›</button></div>
         <div class="cal-grid">${DIAS_SEM.map(d=>`<div class="cal-dh">${d}</div>`).join("")}${celdas.join("")}</div>
-        ${resis.length?resLeyenda(resis):""}
+        ${resLeyenda(resis)}
         ${modoSel?"":`<button class="sec cal-ocultar" data-calocultar>▲ Ocultar calendario</button>`}
       </div>`}
       <h2 class="dia-tit">${+ad} de ${MESES_CAL[+am-1]}</h2>
@@ -1970,6 +2014,18 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false){
       const conEntreno=(porDia.get(diaSel)||[]).length>0;
       if(conEntreno&&pantallaPequena()){CAL_OCULTO=true;pintar();irTitulo();return}
       pintar()});
+    if(admin&&cont.querySelector("[data-convertir]")) cont.querySelector("[data-convertir]").onclick=async()=>{
+      const conv=carreraF.map(aResistencia).filter(x=>x.fecha);
+      const cuenta={};conv.forEach(v=>cuenta[v.tipo]=(cuenta[v.tipo]||0)+1);
+      if(!confirm(`Se pasarán ${conv.length} sesión(es) a Resistencia (${Object.entries(cuenta).map(([t,n])=>`${n} ${RES_NOMBRE[t]||t}`).join(", ")}), con su color y su registro de carrera. ¿Continuar?`)) return;
+      try{
+        const [c]=await db("GET","perfiles",`?id=eq.${clienteId}&select=*`);
+        await importarResistencia(c,conv);
+        await db("DELETE","sesiones",`?id=in.(${carreraF.map(t=>t.id).join(",")})`,null,"return=minimal");
+        await tabEntrenosCal(host,clienteId,admin);
+        const h=$(host); if(h) h.insertAdjacentHTML("afterbegin",`<p class="cal-aviso card">✓ ${conv.length} sesión(es) pasadas a Resistencia</p>`);
+      }catch(e){aviso="No se pudo convertir: "+e.message;pintar()}
+    };
     if(admin){
       const q=sel=>cont.querySelector(sel);
       q("[data-selmodo]").onclick=()=>{modoSel=!modoSel;selDias.clear();verBorrado=false;if(modoSel)CAL_OCULTO=false;pintar()};
