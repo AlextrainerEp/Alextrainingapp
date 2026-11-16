@@ -264,6 +264,19 @@ body:has(#login:not(.oculto)) #login input:not([type=checkbox]){margin:0 0 8px}
 body:has(#login:not(.oculto)) #login label,body:has(#login:not(.oculto)) #login .muted,body:has(#login:not(.oculto)) #login .link,body:has(#login:not(.oculto)) #login .ver{color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.9)}
 body:has(#login:not(.oculto)) #login .row{margin-top:2px}
 .texto-claro .tl{margin:3px 0}
+html.embed body{background:transparent!important;padding:0!important}
+html.embed .fondo,html.embed #hdr,html.embed #tabs-t,html.embed #tabs-a,html.embed #badge-admin,html.embed #btn-menu{display:none!important}
+html.embed main{margin:0!important;padding:0!important;max-width:none!important;left:0!important}
+html.embed #panel,html.embed #vista-atleta{margin:0!important;padding:0!important}
+html.embed body::before,html.embed body::after{display:none!important}
+html.embed .modal,html.embed .modal-fuerza{position:absolute!important;inset:auto 0 auto 0!important;top:var(--modal-top,0px)!important;background:transparent!important;align-items:flex-start!important;padding:8px!important}
+html.embed .modal-caja,html.embed .mf-card{box-shadow:0 8px 30px rgba(0,0,0,.35);max-height:none!important}
+html.embed .banner-mover{position:absolute!important;top:var(--modal-top,0px)!important;bottom:auto!important}
+.borrado-bar{gap:8px}
+.sel-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;margin:8px 0;border:2px solid #c0392b}
+.sel-bar span{flex:1 1 200px}
+.borrado-panel{margin:8px 0;border:2px solid #c0392b}
+.mes-celda.selb{outline:3px solid #c0392b;outline-offset:-3px;background:#fdecea!important}
 .modal-fuerza{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px}
 .mf-card{background:#fff;color:#1d1f21;border-radius:12px;max-width:620px;width:100%;max-height:88vh;overflow:auto;padding:18px;border-left:6px solid #7b1fa2}
 .mf-tipo{color:#7b1fa2;font-weight:800;font-size:13px;letter-spacing:.04em}
@@ -433,14 +446,22 @@ body:has(#login:not(.oculto)) #login .row{margin-top:2px}
       <div class="zona-borrado">
         <h3>Borrar entrenamientos</h3>
         <div id="bloques-lista" class="muted"></div>
-        <div class="row" style="margin-top:8px">
-          <input id="borrar-desde" type="date" title="Desde">
-          <input id="borrar-hasta" type="date" title="Hasta">
-          <button id="btn-borrar-rango" class="danger" type="button">Borrar entre fechas</button>
+        <div class="row borrado-bar" style="margin-top:8px">
+          <button id="btn-selmodo" class="sec" type="button">☑ Seleccionar días para borrar</button>
+          <button id="btn-borrado" class="sec" type="button">🗑 Borrar varias…</button>
         </div>
-        <div class="acciones">
-          <button id="btn-borrar-futuras" class="danger" type="button">Borrar lo que queda por hacer</button>
-          <button id="btn-borrar-todo" class="danger" type="button">Borrar todo el calendario</button>
+        <div id="sel-bar" class="card sel-bar oculto"><span id="sel-txt">Toca los días del calendario que quieras borrar.</span>
+          <button id="sel-mes" class="sec" type="button">Todo el mes</button>
+          <button id="sel-borrar" class="danger" type="button" disabled>Borrar seleccionadas</button>
+          <button id="sel-cancelar" class="sec" type="button">Cancelar</button></div>
+        <div id="borrado-panel" class="card borrado-panel oculto">
+          <h3>Borrar varias sesiones</h3>
+          <div class="row"><label>Qué <select id="bQue"><option value="todo">Fuerza y resistencia</option><option value="f">Solo fuerza</option><option value="r">Solo resistencia</option></select></label>
+          <label>Cuáles <select id="bCual"><option value="todas">Todas</option><option value="desde">Desde una fecha</option><option value="entre">Entre dos fechas</option></select></label></div>
+          <div class="row" id="bFechas" style="display:none"><label>Desde <input type="date" id="bDesde"></label><label id="bHastaL">Hasta <input type="date" id="bHasta"></label></div>
+          <label class="ver"><input type="checkbox" id="bConservar" checked> Conservar las ya completadas por el atleta</label>
+          <div class="row"><button id="bBorrar" class="danger" type="button">Borrar</button><button id="bCerrar" class="sec" type="button">Cancelar</button></div>
+          <p id="bMsg" class="muted"></p>
         </div>
       </div>
       <div class="leyenda" data-leyenda></div>
@@ -716,6 +737,28 @@ function textoErrorEnlace(code,desc){
     history.replaceState(null, '', location.pathname);
   }
 }
+// Dentro de la página general (iframe): sin cabecera ni menú propios; la altura se avisa a la página general
+const EMBED = new URLSearchParams(location.search).has('embed');
+const PARAMS_EMBED = new URLSearchParams(location.search);
+if (EMBED) {
+  document.documentElement.classList.add('embed');
+  const avisarAltura = () => { try { parent.postMessage({ alexAltura: document.documentElement.scrollHeight }, location.origin); } catch (e) {} };
+  window.addEventListener('load', avisarAltura);
+  if (window.ResizeObserver) new ResizeObserver(avisarAltura).observe(document.documentElement);
+  setInterval(avisarAltura, 1500);
+  // Las ventanas emergentes se colocan donde se ha tocado (la página general es la que hace scroll)
+  let ultimoY = 0;
+  document.addEventListener('pointerdown', e => { ultimoY = e.pageY; }, true);
+  const colocar = el => {
+    el.style.setProperty('--modal-top', Math.max(0, ultimoY - 140) + 'px');
+    const caja = el.querySelector('.modal-caja, .mf-card') || el;
+    setTimeout(() => caja.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 30);
+  };
+  new MutationObserver(ms => ms.forEach(m => {
+    if (m.type === 'attributes') { const el = m.target; if (el.classList && (el.classList.contains('modal') || el.classList.contains('banner-mover')) && !el.classList.contains('oculto')) colocar(el); }
+    else m.addedNodes.forEach(n => { if (n.classList && (n.classList.contains('modal-fuerza') || n.classList.contains('modal') || n.classList.contains('banner-mover'))) colocar(n); });
+  })).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+}
 {
   const q = new URLSearchParams(location.search);
   const estado = q.get('state') || '';
@@ -734,7 +777,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_3cFWXykjHyxsdo65c2CZkA_8dM6U-HF';
 // Con localStorage, todas las pestañas del mismo sitio comparten sesión y al
 // recargar una pestaña podía entrar con la cuenta que se había abierto en otra.
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: { storage: window.sessionStorage, persistSession: true, autoRefreshToken: true }
+  auth: { storage: window.sessionStorage, persistSession: true, autoRefreshToken: !new URLSearchParams(location.search).has('embed') }
 });
 // La sesión es la misma que la del apartado funcional: cada vez que cambia, se copia a su formato
 sb.auth.onAuthStateChange((ev, ses) => {
@@ -805,7 +848,9 @@ async function mostrarSegunSesion() {
   $('nueva-pass').classList.add('oculto');
   const { data: { session } } = await sb.auth.getSession();
   // Entrada única: sin sesión se va a la pantalla de acceso común
-  if (!session) { location.replace('../app/?ir=resistencia'); return; }
+  if (!session) { location.replace('../app/'); return; }
+  const vueltaStrava = sessionStorage.getItem('strava_code') || sessionStorage.getItem('strava_error');
+  if (!EMBED && !vueltaStrava) { location.replace('../app/'); return; }
   {
     const { data: pf } = await sb.from('perfiles').select('rol, modulos, acceso_hasta').eq('id', session.user.id).maybeSingle();
     miPerfil = pf || {};
@@ -826,9 +871,24 @@ async function mostrarSegunSesion() {
   }
   miUserId = session.user.id;
   const esEntrenador = await esAdminCuenta(miUserId);
-  if (esEntrenador) return modoEntrenador();
+  if (esEntrenador) {
+    await modoEntrenador();
+    if (EMBED) {
+      const uid = PARAMS_EMBED.get('atleta'), sec = PARAMS_EMBED.get('sec');
+      if (uid) {
+        const { data: a } = await sb.from('atletas').select('*').eq('user_id', uid).maybeSingle();
+        if (a) abrirFicha(a); else { mostrarTab('atletas'); }
+        if (a && PARAMS_EMBED.get('sub')) mostrarSub(PARAMS_EMBED.get('sub'));
+      } else if (sec) mostrarTab(sec);
+    }
+    return;
+  }
   const atleta = await buscarFichaAtleta(miUserId, session.user.email);
-  if (atleta && atleta.entrenador_id) return modoAtleta(atleta);
+  if (atleta && atleta.entrenador_id) {
+    await modoAtleta(atleta);
+    if (EMBED && PARAMS_EMBED.get('tab')) mostrarTabA(PARAMS_EMBED.get('tab'));
+    return;
+  }
   const nombre = session.user.user_metadata && session.user.user_metadata.nombre;
   if (!atleta && nombre) {
     const { error } = await sb.from('atletas').insert({
@@ -1216,7 +1276,7 @@ async function iniciarStravaAtleta() {
     code = null;
     alert('Esa autorización de Strava no corresponde a la cuenta que está dentro ahora. Vuelve a pulsar «Conectar con Strava».');
   }
-  if (errorStrava) alert('No se ha completado la conexión con Strava (has cancelado o denegado el permiso).');
+  if (errorStrava) { alert('No se ha completado la conexión con Strava (has cancelado o denegado el permiso).'); if (!EMBED) { location.replace('../app/?ir=strava'); return; } }
   if (code) {
     mostrarTabA('perfil');
     $('strava-estado').textContent = 'Conectando con Strava y trayendo tus actividades…';
@@ -1225,11 +1285,13 @@ async function iniciarStravaAtleta() {
       miAtleta.strava_conectado = true;
       pintarEstadoStrava();
       $('strava-estado').textContent = `Strava conectado. ${r.actividades} actividades traídas y ${r.marcadas} sesiones marcadas como hechas.`;
+      if (!EMBED) { alert(`Strava conectado ✓ ${r.actividades} actividades traídas.`); location.replace('../app/?ir=strava'); return; }
       cargarSemana();
       cargarTodoAtleta();
     } catch (e) {
       pintarEstadoStrava();
       alert('No se ha podido conectar con Strava: ' + e.message);
+      if (!EMBED) { location.replace('../app/?ir=strava'); return; }
     }
   } else if (miAtleta.strava_conectado) {
     // Sincronización silenciosa al entrar
@@ -1247,7 +1309,7 @@ $('btn-strava-conectar').onclick = () => {
     'Si aparece la cuenta de otra persona, pulsa «Cancelar» en Strava, cierra su sesión en strava.com y vuelve a conectar.\n\n¿Continuar?');
   if (!ok) return;
   const vuelta = location.origin + location.pathname;
-  location.href = 'https://www.strava.com/oauth/authorize?client_id=' + STRAVA_CLIENT_ID +
+  (EMBED ? window.top : window).location.href = 'https://www.strava.com/oauth/authorize?client_id=' + STRAVA_CLIENT_ID +
     '&redirect_uri=' + encodeURIComponent(vuelta) +
     '&response_type=code&approval_prompt=force&scope=read,activity:read_all&state=strava-' + encodeURIComponent(miAtleta.id);
 };
@@ -1342,42 +1404,6 @@ async function limpiarBloquesVacios() {
   const vacios = (bloques || []).map(b => b.id).filter(id => !usados.has(id));
   if (vacios.length) await sb.from('bloques').delete().in('id', vacios);
 }
-$('btn-borrar-rango').onclick = async () => {
-  const d = $('borrar-desde').value, h = $('borrar-hasta').value;
-  if (!d || !h) return alert('Elige las dos fechas.');
-  if (d > h) return alert('La primera fecha debe ser anterior a la segunda.');
-  await cargarBloques();
-  const n = sesionesBorrado.filter(x => x.fecha >= d && x.fecha <= h).length;
-  if (!n) return alert('No hay sesiones entre esas fechas.');
-  if (!confirm(`¿Borrar ${n} sesiones de ${atletaActual.nombre} entre el ${d} y el ${h}? Incluye las ya hechas. No se puede deshacer.`)) return;
-  const { error } = await sb.from('sesiones_planificadas').delete().eq('atleta_id', atletaActual.id).gte('fecha', d).lte('fecha', h);
-  if (error) return alert(error.message);
-  await limpiarBloquesVacios();
-  trasBorrar();
-};
-$('btn-borrar-futuras').onclick = async () => {
-  const hoy = iso(new Date());
-  await cargarBloques();
-  const n = sesionesBorrado.filter(x => x.fecha >= hoy && x.estado !== 'hecha').length;
-  if (!n) return alert('No quedan sesiones por hacer desde hoy.');
-  if (!confirm(`¿Borrar las ${n} sesiones de ${atletaActual.nombre} que quedan por hacer desde hoy? Las ya hechas y el historial se conservan. No se puede deshacer.`)) return;
-  const { error } = await sb.from('sesiones_planificadas').delete().eq('atleta_id', atletaActual.id).gte('fecha', hoy).neq('estado', 'hecha');
-  if (error) return alert(error.message);
-  await limpiarBloquesVacios();
-  trasBorrar();
-};
-$('btn-borrar-todo').onclick = async () => {
-  await cargarBloques();
-  const n = sesionesBorrado.length;
-  if (!n) return alert('El calendario ya está vacío.');
-  if (!confirm(`¿Borrar TODO el calendario de ${atletaActual.nombre}? Son ${n} sesiones, incluidas las hechas, con sus notas y esfuerzos. No se puede deshacer.`)) return;
-  if (prompt('Para confirmar, escribe BORRAR') !== 'BORRAR') return alert('No se ha borrado nada.');
-  const r1 = await sb.from('sesiones_planificadas').delete().eq('atleta_id', atletaActual.id);
-  if (r1.error) return alert(r1.error.message);
-  const r2 = await sb.from('bloques').delete().eq('atleta_id', atletaActual.id);
-  if (r2.error) return alert(r2.error.message);
-  trasBorrar();
-};
 
 /* ---------- IMPORTAR DESDE EXCEL / GOOGLE SHEETS ---------- */
 let libXLSX = null;
@@ -2824,6 +2850,66 @@ function alternarVista() {
 $('btn-vista').onclick = alternarVista;
 $('btn-vista-a').onclick = alternarVista;
 
+/* ---------- Borrar: igual que en la página general (selección de días o «Borrar varias») ---------- */
+let modoBorrar = false; const diasBorrar = new Set();
+function hechaFuerza(s) { return Object.keys(s.registro || {}).length > 0; }
+async function sesionesParaBorrar(que, desde, hasta) {
+  const res = que === 'f' ? [] : ((await sb.from('sesiones_planificadas').select('id, fecha, estado').eq('atleta_id', atletaActual.id)).data || []).map(x => ({ ...x, _r: true }));
+  let fz = [];
+  if (que !== 'r' && atletaActual.user_id) fz = ((await sb.from('sesiones').select('id, fecha, registro').eq('cliente_id', atletaActual.user_id)).data || []).map(x => ({ id: x.id, fecha: isoDeTexto(x.fecha), estado: hechaFuerza(x) ? 'hecha' : 'pendiente' }));
+  return [...res, ...fz].filter(x => (!desde || (x.fecha && x.fecha >= desde)) && (!hasta || (x.fecha && x.fecha <= hasta)));
+}
+async function borrarLista(lista) {
+  const trozos = (ids, n = 80) => { const r = []; for (let i = 0; i < ids.length; i += n) r.push(ids.slice(i, i + n)); return r; };
+  for (const t of trozos(lista.filter(x => x._r).map(x => x.id))) { const { error } = await sb.from('sesiones_planificadas').delete().in('id', t); if (error) throw error; }
+  for (const t of trozos(lista.filter(x => !x._r).map(x => x.id))) { const { error } = await sb.from('sesiones').delete().in('id', t); if (error) throw error; }
+  await limpiarBloquesVacios();
+}
+function pintarBarraSel() {
+  $('sel-bar').classList.toggle('oculto', !modoBorrar);
+  $('btn-selmodo').textContent = modoBorrar ? '✓ Seleccionando días…' : '☑ Seleccionar días para borrar';
+  $('btn-selmodo').className = modoBorrar ? 'gold' : 'sec';
+  $('sel-txt').innerHTML = diasBorrar.size ? `<b>${diasBorrar.size}</b> día(s) seleccionados` : 'Toca los días del calendario que quieras borrar.';
+  $('sel-borrar').disabled = !diasBorrar.size;
+}
+$('btn-selmodo').onclick = () => {
+  modoBorrar = !modoBorrar; diasBorrar.clear(); $('borrado-panel').classList.add('oculto');
+  if (modoBorrar && !vistaMes) { vistaMes = true; mesActual = new Date(semanaInicio.getFullYear(), semanaInicio.getMonth(), 1); $('btn-vista').textContent = 'Ver semana'; }
+  pintarBarraSel(); cargarSemana();
+};
+$('sel-cancelar').onclick = () => { modoBorrar = false; diasBorrar.clear(); pintarBarraSel(); cargarSemana(); };
+$('sel-mes').onclick = () => {
+  document.querySelectorAll('#semana .mes-celda:not(.fuera)[data-dia]').forEach(c => { if (c.querySelector('.mes-item')) diasBorrar.add(c.dataset.dia); });
+  pintarBarraSel(); cargarSemana();
+};
+$('sel-borrar').onclick = async () => {
+  const dias = [...diasBorrar];
+  const lista = (await sesionesParaBorrar('todo')).filter(x => dias.includes(x.fecha));
+  if (!lista.length) return alert('No hay sesiones en esos días.');
+  if (!confirm(`¿Borrar ${lista.length} sesión(es) de ${dias.length} día(s)?${lista.some(x => x.estado === 'hecha') ? '\nAlgunas ya están completadas: se perderán también sus registros.' : ''}`)) return;
+  try { await borrarLista(lista); modoBorrar = false; diasBorrar.clear(); pintarBarraSel(); trasBorrar(); alert(`✓ ${lista.length} sesión(es) borradas`); }
+  catch (e) { alert(e.message); }
+};
+$('btn-borrado').onclick = () => {
+  modoBorrar = false; diasBorrar.clear(); pintarBarraSel();
+  $('borrado-panel').classList.toggle('oculto'); $('bDesde').value = iso(new Date()); ajustarBorrado(); $('bMsg').textContent = '';
+};
+function ajustarBorrado() { const v = $('bCual').value; $('bFechas').style.display = v === 'todas' ? 'none' : ''; $('bHastaL').style.display = v === 'entre' ? '' : 'none'; }
+$('bCual').onchange = ajustarBorrado;
+$('bCerrar').onclick = () => $('borrado-panel').classList.add('oculto');
+$('bBorrar').onclick = async () => {
+  const que = $('bQue').value, cual = $('bCual').value, d = $('bDesde').value, h = $('bHasta').value, conservar = $('bConservar').checked;
+  if (cual !== 'todas' && !d) { $('bMsg').textContent = 'Elige la fecha de inicio'; return; }
+  if (cual === 'entre' && (!h || h < d)) { $('bMsg').textContent = 'Elige una fecha final igual o posterior'; return; }
+  let lista = await sesionesParaBorrar(que, cual === 'todas' ? null : d, cual === 'entre' ? h : null);
+  if (conservar) lista = lista.filter(x => x.estado !== 'hecha');
+  if (!lista.length) { $('bMsg').textContent = 'No hay sesiones que cumplan eso.'; return; }
+  const nr = lista.filter(x => x._r).length, nf = lista.length - nr;
+  if (!confirm(`Se van a borrar ${lista.length} sesión(es): ${nf} de fuerza y ${nr} de resistencia.\nNo se puede deshacer. ¿Continuar?`)) return;
+  try { await borrarLista(lista); $('borrado-panel').classList.add('oculto'); trasBorrar(); alert(`✓ ${lista.length} sesión(es) borradas (${nf} fuerza, ${nr} resistencia)`); }
+  catch (e) { $('bMsg').textContent = e.message; }
+};
+
 /* ---------- Sesiones de FUERZA (apartado funcional) dentro del calendario de resistencia ---------- */
 function isoDeTexto(t) {
   const x = String(t || '').trim();
@@ -2912,7 +2998,8 @@ async function cargarMes() {
   for (let i = 0; i < 42; i++) {
     const dia = sumarDias(primero, i);
     const celda = document.createElement('div');
-    celda.className = 'mes-celda' + (dia.getMonth() !== ini.getMonth() ? ' fuera' : '');
+    celda.className = 'mes-celda' + (dia.getMonth() !== ini.getMonth() ? ' fuera' : '') + (diasBorrar.has(iso(dia)) ? ' selb' : '');
+    celda.dataset.dia = iso(dia);
     const num = document.createElement('div');
     num.className = 'mes-num';
     num.textContent = dia.getDate();
@@ -2926,11 +3013,11 @@ async function cargarMes() {
       t.style.background = ((typeof COLORES !== 'undefined' && COLORES[p.tipo]) || '#999') + '26';
       t.textContent = (p._fun ? '🏋️ ' : '') + (p.descripcion || p.tipo || '').split(' — ')[0];
       ponerPunto(t, p);
-      if (p._fun) { t.onclick = (e) => { e.stopPropagation(); verFuerza(p); }; celda.appendChild(t); return; }
+      if (p._fun) { t.onclick = (e) => { if (modoBorrar) return; e.stopPropagation(); verFuerza(p); }; celda.appendChild(t); return; }
       t.draggable = true;
       t.ondragstart = (e) => { arrastrando = p; e.dataTransfer.setData('text/plain', p.id || ''); };
       t.ondragend = () => { arrastrando = null; };
-      t.onclick = (e) => { e.stopPropagation(); iniciarMover(p); };
+      t.onclick = (e) => { if (modoBorrar) return; e.stopPropagation(); iniciarMover(p); };
       celda.appendChild(t);
     });
     if (delDia.length > 3) {
@@ -2942,6 +3029,7 @@ async function cargarMes() {
     celda.ondragover = (e) => e.preventDefault();
     celda.ondrop = (e) => { e.preventDefault(); soltarEnDia(dia); };
     celda.onclick = () => {
+      if (modoBorrar && !modoAtletaActivo) { const k = iso(dia); if (!delDia.length) return; diasBorrar.has(k) ? diasBorrar.delete(k) : diasBorrar.add(k); celda.classList.toggle('selb', diasBorrar.has(k)); pintarBarraSel(); return; }
       if (seleccion) return soltarEnDia(dia);
       if (!modoAtletaActivo) return abrirPickerDia(dia);
       semanaInicio = lunesDe(dia);
