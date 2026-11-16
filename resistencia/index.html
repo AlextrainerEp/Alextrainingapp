@@ -206,6 +206,9 @@ h3{margin:12px 0 6px;font-size:15px}
 .act-fila{padding:8px 0;border-bottom:1px solid rgba(0,0,0,.12);font-size:14px}
 .act-fila b{font-size:15px}
 .act-fila a{color:#FC4C02;font-weight:700;margin-left:6px;white-space:nowrap}
+.act-rpe{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px;font-size:13px}
+.act-rpe label{display:inline-flex;align-items:center;gap:6px;margin:0}
+.act-rpe select{width:auto;margin:0;padding:4px 8px}
 .pie-strava{font-size:11px;color:#555;margin-top:6px}
 
 
@@ -1250,9 +1253,17 @@ async function pintarActividades(box, atletaId) {
     box.appendChild(pv);
     return;
   }
+  // Actividades extra (sin sesión hecha ese día): el atleta puede poner su esfuerzo (RPE) para que sumen carga
+  const fechasAct = [...new Set(data.map(a => a.fecha).filter(Boolean))];
+  let diasHechos = new Set();
+  if (fechasAct.length) {
+    const { data: hechas } = await sb.from('sesiones_planificadas').select('fecha').eq('atleta_id', atletaId).eq('estado', 'hecha').in('fecha', fechasAct);
+    diasHechos = new Set((hechas || []).map(h => String(h.fecha).slice(0, 10)));
+  }
   data.forEach(a => {
     const fila = document.createElement('div');
     fila.className = 'act-fila';
+    const rpeBox = cajaRpeActividad(a, diasHechos);
     const tit = document.createElement('b');
     tit.textContent = `${a.fecha} · ${a.nombre || a.tipo || 'Actividad'}`;
     const det = document.createElement('div');
@@ -1264,8 +1275,37 @@ async function pintarActividades(box, atletaId) {
     enlace.textContent = 'Ver en Strava';
     det.appendChild(enlace);
     fila.append(tit, det);
+    if (rpeBox) fila.appendChild(rpeBox);
     box.appendChild(fila);
   });
+}
+// Selector de esfuerzo (RPE 1-10) para actividades de Strava que no van unidas a una sesión hecha
+function cajaRpeActividad(a, diasHechos) {
+  if (/Weight|Workout|Crossfit|Yoga|Pilates/i.test(a.tipo || '')) return null; // la fuerza se registra en la app
+  const unida = diasHechos.has(String(a.fecha).slice(0, 10));
+  if (unida && a.rpe == null) return null; // ese día ya hay sesión hecha: su RPE se pone en la sesión
+  const caja = document.createElement('div');
+  caja.className = 'act-rpe';
+  const et = document.createElement('label');
+  et.textContent = 'Esfuerzo (RPE 1-10) ';
+  const sel = document.createElement('select');
+  [['', '–'], ...[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => [String(n), String(n)])].forEach(([v, t]) => {
+    const o = document.createElement('option'); o.value = v; o.textContent = t; if (String(a.rpe ?? '') === v) o.selected = true; sel.appendChild(o);
+  });
+  const st = document.createElement('span');
+  st.className = 'muted';
+  st.textContent = a.rpe == null ? 'Actividad extra: indica cómo de dura fue para que cuente en tu carga.' : '';
+  sel.onchange = async () => {
+    st.textContent = 'Guardando…';
+    const { data: upd, error } = await sb.from('actividades').update({ rpe: sel.value ? Number(sel.value) : null })
+      .eq('atleta_id', a.atleta_id).eq('strava_id', a.strava_id).select('strava_id');
+    if (error) st.textContent = /rpe/.test(error.message) ? 'Falta ejecutar carga_strava_rpe.sql en Supabase.' : 'No se pudo guardar: ' + error.message;
+    else if (!upd || !upd.length) st.textContent = 'Sin permiso para guardar: ejecuta carga_strava_rpe.sql en Supabase.';
+    else { a.rpe = sel.value ? Number(sel.value) : null; st.textContent = 'Guardado ✓'; }
+  };
+  et.appendChild(sel);
+  caja.append(et, st);
+  return caja;
 }
 function pintarEstadoStrava() {
   const con = !!(miAtleta && miAtleta.strava_conectado);
