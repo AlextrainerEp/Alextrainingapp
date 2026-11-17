@@ -93,6 +93,13 @@ details summary{cursor:pointer;padding:4px 0}
 .exn .nota{color:#ddd;font-weight:400;font-size:12px}
 .exlink{color:inherit;text-decoration:underline;text-underline-offset:3px}
 /* Tabla compacta: una línea por ejercicio */
+.ecard{background:rgba(255,255,255,.94);border-radius:14px;padding:14px 16px;margin:10px 0;box-shadow:0 1px 4px rgba(0,0,0,.12);color:#1d1f21}
+.ec-t{font-size:20px;font-weight:800;line-height:1.2}
+.ec-main{font-size:28px;font-weight:800;color:#b8860b;margin:6px 0 2px}
+.ec-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.ec-chip{background:#2e3133;color:#fff;border-radius:999px;padding:6px 12px;font-size:15px;font-weight:600}
+.ec-nota{margin-top:8px;font-size:15px;line-height:1.4}
+html.oscuro .ecard{background:rgba(30,32,34,.92);color:#f2f2f2}
 .ghead,.grow{display:grid;grid-template-columns:minmax(0,1.7fr) .38fr .38fr .5fr .5fr 1fr .46fr .5fr;gap:3px;align-items:center}
 .ghead{font-size:11px;color:#555;text-align:center;padding:4px 0;border-bottom:1px solid #ccc;font-weight:700}
 .ghead span:first-child{text-align:left}
@@ -625,6 +632,17 @@ html.oscuro .grow input.pl{background:rgba(255,255,255,.10);border-color:#c98500
 .pl-dia{border:1px solid rgba(0,0,0,.18);background:rgba(255,255,255,.8);color:inherit;border-radius:8px;padding:6px 10px;margin:0;width:auto;font:inherit;font-size:13px;cursor:pointer;opacity:.6}
 .pl-dia.on{opacity:1;font-weight:700;border-color:#b8860b;background:rgba(184,134,11,.18)}
 html.oscuro .pl-dia{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18)}
+
+/* Análisis con IA */
+.ia-barra{padding:12px 14px}
+.ia-barra .muted{font-size:12px;margin:6px 0 0}
+.ia-caja{margin-top:10px;border-left:3px solid #b8860b;background:rgba(184,134,11,.08);border-radius:0 10px 10px 0;padding:10px 14px}
+.ia-cab{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:14px;margin-bottom:4px}
+.ia-texto h4{margin:12px 0 4px;font-size:14.5px;color:var(--acento,#b8860b)}
+.ia-texto p{margin:5px 0;font-size:14px;line-height:1.5}
+.ia-texto ul{margin:5px 0 5px 18px;padding:0}
+.ia-texto li{font-size:14px;line-height:1.5;margin:3px 0}
+.ia-pie{font-size:11.5px;margin-top:10px}
 </style>
 </head>
 <body>
@@ -1098,7 +1116,16 @@ function sesionHTML(s,editable,conLeyenda=editable,plan=false){
   const bloques=grupos.map(g=>{
     const cab=`<div class="cab">${esc(g.nombre)}</div>`;
     const letra=x=>String((normEj(x).cod)||"").replace(/[^A-Za-z]/g,"").charAt(0).toUpperCase();
-    return cab+cabeza+g.items.map(({x,bi,ei},idx)=>{const e=normEj(x),k=bi+"-"+ei,r=R[k]||{};const sep=idx>0&&letra(x)!==letra(g.items[idx-1].x)?" sep":"";return `<div class="grow${sep}">
+    const esResis=x=>{const e=normEj(x);return /['’′]|\bmin\b|\bkm\b|\d\s*h\b/i.test(String(e.rep))||/\bZ\s?[1-8]\b|\bFC\b|min\/km|ritmo/i.test(String(e.int))};
+    const tarjeta=({x})=>{const e=normEj(x);const dosis=[e.ser,e.rep].filter(v=>String(v).trim()!=="").map(v=>esc(String(v))).join(" × ");
+      const chips=[e.int?`<span class="ec-chip">${esc(e.int)}</span>`:"",e.rir?`<span class="ec-chip">RIR objetivo ${esc(String(e.rir).replace(".",","))}</span>`:"",e.rpe?`<span class="ec-chip">RPE objetivo ${esc(String(e.rpe).replace(".",","))}</span>`:""].join("");
+      return `<div class="ecard"><div class="ec-t">${e.cod?`<b>${esc(e.cod)}</b> `:""}${nombreVideo(e)}${btnVideoMini(e)}</div>${dosis?`<div class="ec-main">${dosis}</div>`:""}${chips?`<div class="ec-chips">${chips}</div>`:""}${e.nota?`<div class="ec-nota">📝 ${esc(e.nota)}</div>`:""}${e.prog?`<div class="ec-nota">📈 ${esc(e.prog)}</div>`:""}</div>`};
+    const separar=!plan;
+    const itemsRes=separar?g.items.filter(it=>esResis(it.x)):[];
+    const itemsFza=separar?g.items.filter(it=>!esResis(it.x)):g.items;
+    if(itemsRes.length&&!itemsFza.length) return cab+itemsRes.map(tarjeta).join("");
+    const gItems=itemsFza;
+    return cab+itemsRes.map(tarjeta).join("")+cabeza+gItems.map(({x,bi,ei},idx)=>{const e=normEj(x),k=bi+"-"+ei,r=R[k]||{};const sep=idx>0&&letra(x)!==letra(gItems[idx-1].x)?" sep":"";return `<div class="grow${sep}">
       <div class="gname">${plan
         ?`${e.cod?`<b>${esc(e.cod)}</b> `:""}<input class="pl pl-ej" data-pk="${k}" data-pf="ej" value="${esc(e.ej)}" placeholder="Ejercicio">${btnVideoMini(e)}`
         :`${e.cod?`<b>${esc(e.cod)}</b> `:""}${nombreVideo(e)}${btnVideoMini(e)}`}${e.nota?`<div class="gsub">📝 ${esc(e.nota)}</div>`:""}${e.prog?`<div class="gsub">📈 ${esc(e.prog)}</div>`:""}</div>
@@ -1111,7 +1138,7 @@ function sesionHTML(s,editable,conLeyenda=editable,plan=false){
       ${pick(k,"rpe",r.rpe,true,editable,e.rpe)}
     </div>`}).join("");
   }).join("");
-  const hayObj=grupos.some(g=>g.items.some(({x})=>{const e=normEj(x);return e.rir||e.rpe}));
+  const hayObj=grupos.some(g=>g.items.some(({x})=>{const e=normEj(x);const res=/['’′]|\bmin\b|\bkm\b|\d\s*h\b/i.test(String(e.rep))||/\bZ\s?[1-8]\b|\bFC\b|min\/km|ritmo/i.test(String(e.int));return !res&&(e.rir||e.rpe)}));
   if(plan) return `<div class="plan-edit">`+bloques+`</div>`+`<p class="obj-ayuda">Puedes escribir directamente en <b>Ejercicio</b>, <b>Series</b>, <b>Reps</b>, <b>Intensidad</b>, <b>RIR</b> y <b>RPE</b>, y guardar con «Guardar cambios». Para añadir o quitar ejercicios y bloques, usa «Editar».</p>`+`<div class="muted" style="margin-top:10px">Comentario del entrenamiento</div><textarea data-k="s" data-f="com" placeholder="Cómo ha ido la sesión" rows="2">${esc((R.s||{}).com)}</textarea>`;
   return bloques+(hayObj?`<p class="obj-ayuda">En <b>RIR</b> y <b>RPE</b> ves en gris el <b>objetivo</b> que te marca tu entrenador. Tócalo para apuntar lo que has hecho de verdad. En <b>Kg</b> apunta el peso que has usado: con él se calcula tu fuerza estimada.</p>`:"")+`<div class="rpe-tot"><b>RPE total del entrenamiento</b><div class="rpe-tot-pick">${pick("s","rpe",(R.s||{}).rpe,true,editable)}</div></div><div class="rpe-tot"><b>Duración del entrenamiento (min)</b><div class="rpe-tot-pick"><input data-k="s" data-f="min" inputmode="numeric" placeholder="min" value="${esc((R.s||{}).min??"")}" ${dis} style="margin:0;text-align:center;font-weight:700"></div></div><div class="muted" style="margin-top:10px">Comentario del entrenamiento</div><textarea data-k="s" data-f="com" placeholder="Cómo ha ido la sesión" rows="2" ${dis}>${esc((R.s||{}).com)}</textarea>${conLeyenda?`<div style="margin-top:12px">${leyendaRPE()}</div>`:""}`;
 }
@@ -4674,6 +4701,7 @@ async function tabCarga(host, clienteId, nombre) {
             const desdeB = ATLCarga.fecha.sumarDias(ATLCarga.fecha.lunes(ATLCarga.fecha.hoyISO()), -7 * 11);
         const bien = typeof bienestarSemanal === 'function' ? await bienestarSemanal(clienteId, desdeB) : null;
         ATLCargaUI.panelEntrenador(cont, { sesiones, atleta: nombre, nota: cargaNota(info), detalle: true, bienestar: bien });
+        if (typeof iaBarra === 'function') { cont.insertAdjacentHTML('afterbegin', iaBarra(clienteId)); iaActivar(clienteId); }
       }
     } catch (e) {
       cont.innerHTML = `<div class="card"><p class="muted">No se pudo calcular la carga: ${esc(e.message)}</p></div>`;
@@ -5256,6 +5284,112 @@ function plPanel(cliente, alTerminar) {
   };
   document.body.appendChild(ov);
   pintar();
+}
+
+</script>
+<script>
+/* =====================================================================
+ * Alex Training Lab · Análisis con IA (solo entrenador)
+ * Manda a la Edge Function «analizar-ia» un resumen con NÚMEROS de carga:
+ * ni nombre, ni correo, ni anamnesis, ni ningún dato de salud.
+ * Usa de la app: db, esc, $, S, SUPA_URL / SUPABASE_URL.
+ * ===================================================================== */
+
+/** Resumen anónimo para la IA: solo cifras de entrenamiento. */
+function iaResumen(sesiones, fuerzaAn, bienestar, info) {
+  const C = ATLCarga, hasta = C.fecha.hoyISO();
+  const sem = C.resumenPeriodo(sesiones, { unidad: 'semana', n: 12, hasta });
+  const mes = C.resumenPeriodo(sesiones, { unidad: 'mes', n: 6, hasta });
+  const diario = C.serieDiaria(sesiones.map(C.normalizarSesion), C.fecha.sumarDias(sem[0].semana, -56), hasta, 'srpe');
+  const ac = C.agudoCronico(diario), ff = C.formaFatiga(diario);
+  const u = [...ac].reverse().find(x => x.ratio != null), f = ff[ff.length - 1];
+  const limpia = w => ({ semana: w.semana, enCurso: w.enCurso || undefined, sesiones: w.sesiones, minutos: w.minutos, km: w.km,
+    desnivel: w.desnivel || undefined, ecosPlan: w.ecosPlan, ecosReal: w.ecosReal, cumplimiento: w.cumplimiento,
+    srpe: w.srpe, srpeFuerza: w.srpeFuerza || undefined, monotonia: w.monotonia, coste: w.coste });
+  const out = {
+    hoy: hasta,
+    semanas: sem.map(limpia),
+    meses: mes.map(w => ({ mes: w.etiqueta, sesiones: w.sesiones, minutos: w.minutos, km: w.km, ecosReal: w.ecosReal, srpe: w.srpe })),
+    ratioAgudoCronico: u ? u.ratio : null,
+    formaFatiga: f ? { forma: f.forma, fatiga: f.fatiga, balance: f.balance } : null,
+    avisosAutomaticos: C.alertas(sem, ac).map(a => a.texto),
+    calidadDeLosDatos: info ? { sesionesSinRPE: info.sinRPE, sinEcos: info.sinEcos, estimadas: info.estimadas,
+      actividadesStrava: info.stravaUnidas + info.stravaExtra, fuerzaSinDuracion: info.fuerzaSinMin } : undefined
+  };
+  if (fuerzaAn && fuerzaAn.length) {
+    const sf = ATLFuerza.resumenSemanal(fuerzaAn, { semanas: 12, hasta, fecha: C.fecha });
+    out.fuerza = {
+      semanas: sf.map(w => ({ semana: w.semana, sesiones: w.sesiones, seriesDuras: w.seriesDuras, seriesDurasPlan: w.seriesDurasPlan,
+        series: w.series, tonelaje: w.tonelaje, rirMedio: w.rirMedio, desvRIR: w.desvRIR, srpe: w.srpe })),
+      seriesDurasPorPatron: sf[sf.length - 1] ? sf[sf.length - 1].porPatron : {},
+      progresion1RM: ATLFuerza.progresion1RM(fuerzaAn, { fecha: C.fecha, semanas: 24, hasta })
+        .map(x => ({ ejercicio: x.nombre, patron: x.patron, primera: x.valorPrimera, ultima: x.valorUltima, cambioPct: x.cambio })),
+      avisos: ATLFuerza.alertas(sf).map(a => a.texto)
+    };
+  }
+  if (bienestar && bienestar.length) out.bienestar = bienestar.map(b => ({ semana: b.semana, dias: b.dias, sueno: b.sueno, energia: b.fatiga, dolor: b.dolor, animo: b.animo }));
+  return out;
+}
+
+/** Texto muy sencillo a HTML: ## títulos, - listas, **negrita**. */
+function iaHTML(t) {
+  const linea = x => esc(x).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+  const out = []; let lista = false;
+  String(t || '').split('\n').forEach(l => {
+    const s = l.trim();
+    if (/^#{2,3}\s/.test(s)) { if (lista) { out.push('</ul>'); lista = false; } out.push(`<h4>${linea(s.replace(/^#+\s*/, ''))}</h4>`); return; }
+    if (/^[-*]\s/.test(s) || /^\d+[.)]\s/.test(s)) { if (!lista) { out.push('<ul>'); lista = true; } out.push(`<li>${linea(s.replace(/^([-*]|\d+[.)])\s*/, ''))}</li>`); return; }
+    if (lista) { out.push('</ul>'); lista = false; }
+    if (s) out.push(`<p>${linea(s)}</p>`);
+  });
+  if (lista) out.push('</ul>');
+  return out.join('');
+}
+
+async function iaAnalizar(clienteId, host, pregunta) {
+  const caja = typeof host === 'string' ? $(host) : host;
+  caja.innerHTML = '<div class="ia-caja"><p class="muted">Analizando… puede tardar unos segundos.</p></div>';
+  try {
+    const [{ sesiones, info }, fz, bien] = await Promise.all([
+      cargaSesionesCliente(clienteId),
+      cargaFuerzaCliente(clienteId).then(r => r.sesiones).catch(() => []),
+      bienestarSemanal(clienteId, ATLCarga.fecha.sumarDias(ATLCarga.fecha.hoyISO(), -84)).catch(() => null)
+    ]);
+    const datos = iaResumen(sesiones, fz, bien, info);
+    const base = String(typeof SB_URL !== 'undefined' ? SB_URL : '').replace(/\/+$/, '');
+    const r = await fetch(`${base}/functions/v1/analizar-ia`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + S.access },
+      body: JSON.stringify({ datos, pregunta: pregunta || '' })
+    });
+    const j = await r.json().catch(() => ({ error: 'Respuesta ilegible del servidor' }));
+    if (!r.ok || j.error) throw new Error(j.error || ('Error ' + r.status));
+    caja.innerHTML = `<div class="ia-caja"><div class="ia-cab"><b>🤖 Análisis</b><span class="muted">${new Date().toLocaleString('es-ES')}</span></div>
+      <div class="ia-texto">${iaHTML(j.texto)}</div>
+      <p class="muted ia-pie">Lo ha escrito una IA a partir de los números de carga, sin saber quién es el entrenado. Revísalo antes de aplicarlo: la decisión es tuya.</p></div>`;
+  } catch (e) {
+    const falta = /ANTHROPIC_API_KEY|Falta la clave/.test(e.message);
+    caja.innerHTML = `<div class="ia-caja"><p class="muted">No se pudo analizar: ${esc(e.message)}</p>${
+      falta ? '<p class="muted">Añade tu clave en Supabase → Edge Functions → Secrets, con el nombre <b>ANTHROPIC_API_KEY</b>.</p>' : ''}</div>`;
+  }
+}
+
+/** Barra con el botón y el recuadro de pregunta, para la pestaña de Carga. */
+function iaBarra(clienteId) {
+  return `<div class="card ia-barra">
+    <div class="row"><button class="gold" id="ia-b">🤖 Analizar con IA</button>
+      <input id="ia-q" placeholder="¿Algo concreto que quieras preguntar? (opcional)" style="flex:1;min-width:180px;margin:0"></div>
+    <p class="muted">Se mandan solo cifras de entrenamiento: nada de nombre, correo, anamnesis ni datos de salud.</p>
+    <div id="ia-out"></div></div>`;
+}
+function iaActivar(clienteId) {
+  const b = $('#ia-b');
+  if (!b) return;
+  b.onclick = async () => {
+    b.disabled = true; b.textContent = 'Analizando…';
+    await iaAnalizar(clienteId, '#ia-out', ($('#ia-q') || {}).value || '');
+    b.disabled = false; b.textContent = '🤖 Analizar de nuevo';
+  };
 }
 
 </script>
