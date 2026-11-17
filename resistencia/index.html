@@ -1538,7 +1538,11 @@ async function limpiarBloquesVacios() {
 let libXLSX = null;
 let filasImportar = [];
 async function cargarXLSX() {
-  if (!libXLSX) libXLSX = await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/xlsx.mjs');
+  // Librería de Excel al día; si su servidor no responde, se usa la antigua para no quedarse sin importar
+  if (!libXLSX) {
+    try { libXLSX = await import('https://cdn.sheetjs.com/xlsx-latest/package/xlsx.mjs'); }
+    catch (e) { libXLSX = await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/xlsx.mjs'); }
+  }
   return libXLSX;
 }
 function sinAcentos(t) {
