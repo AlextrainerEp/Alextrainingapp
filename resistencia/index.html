@@ -255,7 +255,7 @@ body.cli .card{background:rgba(255,255,255,.85);backdrop-filter:none;-webkit-bac
 .sesion-res .res-abrir{display:inline-block;margin-top:6px;font-weight:700}
 .res-pasos{margin:4px 0 8px 18px;padding:0;line-height:1.5}
 .emb-wrap{width:100%}
-.st-act{border-top:1px solid rgba(128,128,128,.25);padding:10px 0}.st-act:first-of-type{border-top:0}.st-cab{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}.st-datos{margin-top:4px;font-size:.92em;line-height:1.5}.st-zonas{display:flex;flex-wrap:wrap;gap:6px 12px;margin:8px 0}.st-zonas b{width:100%}.st-zonas span{font-size:.9em}
+.st-act{border-top:1px solid rgba(128,128,128,.25);padding:10px 0}.st-act:first-of-type{border-top:0}.st-cab{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}.st-datos{margin-top:4px;font-size:.92em;line-height:1.5}.st-zonas{display:flex;flex-wrap:wrap;gap:6px 12px;margin:8px 0}.st-zonas b{width:100%}.st-zonas span{font-size:.9em}.st-con{margin:6px 0 10px}.st-btn{background:#fc4c02!important;color:#fff!important;border:0;border-radius:8px;padding:10px 16px;font-weight:700}
 iframe.emb{width:100%;min-height:500px;border:0;background:transparent;display:block}
 .cli-nav button.otra-app{width:100%;text-align:left;cursor:pointer;background:transparent}
 .res-reg{margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,0,0,.12)}
@@ -1435,6 +1435,11 @@ async function fichaCliente(id){
     embebido("#res-emb","atleta="+id);
   };
   window.__verRes=verRes;
+  window.__verStrava=()=>{
+    $("#tab").innerHTML=`<div class="row res-vuelta"><button class="sec" id="st-volver">← Volver al calendario</button><b>🔗 Strava de ${esc(c.nombre||"este cliente")}</b></div><div id="st-emb"></div>`;
+    $("#st-volver").onclick=()=>{$("#ta").click()};
+    tabStravaCliente("#st-emb",id,true);
+  };
   const verCarga=()=>tabCarga("#tab",id,c.nombre);
   pestanas(["ta","tf","tb","tc","td"],[verEntrenos,verCarga,verAnam,verHist,verMsgs]);
   verEntrenos();
@@ -1802,25 +1807,77 @@ const resLeyenda=lista=>{
 };
 
 /* ---------- Strava y zonas del entrenado (dentro de la misma página, sin iframe ni pestaña nueva) ---------- */
-async function tabStravaCliente(host){
+// Conexión con Strava: el botón lleva a la autorización de Strava y vuelve a esta misma página.
+// El intercambio del código y la descarga de actividades los hace la función de Supabase «strava»
+// (la clave secreta de Strava nunca está en el código de la web).
+async function stravaFn(accion,extra={}){
+  const r=await fetch(`${String(SB_URL).replace(/\/+$/,"")}/functions/v1/strava`,{method:"POST",
+    headers:{apikey:SB_KEY,Authorization:"Bearer "+S.access,"Content-Type":"application/json"},
+    body:JSON.stringify({accion,...extra})});
+  let j={};try{j=await r.json()}catch(e){}
+  if(r.status===401&&typeof refrescar==="function"&&!extra._reintento){try{await refrescar();return stravaFn(accion,{...extra,_reintento:true})}catch(e){}}
+  if(!r.ok||j.error) throw new Error(j.error||("Error "+r.status+(r.status===404?" (falta publicar la función «strava» en Supabase)":"")));
+  return j;
+}
+async function stravaConectar(){
+  const {client_id}=await stravaFn("config");
+  if(!client_id) throw new Error("Falta configurar STRAVA_CLIENT_ID en Supabase");
+  const state="strava-"+Math.random().toString(36).slice(2);
+  try{sessionStorage.setItem("strava_state",state)}catch(e){}
+  const p=new URLSearchParams({client_id,response_type:"code",redirect_uri:location.origin+location.pathname,
+    approval_prompt:"auto",scope:"read,activity:read_all",state});
+  location.href="https://www.strava.com/oauth/authorize?"+p.toString(); // misma pestaña: al aceptar vuelve aquí
+}
+async function tabStravaCliente(host,clienteId=S.user.id,esEntrenador=false){
   const cont=$(host); if(!cont) return;
-  cont.innerHTML=`<div class="card"><h3>🔗 Strava y zonas</h3><p class="muted">Cargando tus actividades…</p></div>`;
+  const propio=clienteId===S.user.id;
+  const titulo=esEntrenador?"🔗 Strava del entrenado":"🔗 Mis actividades de Strava";
+  cont.innerHTML=`<div class="card"><h3>${titulo}</h3><p class="muted">Cargando…</p></div>`;
   const dur=s=>{s=Math.round(+s||0);const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return h?`${h}h ${String(m).padStart(2,"0")}′`:`${m}′ ${String(x).padStart(2,"0")}″`};
   const ritmo=sk=>{if(!sk||!isFinite(sk))return "—";sk=Math.round(sk);return `${Math.floor(sk/60)}:${String(sk%60).padStart(2,"0")} /km`};
   const fechaTxt=f=>{try{return new Date(String(f).slice(0,10)+"T12:00:00").toLocaleDateString("es-ES",{weekday:"short",day:"numeric",month:"short"})}catch(e){return f}};
   const icono=t=>/trail/i.test(t||"")?"⛰️":/run|carrera/i.test(t||"")?"🏃":/ride|bici|cycl/i.test(t||"")?"🚴":/walk|hike/i.test(t||"")?"🥾":/swim/i.test(t||"")?"🏊":/weight|workout|fuerza/i.test(t||"")?"🏋️":"⏱️";
+  const extra=propio?{}:{cliente_id:clienteId};
+  let aviso="";
+  // Vuelta desde Strava con el código de autorización
+  let code="",errSt="";try{code=sessionStorage.getItem("strava_code")||"";errSt=sessionStorage.getItem("strava_error")||"";sessionStorage.removeItem("strava_code");sessionStorage.removeItem("strava_error")}catch(e){}
+  if(propio&&errSt) aviso=`<p class="msg err">No se ha conectado Strava: ${errSt==="access_denied"?"has cancelado el permiso.":esc(errSt)}</p>`;
+  if(propio&&code){
+    try{cont.innerHTML=`<div class="card"><h3>${titulo}</h3><p class="muted">Conectando con Strava y descargando tus actividades…</p></div>`;
+      const r=await stravaFn("conectar",{code});aviso=`<p class="msg ok">✅ Strava conectado${r.nuevas!=null?` · ${r.nuevas} actividad(es) descargadas`:""}.</p>`}
+    catch(e){aviso=`<p class="msg err">No se ha podido conectar Strava: ${esc(e.message)}</p>`}
+  }
+  // Estado de la conexión (y sincronización automática si hace más de 30 min)
+  let est=null,errEst="";
+  try{est=await stravaFn("estado",extra);
+    if(est.conectado&&!code&&(!est.ultima_sync||Date.now()-new Date(est.ultima_sync).getTime()>30*60000)){
+      try{await stravaFn("sincronizar",extra);est=await stravaFn("estado",extra)}catch(e){}
+    }
+  }catch(e){errEst=e.message}
+  const barra=()=>{
+    if(errEst) return `<p class="msg err">No se puede consultar la conexión con Strava: ${esc(errEst)}</p>`;
+    if(!est||!est.conectado){
+      return propio?`<div class="st-con"><p class="muted">Tu cuenta de Strava no está conectada. Conéctala para que tu entrenador y la app vean tus entrenamientos.</p><button class="st-btn" id="st-conectar">Conectar con Strava</button></div>`
+        :`<div class="st-con"><p class="muted">Este entrenado todavía no ha conectado Strava. Tiene que hacerlo él desde su perfil → «Strava y zonas» → «Conectar con Strava» (se entra con su cuenta de Strava).</p></div>`;
+    }
+    const ult=est.ultima_sync?new Date(est.ultima_sync).toLocaleString("es-ES",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}):"nunca";
+    return `<div class="st-con"><p class="muted">✅ Conectado a Strava${est.nombre?` como <b>${esc(est.nombre)}</b>`:""} · última sincronización: ${esc(ult)}</p>
+      <div class="row"><button class="sec" id="st-sync">🔄 Sincronizar ahora</button>${propio?`<button class="sec" id="st-desc">Desconectar</button>`:""}</div></div>`;
+  };
   try{
-    const atl=await db("GET","atletas",`?user_id=eq.${S.user.id}&select=id`);
+    const atl=await db("GET","atletas",`?user_id=eq.${clienteId}&select=id`);
     const ids=(atl||[]).map(a=>a.id);
-    if(!ids.length){cont.innerHTML=`<div class="card"><h3>🔗 Strava y zonas</h3><p class="muted">Tu entrenador todavía no ha vinculado tu perfil de running. En cuanto lo haga, aquí verás tus actividades de Strava.</p></div>`;return}
-    const desde=isoLocal(new Date(Date.now()-90*86400000));
-    const [acts,zs,perf]=await Promise.all([
-      db("GET","actividades",`?atleta_id=in.(${ids.join(",")})&fecha=gte.${desde}&select=*&order=inicio.desc&limit=60`).catch(()=>[]),
-      db("GET","zonas",`?atleta_id=in.(${ids.join(",")})&select=*`).catch(()=>[]),
-      db("GET","perfil_atleta",`?atleta_id=in.(${ids.join(",")})&select=*`).catch(()=>[])
-    ]);
-    const zonas=cargaZonasAtleta(zs,(perf||[])[0]);
-    const lista=(acts||[]).map(a=>{
+    let acts=[],zonas=[];
+    if(ids.length){
+      const desde=isoLocal(new Date(Date.now()-90*86400000));
+      const [a,zs,perf]=await Promise.all([
+        db("GET","actividades",`?atleta_id=in.(${ids.join(",")})&fecha=gte.${desde}&select=*&order=inicio.desc&limit=60`).catch(()=>[]),
+        db("GET","zonas",`?atleta_id=in.(${ids.join(",")})&select=*`).catch(()=>[]),
+        db("GET","perfil_atleta",`?atleta_id=in.(${ids.join(",")})&select=*`).catch(()=>[])
+      ]);
+      acts=a||[];zonas=cargaZonasAtleta(zs,(perf||[])[0]);
+    }
+    const lista=acts.map(a=>{
       const km=a.distancia_m?a.distancia_m/1000:null, sk=km&&a.duracion_s?a.duracion_s/km:null;
       const zFC=a.fc_media?cargaZonaPorFC(+a.fc_media,zonas):null;
       const datos=[km!=null?`<b>${km.toFixed(2)} km</b>`:"",a.duracion_s?`⏱ ${dur(a.duracion_s)}`:"",sk?`⚡ ${ritmo(sk)}`:"",a.desnivel_m!=null?`⛰ +${Math.round(a.desnivel_m)} m`:"",a.fc_media?`❤️ ${Math.round(a.fc_media)} ppm${zFC?` (Z${zFC})`:""}`:"",(a.rpe??a.perceived_exertion)!=null?`RPE ${a.rpe??a.perceived_exertion}`:""].filter(Boolean).join(" · ");
@@ -1830,12 +1887,17 @@ async function tabStravaCliente(host){
       const f=v=>t==="ritmo"?ritmo(v).replace(" /km",""):Math.round(v);
       return `<div class="st-zonas"><b>${t==="fc"?"❤️ Zonas de FC (ppm)":"⚡ Zonas de ritmo (min/km)"}</b>${z.map(x=>`<span>Z${x.zona}: ${f(Math.min(+x.minimo,+x.maximo))}–${f(Math.max(+x.minimo,+x.maximo))}</span>`).join("")}</div>`};
     const zonasHtml=filaZ("fc")+filaZ("ritmo");
-    const n=(acts||[]).length, kmTot=(acts||[]).reduce((t,a)=>t+(+a.distancia_m||0),0)/1000;
-    cont.innerHTML=`<div class="card"><h3>🔗 Mis actividades de Strava</h3>
-      ${n?`<p class="muted">Últimos 90 días: ${n} actividad(es) · ${kmTot.toFixed(1)} km</p>${lista}`:`<p class="muted">Todavía no hay actividades de Strava sincronizadas en los últimos 90 días. Si acabas de entrenar, puede tardar un poco en aparecer; si no aparece nada, avisa a tu entrenador.</p>`}
-    </div>${zonasHtml?`<div class="card"><h3>Mis zonas</h3>${zonasHtml}</div>`:""}`;
-  }catch(e){cont.innerHTML=`<div class="card"><h3>🔗 Strava y zonas</h3><p class="muted">No se han podido cargar tus actividades (${esc(e.message)}).</p></div>`}
+    const kmTot=acts.reduce((t,a)=>t+(+a.distancia_m||0),0)/1000;
+    cont.innerHTML=`<div class="card"><h3>${titulo}</h3>${aviso}${barra()}
+      ${!ids.length?`<p class="muted">${esTrenadorTxt(esEntrenador)}</p>`:acts.length?`<p class="muted">Últimos 90 días: ${acts.length} actividad(es) · ${kmTot.toFixed(1)} km</p>${lista}`:(est&&est.conectado?`<p class="muted">No hay actividades en los últimos 90 días.</p>`:"")}
+    </div>${zonasHtml?`<div class="card"><h3>Zonas</h3>${zonasHtml}</div>`:""}`;
+  }catch(e){cont.innerHTML=`<div class="card"><h3>${titulo}</h3>${aviso}${barra()}<p class="muted">No se han podido cargar las actividades (${esc(e.message)}).</p></div>`}
+  const bc=$("#st-conectar"); if(bc) bc.onclick=async()=>{bc.disabled=true;bc.textContent="Abriendo Strava…";try{await stravaConectar()}catch(e){bc.disabled=false;bc.textContent="Conectar con Strava";alertaStrava(cont,e.message)}};
+  const bs=$("#st-sync"); if(bs) bs.onclick=async()=>{bs.disabled=true;bs.textContent="Sincronizando…";try{await stravaFn("sincronizar",extra);tabStravaCliente(host,clienteId,esEntrenador)}catch(e){bs.disabled=false;bs.textContent="🔄 Sincronizar ahora";alertaStrava(cont,e.message)}};
+  const bd=$("#st-desc"); if(bd) bd.onclick=async()=>{if(!confirm("¿Desconectar tu cuenta de Strava? Las actividades ya descargadas se mantienen."))return;try{await stravaFn("desconectar");tabStravaCliente(host,clienteId,esEntrenador)}catch(e){alertaStrava(cont,e.message)}};
 }
+function esTrenadorTxt(esEntrenador){return esEntrenador?"Este entrenado todavía no tiene perfil de running/trail. Actívale el apartado de running para poder vincular Strava.":"Tu entrenador todavía no ha activado tu perfil de running. En cuanto lo haga podrás conectar Strava aquí."}
+function alertaStrava(cont,t){const c=cont.querySelector(".card");if(c) c.insertAdjacentHTML("afterbegin",`<p class="msg err">${esc(t)}</p>`)}
 
 /* ---------- Resistencia integrada en la página general ---------- */
 function embebido(host,ruta){
@@ -2102,7 +2164,7 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
     cont.innerHTML=`
       ${msgAviso?`<p class="cal-aviso card">${esc(msgAviso)}</p>`:""}
       ${admin?`<div class="row res-acceso"><button class="sec" data-plantillas>📋 Crear plan con una plantilla (iniciación fuerza, asfalto o trail)</button></div>`:""}
-      ${admin&&RES_ACTIVA?`<div class="row res-acceso"><button class="sec" data-irres>🏃 Planificar running / trail (pasos por zona, Strava, tests)</button></div>`:""}
+      ${admin?`<div class="row res-acceso">${RES_ACTIVA?`<button class="sec" data-irres>🏃 Planificar running / trail (pasos por zona, tests)</button>`:""}<button class="sec" data-irstrava>🔗 Strava del entrenado</button></div>`:""}
       ${admin?`<div class="borrado-bar row">
         <button class="${modoSel?"gold":"sec"}" data-selmodo>${modoSel?"✓ Seleccionando días…":"☑ Seleccionar días para borrar"}</button>
         <button class="sec" data-borrado>🗑 Borrar varias…</button>
@@ -2182,6 +2244,7 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
       q("[data-borrado]").onclick=()=>{verBorrado=!verBorrado;verSemana=false;modoSel=false;selDias.clear();pintar()};
       q("[data-semana]").onclick=()=>{verSemana=!verSemana;verBorrado=false;modoSel=false;selDias.clear();pintar()};
       if(q("[data-irres]")) q("[data-irres]").onclick=()=>{if(window.__verRes) window.__verRes()};
+      if(q("[data-irstrava]")) q("[data-irstrava]").onclick=()=>{if(window.__verStrava) window.__verStrava()};
       if(q("[data-plantillas]")) q("[data-plantillas]").onclick=async()=>{
         let c=null;
         try{[c]=await db("GET","perfiles",`?id=eq.${clienteId}&select=id,nombre,modulos`)}catch(e){}
@@ -3151,6 +3214,13 @@ async function init(){
   if(window.top!==window&&new URLSearchParams(location.search).get("embed")){document.body.innerHTML='<p style="padding:16px;font-family:sans-serif">No se ha encontrado la app de resistencia en esta ruta.</p>';return}
   const h=new URLSearchParams(location.hash.slice(1));
   const q=new URLSearchParams(location.search);
+  if(String(q.get("state")||"").startsWith("strava-")){
+    try{if(q.get("code")) sessionStorage.setItem("strava_code",q.get("code"));
+      if(q.get("error")) sessionStorage.setItem("strava_error",q.get("error"));
+      else if(q.get("code")&&!/activity:read_all/.test(q.get("scope")||"")) sessionStorage.setItem("strava_error","hay que dejar marcada la casilla de ver tus actividades");
+      sessionStorage.setItem("ir","strava");sessionStorage.removeItem("strava_state")}catch(e){}
+    history.replaceState(null,"",location.pathname);q.delete("error");q.delete("error_code");
+  }
   if(q.get("ir")){try{sessionStorage.setItem("ir",q.get("ir"))}catch(e){} history.replaceState(null,"",location.pathname+location.hash);}
   // Enlace del correo con error (caducado, ya usado…): avisar con un mensaje claro
   const errCode=h.get("error_code")||q.get("error_code"), errDesc=h.get("error_description")||q.get("error_description");
