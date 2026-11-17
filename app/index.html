@@ -87,7 +87,7 @@ details summary{cursor:pointer;padding:4px 0}
 .exn .nota{color:#ddd;font-weight:400;font-size:12px}
 .exlink{color:inherit;text-decoration:underline;text-underline-offset:3px}
 /* Tabla compacta: una línea por ejercicio */
-.ghead,.grow{display:grid;grid-template-columns:minmax(0,1.9fr) .42fr .42fr .55fr 1.15fr .5fr .55fr;gap:3px;align-items:center}
+.ghead,.grow{display:grid;grid-template-columns:minmax(0,1.7fr) .38fr .38fr .5fr .5fr 1fr .46fr .5fr;gap:3px;align-items:center}
 .ghead{font-size:11px;color:#555;text-align:center;padding:4px 0;border-bottom:1px solid #ccc;font-weight:700}
 .ghead span:first-child{text-align:left}
 .grow{padding:4px 0;border-bottom:1px solid rgba(0,0,0,.12);font-size:13px}
@@ -589,6 +589,15 @@ html body:not(.cli) .login button.gold{height:46px;border-radius:9px;font-size:1
 html body:not(.cli) .login a,html body:not(.cli) .login p,html body:not(.cli) .login h2,html body:not(.cli) .login h3,html body:not(.cli) .login label{color:#eee!important}
 html body:not(.cli) .login .msg.err{color:#ffb4a8!important}
 html body:not(.cli) .login .msg.ok{color:#bfe8b0!important}
+
+/* Entrada única: avisos de disciplina sin asignar */
+.pend-aviso{padding:10px 13px;font-size:13.5px;border-left:4px solid #eda100;margin-bottom:10px}
+.ent-abrir.pendiente{border-left:4px solid #eda100}
+.pend-chip{display:block;font-size:11px;opacity:.75;font-weight:600}
+.res-acceso{margin-bottom:8px}
+.res-acceso button{width:100%;text-align:left;font-size:13.5px}
+.res-vuelta{align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.res-vuelta button{width:auto}
 </style>
 </head>
 <body>
@@ -797,7 +806,7 @@ function entrar(){
 function pantallaSinModulos(){
   $("#app").innerHTML=`<div class="login card">
     <h2>Tu cuenta está lista</h2>
-    <p class="muted">Tu entrenador todavía no te ha activado ningún apartado (Funcional o Resistencia). Avísale y, en cuanto lo haga, podrás entrar.</p>
+    <p class="muted">Ya tienes la cuenta creada. Tu entrenador tiene que decirle a la app si entrenas <b>fuerza</b>, <b>running / trail</b> o las dos cosas; en cuanto lo haga, al volver a entrar verás tus entrenamientos.</p>
     <button class="sec" id="sal">Salir</button></div>`;
   $("#sal").onclick=salir;
 }
@@ -1050,7 +1059,7 @@ function sesionHTML(s,editable,conLeyenda=editable){
     if(esPrin&&ult&&ult.principal){ult.items.push(...items);return}
     grupos.push({nombre:esPrin?"Parte principal":(b.nombre||""),principal:esPrin,items});
   });
-  const cabeza=`<div class="ghead"><span>Ejercicio</span><span>Series</span><span>Reps</span><span>Hechas</span><span>Intensidad</span><span>RIR</span><span>RPE</span></div>`;
+  const cabeza=`<div class="ghead"><span>Ejercicio</span><span>Series</span><span>Reps</span><span>Hechas</span><span>Kg</span><span>Intensidad</span><span>RIR</span><span>RPE</span></div>`;
   const bloques=grupos.map(g=>{
     const cab=`<div class="cab">${esc(g.nombre)}</div>`;
     const letra=x=>String((normEj(x).cod)||"").replace(/[^A-Za-z]/g,"").charAt(0).toUpperCase();
@@ -1058,13 +1067,14 @@ function sesionHTML(s,editable,conLeyenda=editable){
       <div class="gname">${e.cod?`<b>${esc(e.cod)}</b> `:""}${nombreVideo(e)}${btnVideoMini(e)}${e.nota?`<div class="gsub">📝 ${esc(e.nota)}</div>`:""}${e.prog?`<div class="gsub">📈 ${esc(e.prog)}</div>`:""}</div>
       <span>${esc(e.ser)}</span><span>${esc(e.rep)}</span>
       <input data-k="${k}" data-f="reps" value="${esc(r.reps)}" ${dis}>
+      <input data-k="${k}" data-f="kg" inputmode="decimal" placeholder="kg" value="${esc(r.kg)}" ${dis}>
       <div class="intb">${esc(e.int)}</div>
       ${pick(k,"rir",r.rir,false,editable,e.rir)}
       ${pick(k,"rpe",r.rpe,true,editable,e.rpe)}
     </div>`}).join("");
   }).join("");
   const hayObj=grupos.some(g=>g.items.some(({x})=>{const e=normEj(x);return e.rir||e.rpe}));
-  return bloques+(hayObj?`<p class="obj-ayuda">En <b>RIR</b> y <b>RPE</b> ves en gris el <b>objetivo</b> que te marca tu entrenador. Tócalo para apuntar lo que has hecho de verdad.</p>`:"")+`<div class="rpe-tot"><b>RPE total del entrenamiento</b><div class="rpe-tot-pick">${pick("s","rpe",(R.s||{}).rpe,true,editable)}</div></div><div class="rpe-tot"><b>Duración del entrenamiento (min)</b><div class="rpe-tot-pick"><input data-k="s" data-f="min" inputmode="numeric" placeholder="min" value="${esc((R.s||{}).min??"")}" ${dis} style="margin:0;text-align:center;font-weight:700"></div></div><div class="muted" style="margin-top:10px">Comentario del entrenamiento</div><textarea data-k="s" data-f="com" placeholder="Cómo ha ido la sesión" rows="2" ${dis}>${esc((R.s||{}).com)}</textarea>${conLeyenda?`<div style="margin-top:12px">${leyendaRPE()}</div>`:""}`;
+  return bloques+(hayObj?`<p class="obj-ayuda">En <b>RIR</b> y <b>RPE</b> ves en gris el <b>objetivo</b> que te marca tu entrenador. Tócalo para apuntar lo que has hecho de verdad. En <b>Kg</b> apunta el peso que has usado: con él se calcula tu fuerza estimada.</p>`:"")+`<div class="rpe-tot"><b>RPE total del entrenamiento</b><div class="rpe-tot-pick">${pick("s","rpe",(R.s||{}).rpe,true,editable)}</div></div><div class="rpe-tot"><b>Duración del entrenamiento (min)</b><div class="rpe-tot-pick"><input data-k="s" data-f="min" inputmode="numeric" placeholder="min" value="${esc((R.s||{}).min??"")}" ${dis} style="margin:0;text-align:center;font-weight:700"></div></div><div class="muted" style="margin-top:10px">Comentario del entrenamiento</div><textarea data-k="s" data-f="com" placeholder="Cómo ha ido la sesión" rows="2" ${dis}>${esc((R.s||{}).com)}</textarea>${conLeyenda?`<div style="margin-top:12px">${leyendaRPE()}</div>`:""}`;
 }
 function leerRegistro(raiz){
   const reg={};
@@ -1291,13 +1301,18 @@ aplicarTema(temaOscuro());
 
 /* ---------- Panel del entrenador ---------- */
 async function listaClientes(){
-  const cs=await db("GET","perfiles","?rol=eq.cliente&order=nombre.asc&select=id,nombre,foto");
+  const cs=await db("GET","perfiles","?rol=eq.cliente&order=nombre.asc&select=id,nombre,foto,modulos");
+  const pendiente=c=>!modulosDe(c).length;
+  cs.sort((a,b)=>(pendiente(b)-pendiente(a))||String(a.nombre||"").localeCompare(String(b.nombre||"")));
+  const nPend=cs.filter(pendiente).length;
   shell(`<div id="tab"><div class="an-panel ent-lista">
     <h2 class="ent-tit">Entrenados (${cs.length})</h2>
+    ${nPend?`<p class="card pend-aviso">⏳ ${nPend===1?"Hay 1 entrenado nuevo":"Hay "+nPend+" entrenados nuevos"} esperando a que le${nPend===1?"":"s"} digas qué entrena${nPend===1?"":"n"}. Ábrelo${nPend===1?"":"s"} y marca Fuerza, Running / trail o las dos.</p>`:""}
     ${cs.length?"":`<p class="muted">Todavía no hay entrenados. Se registran ellos desde la pantalla de inicio.</p>`}
-    ${cs.map(c=>`<button class="ent-abrir" data-c="${c.id}">${c.foto?`<img class="ent-av" src="${c.foto}" alt="">`:`<span class="ent-av ent-ini">${esc((c.nombre||"?")[0].toUpperCase())}</span>`}<span>${esc(c.nombre||"Sin nombre")}</span><span class="badge-msg" data-bc="${c.id}"></span></button>`).join("")}
+    ${cs.map(c=>`<button class="ent-abrir${pendiente(c)?" pendiente":""}" data-c="${c.id}">${c.foto?`<img class="ent-av" src="${c.foto}" alt="">`:`<span class="ent-av ent-ini">${esc((c.nombre||"?")[0].toUpperCase())}</span>`}<span>${esc(c.nombre||"Sin nombre")}${pendiente(c)?'<small class="pend-chip">⏳ sin asignar</small>':""}</span><span class="badge-msg" data-bc="${c.id}"></span></button>`).join("")}
   </div></div>`);
-  $("#cnav").innerHTML='<button class="on">Entrenados</button>';
+  $("#cnav").innerHTML='<button class="on">Entrenados</button><button id="rescarga">📈 Carga de todos</button>';
+  $("#rescarga").onclick=tabResumenCarga;
   document.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>fichaCliente(b.dataset.c));
   refrescarBadges();
 }
@@ -1305,7 +1320,7 @@ async function fichaCliente(id){
   const [c]=await db("GET","perfiles",`?id=eq.${id}&select=*`);
   const ses=await db("GET","sesiones",`?cliente_id=eq.${id}&order=created_at.desc&select=*`);
   shell(`<div id="tab"></div>`,c);
-  $("#cnav").innerHTML=`<button id="volver">← Clientes</button><button id="ta" class="on">Entrenamientos</button><button id="tr">🏃 Resistencia</button><button id="tf">📈 Carga</button><button id="tb">Anamnesis</button><button id="tc">Historial</button><button id="td">Mensajes<span class="badge-msg" data-bc="${id}"></span></button>`;
+  $("#cnav").innerHTML=`<button id="volver">← Clientes</button><button id="ta" class="on">Entrenamientos</button><button id="tf">📈 Carga</button><button id="tb">Anamnesis</button><button id="tc">Historial</button><button id="td">Mensajes<span class="badge-msg" data-bc="${id}"></span></button>`;
   $("#volver").onclick=listaClientes;
 
   const verEntrenos=()=>{
@@ -1359,12 +1374,16 @@ async function fichaCliente(id){
   const verAnam=()=>subTabs([["Valoración inicial",()=>anValoracionEntrenador(c,"ini")],["Anamnesis",()=>anamnesisEntrenador(c)],["Valoración funcional",()=>anValoracionEntrenador(c,"fun")],["Test FMS",()=>anValoracionEntrenador(c,"fms")]]);
   const verHist=()=>{$("#tab").innerHTML=tabHistorial(ses)};
   const verMsgs=()=>tabMensajes(id,true);
+  // La planificación por zonas y Strava se abren dentro de «Entrenamientos», no en una pestaña aparte
   const verRes=()=>{
-    if(!modulosDe(c).includes("resistencia")){$("#tab").innerHTML=`<div class="card"><h3>Resistencia</h3><p class="muted">${esc(c.nombre||"Este cliente")} no tiene activado el apartado de Resistencia. Actívalo en Entrenamientos → «Apartados de la app».</p></div>`;return}
-    embebido("#tab","atleta="+id);
+    if(!modulosDe(c).includes("resistencia")){$("#tab").innerHTML=`<div class="card"><h3>Running / trail</h3><p class="muted">${esc(c.nombre||"Este cliente")} todavía no tiene activado el apartado de running. Actívalo en Entrenamientos → «Apartados de la app».</p></div>`;return}
+    $("#tab").innerHTML=`<div class="row res-vuelta"><button class="sec" id="res-volver">← Volver al calendario</button><b>🏃 Running / trail de ${esc(c.nombre||"este cliente")}</b></div><div id="res-emb"></div>`;
+    $("#res-volver").onclick=()=>{$("#ta").click()};
+    embebido("#res-emb","atleta="+id);
   };
+  window.__verRes=verRes;
   const verCarga=()=>tabCarga("#tab",id,c.nombre);
-  pestanas(["ta","tr","tf","tb","tc","td"],[verEntrenos,verRes,verCarga,verAnam,verHist,verMsgs]);
+  pestanas(["ta","tf","tb","tc","td"],[verEntrenos,verCarga,verAnam,verHist,verMsgs]);
   verEntrenos();
   refrescarBadges();
 }
@@ -1890,9 +1909,11 @@ async function tabCalendario(clienteId,puedeMover,host="#tab"){
 // El calendario se puede ocultar (en móvil se oculta solo al elegir un día con entreno) y se recuerda
 let CAL_OCULTO=false;
 const pantallaPequena=()=>window.innerWidth<760||window.innerHeight<720;
+let RES_ACTIVA=false;
 async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=null,avisoIni=""){
   const [todas,resis]=await Promise.all([db("GET","sesiones",`?cliente_id=eq.${clienteId}&order=created_at.desc&select=*`),sesionesResistencia(clienteId)]);
   let zonasRes=[];
+  if(admin){try{const [pf]=await db("GET","perfiles",`?id=eq.${clienteId}&select=modulos`);RES_ACTIVA=modulosDe(pf).includes("resistencia")}catch(e){RES_ACTIVA=false}}
   if(resis.length){try{zonasRes=await db("GET","zonas",`?atleta_id=eq.${resis[0].atleta_id}&select=*`)}catch(e){}}
   const hoy=new Date(), hoyIso=isoLocal(hoy);
   const conF=todas.map(s=>({s,d:parseFecha(s.fecha)})).filter(x=>x.d);
@@ -1906,7 +1927,10 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
   if(irA){const di=new Date(irA+"T00:00:00");if(!isNaN(di)){diaSel=irA;mes=new Date(di.getFullYear(),di.getMonth(),1)}}
   let arrastrado=false;
   let aviso=avisoIni||"";
-  let modoSel=false; const selDias=new Set(); let verBorrado=false;
+  let modoSel=false; const selDias=new Set(); let verBorrado=false; let verSemana=false;
+  const lunesDe=k=>{const d=new Date(k+"T00:00:00");d.setDate(d.getDate()-((d.getDay()+6)%7));return isoLocal(d)};
+  const txtDia=k=>{const [y2,m2,d2]=k.split("-");return `${d2}/${m2}/${y2}`};
+  let deshacer=null;
   const porDia=new Map();
   const meterRes=()=>resis.forEach(p=>porDia.set(p.fecha,[...(porDia.get(p.fecha)||[]),p]));
   conF.forEach(({s,d})=>{const k=isoLocal(d);porDia.set(k,[...(porDia.get(k)||[]),s])});
@@ -1950,8 +1974,14 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
       const trozos=(ids,n=80)=>{const r=[];for(let i=0;i<ids.length;i+=n)r.push(ids.slice(i,i+n));return r};
       for(const t of trozos(lista.filter(x=>!x._res).map(x=>x.id))) await db("DELETE","sesiones",`?id=in.(${t.join(",")})`,null,"return=minimal");
       for(const t of trozos(lista.filter(x=>x._res).map(x=>x.id))) await db("DELETE","sesiones_planificadas",`?id=in.(${t.join(",")})`,null,"return=minimal");
+      ULTIMO_BORRADO={clienteId,lista:lista.map(x=>JSON.parse(JSON.stringify(x))),cuando:Date.now()};
       await tabEntrenosCal(host,clienteId,admin);
-      const c=$(host); if(c) c.insertAdjacentHTML("afterbegin",`<p class="cal-aviso card">✓ ${esc(txt)}</p>`);
+      const c=$(host);
+      if(c) c.insertAdjacentHTML("afterbegin",`<p class="cal-aviso card">✓ ${esc(txt)} <button class="sec" id="deshacer-b">↶ Deshacer</button></p>`);
+      const bd=$("#deshacer-b");
+      if(bd) bd.onclick=async()=>{bd.disabled=true;bd.textContent="Restaurando…";
+        try{await restaurarBorradas(clienteId);await tabEntrenosCal(host,clienteId,admin,null,"Sesiones restauradas")}
+        catch(e){bd.disabled=false;bd.textContent="↶ Deshacer";alert("No se pudo restaurar: "+e.message)}};
     }catch(e){aviso="No se pudo borrar: "+e.message;pintar()}
   };
   const pintar=()=>{
@@ -1982,9 +2012,19 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
     const nF=selSes.filter(x=>!x._res).length, nR=selSes.filter(x=>x._res).length;
     cont.innerHTML=`
       ${msgAviso?`<p class="cal-aviso card">${esc(msgAviso)}</p>`:""}
+      ${admin&&RES_ACTIVA?`<div class="row res-acceso"><button class="sec" data-irres>🏃 Planificar running / trail (pasos por zona, Strava, tests)</button></div>`:""}
       ${admin?`<div class="borrado-bar row">
         <button class="${modoSel?"gold":"sec"}" data-selmodo>${modoSel?"✓ Seleccionando días…":"☑ Seleccionar días para borrar"}</button>
-        <button class="sec" data-borrado>🗑 Borrar varias…</button></div>
+        <button class="sec" data-borrado>🗑 Borrar varias…</button>
+        <button class="sec" data-semana>📅 Copiar semana…</button></div>
+        ${verSemana?`<div class="card borrado-panel">
+          <h3>Copiar o mover una semana entera</h3>
+          <p class="muted">Se copian todas las sesiones de la semana del día elegido (de lunes a domingo), manteniendo cada una en su mismo día.</p>
+          <div class="row"><label>Semana de origen (lunes ${esc(txtDia(lunesDe(diaSel)))}) <input type="date" id="sOrig" value="${esc(diaSel)}"></label>
+          <label>Pegar en la semana de <input type="date" id="sDest"></label></div>
+          <label class="mod-chk"><input type="checkbox" id="sMover"> Mover en vez de copiar (vacía la semana de origen)</label>
+          <div class="row"><button class="gold" data-copiarsem>Copiar semana</button><button class="sec" data-cerrarsem>Cancelar</button></div>
+          <div class="msg" id="sMsg"></div></div>`:""}
         ${modoSel?`<div class="card sel-bar"><span>${selDias.size?`<b>${selDias.size}</b> día(s) · <b>${selSes.length}</b> sesión(es)${nF&&nR?` (${nF} fuerza, ${nR} resistencia)`:""}`:"Toca los días del calendario que quieras borrar."}</span>
           <button class="sec" data-selmes>Todo el mes</button>
           <button class="danger" data-borrarsel${selSes.length?"":" disabled"}>Borrar seleccionadas</button>
@@ -2049,7 +2089,40 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
     if(admin){
       const q=sel=>cont.querySelector(sel);
       q("[data-selmodo]").onclick=()=>{modoSel=!modoSel;selDias.clear();verBorrado=false;if(modoSel)CAL_OCULTO=false;pintar()};
-      q("[data-borrado]").onclick=()=>{verBorrado=!verBorrado;modoSel=false;selDias.clear();pintar()};
+      q("[data-borrado]").onclick=()=>{verBorrado=!verBorrado;verSemana=false;modoSel=false;selDias.clear();pintar()};
+      q("[data-semana]").onclick=()=>{verSemana=!verSemana;verBorrado=false;modoSel=false;selDias.clear();pintar()};
+      if(q("[data-irres]")) q("[data-irres]").onclick=()=>{if(window.__verRes) window.__verRes()};
+      if(verSemana){
+        q("[data-cerrarsem]").onclick=()=>{verSemana=false;pintar()};
+        q("[data-copiarsem]").onclick=async()=>{
+          const o=q("#sOrig").value,d=q("#sDest").value,mover=q("#sMover").checked,m=q("#sMsg");
+          if(!o||!d){m.textContent="Elige las dos semanas";m.className="msg err";return}
+          const lo=lunesDe(o),ld=lunesDe(d);
+          if(lo===ld){m.textContent="Son la misma semana";m.className="msg err";return}
+          const dias=Array.from({length:7},(_,i)=>{const x=new Date(lo+"T00:00:00");x.setDate(x.getDate()+i);return isoLocal(x)});
+          const lista=dias.flatMap(k=>porDia.get(k)||[]);
+          if(!lista.length){m.textContent="Esa semana no tiene sesiones";m.className="msg err";return}
+          const desplaza=k=>{const x=new Date(k+"T00:00:00");x.setDate(x.getDate()+Math.round((new Date(ld)-new Date(lo))/86400000));return isoLocal(x)};
+          m.textContent=(mover?"Moviendo ":"Copiando ")+lista.length+" sesión(es)…";m.className="msg";
+          try{
+            for(const x of lista){
+              const kOrig=x._res?String(x.fecha).slice(0,10):isoLocal(parseFecha(x.fecha));
+              const nueva=desplaza(kOrig);
+              if(x._res){
+                if(mover) await db("PATCH","sesiones_planificadas",`?id=eq.${x.id}`,{fecha:nueva},"return=minimal");
+                else{const n2={atleta_id:x.atleta_id,fecha:nueva,tipo:x.tipo,descripcion:x.descripcion,duracion_min:x.duracion_min,estado:"pendiente"};
+                  if(x.bloque_id)n2.bloque_id=x.bloque_id; if(x.pasos)n2.pasos=x.pasos;
+                  await db("POST","sesiones_planificadas","",n2,"return=minimal")}
+              }else{
+                const [y3,m3,d3]=nueva.split("-"), txtF=`${d3}/${m3}/${y3}`;
+                if(mover) await db("PATCH","sesiones",`?id=eq.${x.id}`,{fecha:txtF},"return=minimal");
+                else await db("POST","sesiones","",{cliente_id:clienteId,fecha:txtF,titulo:x.titulo,bloques:x.bloques,registro:{}},"return=minimal");
+              }
+            }
+            await tabEntrenosCal(host,clienteId,admin,ld,`Semana ${mover?"movida":"copiada"}: ${lista.length} sesión(es) al ${txtDia(ld)}`);
+          }catch(e){m.textContent="No se pudo: "+e.message;m.className="msg err"}
+        };
+      }
       if(modoSel){
         q("[data-cancelsel]").onclick=()=>{modoSel=false;selDias.clear();pintar()};
         q("[data-selmes]").onclick=()=>{for(const k of porDia.keys()){const [yy,mm]=k.split("-");if(+yy===y&&+mm-1===mo)selDias.add(k)}pintar()};
@@ -2200,7 +2273,7 @@ function accesoHTML(c){
       <button class="sec" id="acSin">Quitar límite</button>
     </div>
     <h3 style="margin-top:16px">Apartados de la app</h3>
-    <p class="muted">Marca lo que tiene contratado. Solo verá los apartados marcados.</p>
+    ${modulosDe(c).length?`<p class="muted">Marca lo que tiene contratado. Solo verá los apartados marcados.</p>`:`<p class="pend-aviso" style="margin:6px 0 10px">⏳ <b>Sin asignar.</b> Hasta que marques fuerza, running o las dos, ${esc(c.nombre||"este entrenado")} solo ve una pantalla de espera al entrar.</p>`}
     <div class="row mod-row">
       <label class="mod-chk"><input type="checkbox" id="mFun"${modulosDe(c).includes("funcional")?" checked":""}> Funcional (fuerza)</label>
       <label class="mod-chk"><input type="checkbox" id="mRes"${modulosDe(c).includes("resistencia")?" checked":""}> Resistencia (running / trail)</label>
@@ -2306,13 +2379,20 @@ async function panelCliente(tab,sub){
   // subTabs() sustituye todo #tab por su barra de subpestañas; al volver a otra pestaña principal
   // hay que restaurar #tab, si no el contenido se pinta dentro de la barra de valoración.
   const limpiarTab=()=>{$("#tab").innerHTML=`<div id="sub"></div>`};
-  const lista=[["Entrenamientos",()=>{limpiarTab();return tabEntrenosCal("#sub")}],["Historial",()=>{limpiarTab();return tabHistorialCliente("#sub")}]];
+  const verEntrenosCli=()=>{limpiarTab();
+    $("#sub").insertAdjacentHTML("beforebegin",'<div id="cli-bien"></div><div id="cli-rpe"></div>');
+    tarjetaBienestar("#cli-bien");
+    avisoRPE("#cli-rpe",(f)=>tabEntrenosCal("#sub",S.user.id,false,f));
+    return tabEntrenosCal("#sub")};
+  const misMods=modulosDe(S.perfil);
+  const soloRes=misMods.includes("resistencia")&&!misMods.includes("funcional");
+  const lista=[[soloRes?"Mis carreras":"Entrenamientos",verEntrenosCli],["Mi carga",()=>{limpiarTab();return tabCargaCliente("#sub")}],["Historial",()=>{limpiarTab();return tabHistorialCliente("#sub")}]];
   if(subs.length) lista.push(["Valoración inicial",()=>subTabs(subs)]);
-  if(modulosDe(S.perfil).includes("resistencia")) lista.push(["Strava y zonas",()=>{limpiarTab();embebido("#sub","tab=strava")}]);
+  if(misMods.includes("resistencia")) lista.push(["Strava y zonas",()=>{limpiarTab();embebido("#sub","tab=strava")}]);
   lista.push(["Mensajes",()=>{limpiarTab();return tabMensajes(S.user.id,false,"#sub")}],["Foto y contraseña",()=>{limpiarTab();return tabPerfil()}]);
-  const claves={strava:"Strava y zonas",entrenamientos:"Entrenamientos",calendario:"Entrenamientos",historial:"Historial",valoracion:"Valoración inicial",mensajes:"Mensajes",anamnesis:"Valoración inicial",perfil:"Foto y contraseña"};
+  const claves={strava:"Strava y zonas",entrenamientos:lista[0][0],calendario:lista[0][0],carga:"Mi carga",historial:"Historial",valoracion:"Valoración inicial",mensajes:"Mensajes",anamnesis:"Valoración inicial",perfil:"Foto y contraseña"};
   const key=tab==="perfil"?(sub||"perfil"):(tab||"entrenamientos");
-  const iconos={"Strava y zonas":"🔗","Entrenamientos":"🏋️","Historial":"🕘","Valoración inicial":"📋","Mensajes":"💬","Foto y contraseña":"👤"};
+  const iconos={"Strava y zonas":"🔗","Entrenamientos":"🏋️","Mis carreras":"🏃","Mi carga":"📈","Historial":"🕘","Valoración inicial":"📋","Mensajes":"💬","Foto y contraseña":"👤"};
   shell(`<div id="tab"><div id="sub"></div></div>`);
   let idx=lista.findIndex(n=>n[0]===claves[key]);
   if(idx<0) idx=0;
@@ -3069,6 +3149,45 @@ html.oscuro body .atl-carga{color-scheme:dark;--surface:rgba(38,43,48,.88);--pla
 html:not(.oscuro) body .atl-carga .tip{background:rgba(255,255,255,.95)}
 html.oscuro body .atl-carga .tip{background:#262b30}
 .atl-carga .nota-datos{font-size:12px}
+/* ===== Bienestar diario, aviso de RPE, carga del cliente y resumen de todos ===== */
+.bien-card{padding:12px 14px}
+.bien-cab{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px;font-size:15px}
+.bien-fila{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;padding:5px 0}
+.bien-et{font-size:14px;font-weight:600;line-height:1.2}
+.bien-ops{display:flex;gap:6px}
+.bien-op{width:38px;height:38px;min-width:38px;padding:0;margin:0;border:1px solid rgba(0,0,0,.18);border-radius:10px;background:rgba(255,255,255,.8);font-size:19px;line-height:1;cursor:pointer;filter:grayscale(1);opacity:.55}
+.bien-op.on{filter:none;opacity:1;border-color:var(--acento,#b8860b);box-shadow:0 0 0 2px rgba(184,134,11,.3)}
+.bien-msg{font-size:12px;min-height:16px;margin-top:4px}
+html.oscuro .bien-op{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18)}
+
+.aviso-rpe{padding:12px 14px;border-left:4px solid #eda100}
+.aviso-rpe p{margin:4px 0 8px;font-size:13px}
+.aviso-rpe-b{display:block;width:100%;text-align:left;margin:4px 0;font-size:13px;padding:9px 12px}
+
+.cli-estado{border-radius:10px;padding:10px 12px;margin:8px 0 12px;border-left:4px solid var(--axis,#bbb)}
+.cli-estado.ok{border-left-color:#0ca30c}.cli-estado.info{border-left-color:#8a8a8a}
+.cli-estado.medio{border-left-color:#fab219}.cli-estado.alto{border-left-color:#d03b3b}
+.cli-estado p{margin:3px 0 0;font-size:13.5px}
+.cli-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.cli-kpis>div{background:rgba(255,255,255,.55);border:1px solid rgba(0,0,0,.08);border-radius:10px;padding:9px 11px;display:flex;flex-direction:column}
+html.oscuro .cli-kpis>div{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.10)}
+.cli-kpis .l{font-size:11.5px;opacity:.7}.cli-kpis .v{font-size:23px;font-weight:700;line-height:1.2}
+.cli-kpis .d{font-size:11.5px;opacity:.7}
+.cli-barras{display:flex;align-items:flex-end;gap:5px;height:110px;margin-top:14px}
+.cli-barra{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;gap:3px}
+.cli-barra span{width:100%;min-height:2px;background:var(--acento,#b8860b);border-radius:4px 4px 0 0;opacity:.85}
+.cli-barra.curso span{opacity:.4}
+.cli-barra.curso small{font-weight:700}
+.cli-barra small{font-size:9.5px;opacity:.6}
+
+.res-fila{display:block;width:100%;text-align:left;margin:6px 0;padding:11px 13px;border-radius:10px}
+.res-fila.vacia{opacity:.6}
+.res-cab{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.res-datos{display:block;font-size:12.5px;opacity:.75;margin-top:3px}
+.res-aviso{display:block;font-size:12.5px;margin-top:4px}
+.res-fila .chip{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;color:#fff;white-space:nowrap}
+.res-fila .chip.alto{background:#d03b3b}.res-fila .chip.medio{background:#fab219;color:#111}
+.res-fila .chip.info{background:#8a8a8a}.res-fila .chip.ok{background:#0ca30c}
 </style>
 <script>
 /* =====================================================================
@@ -3411,6 +3530,18 @@ html.oscuro body .atl-carga .tip{background:#262b30}
   }
 
   /**
+   * 1RM estimado con la fórmula de Epley ajustada por el RIR:
+   * repeticiones equivalentes al fallo = reps hechas + RIR → 1RM = kg × (1 + reps/30).
+   * Solo se estima con 12 repeticiones equivalentes o menos: por encima, la estimación deja de ser fiable.
+   */
+  function estimar1RM(kg, repsSerie, rir) {
+    if (kg == null || kg <= 0 || !repsSerie || rir == null) return null;
+    const alFallo = repsSerie + rir;
+    if (alFallo < 1 || alFallo > 12) return null;
+    return Math.round(kg * (1 + alFallo / 30) * 10) / 10;
+  }
+
+  /**
    * Analiza un ejercicio.
    * plan: {ej, ser, rep, rir, rpe}  (lo que pone el entrenador)
    * reg:  {reps, rir, rpe}          (lo que apunta el cliente)
@@ -3435,9 +3566,13 @@ html.oscuro body .atl-carga .tip{background:#262b30}
     const repsSerie = series && reps ? reps / series : null;
     const duras = !calentamiento && rir != null && rir <= RIR_DURA ? series : 0;
     const ce = repsSerie && rir != null ? repsSerie / (repsSerie + rir) : null;
+    // Peso, tonelaje y 1RM estimado (Epley ajustado por RIR; solo si el esfuerzo es fiable)
+    const kg = num(reg && reg.kg);
+    const tonelaje = kg != null && reps ? Math.round(kg * reps) : null;
+    const unRM = estimar1RM(kg, repsSerie, rir);
     return {
       nombre, patron: patron(nombre), calentamiento, hecho,
-      series, reps, rir, rpe, rirObj, duras,
+      series, reps, rir, rpe, rirObj, duras, kg, tonelaje, unRM,
       seriesDurasPlan: !calentamiento && rirObj != null && rirObj <= RIR_DURA ? seriesPlan : 0,
       desvRIR: rir != null && rirObj != null ? rirObj - rir : null,
       ce
@@ -3463,6 +3598,8 @@ html.oscuro body .atl-carga .tip{background:#262b30}
       fecha: ses.fecha, titulo: ses.titulo || 'Fuerza', ejercicios,
       min, rpe: rpeSes, srpe: min != null && rpeSes != null ? r1(min * rpeSes) : null,
       series: hechos.reduce((a, x) => a + x.series, 0),
+      tonelaje: hechos.reduce((a, x) => a + (x.tonelaje || 0), 0) || null,
+      ejerciciosSinKg: hechos.filter(x => x.kg == null).length,
       seriesDuras: hechos.reduce((a, x) => a + x.duras, 0),
       seriesDurasPlan: ejercicios.reduce((a, x) => a + x.seriesDurasPlan, 0),
       reps: hechos.reduce((a, x) => a + x.reps, 0),
@@ -3489,11 +3626,34 @@ html.oscuro body .atl-carga .tip{background:#262b30}
         semana: ini, fin, enCurso: hasta < fin, sesiones: ss.length,
         srpe: r1(sum(s => s.srpe)), minutos: r1(sum(s => s.min)),
         seriesDuras: sum(s => s.seriesDuras), seriesDurasPlan: sum(s => s.seriesDurasPlan), series: sum(s => s.series), reps: sum(s => s.reps),
+        tonelaje: sum(s => s.tonelaje) || null,
         rirMedio: r1(media(s => s.rirMedio, s => s.series)), desvRIR: r1(media(s => s.desvRIR, s => s.series)), ce: r2(media(s => s.ce, s => s.series)),
         porPatron
       });
     }
     return out;
+  }
+
+  /** Mejor 1RM estimado por ejercicio y semana, para ver la progresión. */
+  function progresion1RM(analizadas, { fecha, semanas = 12, hasta, minSemanas = 2 } = {}) {
+    const F = fecha, ultimo = F.lunes(hasta), primer = F.sumarDias(ultimo, -7 * (semanas - 1));
+    const porEj = {};
+    analizadas.forEach(s => {
+      if (s.fecha < primer || s.fecha > hasta) return;
+      const sem = F.lunes(s.fecha);
+      s.ejercicios.forEach(e => {
+        if (e.unRM == null) return;
+        const k = e.nombre.trim();
+        porEj[k] = porEj[k] || { nombre: k, patron: e.patron, semanas: {} };
+        porEj[k].semanas[sem] = Math.max(porEj[k].semanas[sem] || 0, e.unRM);
+      });
+    });
+    return Object.values(porEj).map(x => {
+      const ks = Object.keys(x.semanas).sort();
+      const pri = x.semanas[ks[0]], ult = x.semanas[ks[ks.length - 1]];
+      return Object.assign(x, { n: ks.length, primera: ks[0], ultima: ks[ks.length - 1], valorPrimera: pri, valorUltima: ult,
+        cambio: ks.length > 1 && pri ? r1((ult - pri) / pri * 100) : null });
+    }).filter(x => x.n >= minSemanas).sort((a, b) => (b.cambio ?? -999) - (a.cambio ?? -999));
   }
 
   function alertas(sem) {
@@ -3520,7 +3680,7 @@ html.oscuro body .atl-carga .tip{background:#262b30}
     return res;
   }
 
-  const API = { RIR_DURA, PATRONES: PATRONES.map(p => p[0]).concat('Otros'), PRIORITARIOS, patron, listaReps, analizarEjercicio, analizarSesion, resumenSemanal, alertas };
+  const API = { RIR_DURA, estimar1RM, progresion1RM, PATRONES: PATRONES.map(p => p[0]).concat('Otros'), PRIORITARIOS, patron, listaReps, analizarEjercicio, analizarSesion, resumenSemanal, alertas };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   global.ATLFuerza = API;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -3781,6 +3941,13 @@ border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 4px 16px rgba(0,0
         kpi('Coste percibido (sem. pasada)', ref.coste != null ? fmt(ref.coste, 2) : '—', 'UA de sRPE por cada ECO'),
         kpi('Balance forma-fatiga', fmt(ultFF && ultFF.balance), `forma ${fmt(ultFF && ultFF.forma)} · fatiga ${fmt(ultFF && ultFF.fatiga)}`));
 
+      // aviso de bienestar: si la media baja y la carga sube
+      const bsem = estado.bienestar || [];
+      const bAct = bsem.find(b => b.semana === ref.semana), bPrev = bsem.filter(b => b.semana < ref.semana).slice(-4);
+      if (bAct && bAct.global != null && bPrev.length >= 2) {
+        const m = bPrev.reduce((a, b) => a + (b.global || 0), 0) / bPrev.length;
+        if (m && bAct.global < m - 0.5) alertas.unshift({ nivel: 'medio', texto: `Dice sentirse peor que de costumbre (${fmt(bAct.global, 1)} sobre 5 frente a ${fmt(m, 1)} de media). Si la carga va alta, conviene aflojar.` });
+      }
       const sAlert = h('div', { class: 'card' }, h('h3', { text: 'Avisos de la semana' }), h('p', { class: 'sub', text: 'Para decidir si subir, mantener o bajar la carga.' }),
         h('ul', { class: 'alertas' }, alertas.map(a => h('li', {}, h('span', { class: 'chip ' + a.nivel, text: { alto: 'Alto', medio: 'Atención', info: 'Info', ok: 'OK' }[a.nivel] }), h('span', { text: a.texto })))));
 
@@ -3800,6 +3967,12 @@ border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 4px 16px rgba(0,0
         ['D+ (m)', w => fmt(w.desnivel)], ['ECOs plan', w => fmt(w.ecosPlan)], ['ECOs real', w => fmt(w.ecosReal)], ['Cumpl.', w => w.cumplimiento == null ? '—' : fmt(w.cumplimiento * 100) + ' %'],
         ['sRPE', w => fmt(w.srpe)], ['Var.', w => w.variacion == null ? '—' : (w.variacion > 0 ? '+' : '') + fmt(w.variacion * 100) + ' %'],
         ['Monot.', w => fmt(w.monotonia, 2)], ['Strain', w => fmt(w.strain)], ['sRPE/ECO', w => fmt(w.coste, 2)]];
+      const bienPorSem = {}; (estado.bienestar || []).forEach(b => bienPorSem[b.semana] = b);
+      if (estado.bienestar && estado.bienestar.length) cols.push(
+        ['Sueño', w => fmt((bienPorSem[w.semana] || {}).sueno, 1)],
+        ['Energía', w => fmt((bienPorSem[w.semana] || {}).fatiga, 1)],
+        ['Dolor', w => fmt((bienPorSem[w.semana] || {}).dolor, 1)],
+        ['Ánimo', w => fmt((bienPorSem[w.semana] || {}).animo, 1)]);
       const tabla = h('div', { class: 'card' }, h('h3', { text: 'Tabla semanal' }), h('div', { class: 'tabla' }, h('table', {},
         h('thead', {}, h('tr', {}, cols.map(c => h('th', { text: c[0] })))),
         h('tbody', {}, [...sem].reverse().map(w => h('tr', {}, cols.map(([n, f]) => {
@@ -3866,7 +4039,8 @@ border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 4px 16px rgba(0,0
         kpi('Series duras (sem. pasada)', fmt(ref.seriesDuras), ref.seriesDurasPlan ? `de ${fmt(ref.seriesDurasPlan)} previstas · RIR ≤ ${FZ.RIR_DURA}` : `RIR ≤ ${FZ.RIR_DURA}`),
         kpi('RIR medio (sem. pasada)', fmt(ref.rirMedio, 1), 'repeticiones que le quedaban'),
         kpi('Desviación de RIR', ref.desvRIR == null ? '—' : (ref.desvRIR > 0 ? '+' : '') + fmt(ref.desvRIR, 1), '+ = más duro de lo previsto'),
-        kpi('Carácter del esfuerzo', ref.ce == null ? '—' : fmt(ref.ce * 100) + ' %', 'reps hechas / reps posibles'));
+        kpi('Carácter del esfuerzo', ref.ce == null ? '—' : fmt(ref.ce * 100) + ' %', 'reps hechas / reps posibles'),
+        kpi('Tonelaje (sem. pasada)', ref.tonelaje ? fmt(ref.tonelaje) + ' kg' : '—', 'kg × repeticiones'));
       const sAl = h('div', { class: 'card' }, h('h3', { text: 'Avisos de fuerza' }),
         h('ul', { class: 'alertas' }, al.map(a => h('li', {}, h('span', { class: 'chip ' + a.nivel, text: { alto: 'Alto', medio: 'Atención', info: 'Info', ok: 'OK' }[a.nivel] }), h('span', { text: a.texto })))));
       const serS = [{ key: 'seriesDurasPlan', label: 'Previstas', color: 'var(--s-plan)' }, { key: 'seriesDuras', label: 'Hechas', color: 'var(--s-real)' }];
@@ -3891,7 +4065,7 @@ border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 4px 16px rgba(0,0
       const reales = an.filter(x => x.fecha >= sem[0].semana && x.fecha <= estado.hasta).sort((a, b) => a.fecha < b.fecha ? 1 : -1);
       const cols = [['Fecha', x => C.fecha.parse(x.fecha).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })], ['Sesión', x => x.titulo],
         ['Min', x => x.min == null ? 'falta' : fmt(x.min)], ['RPE', x => x.rpe == null ? 'falta' : fmt(x.rpe, x.rpe % 1 ? 1 : 0)], ['sRPE', x => fmt(x.srpe)],
-        ['Series', x => fmt(x.series)], ['Duras', x => `${fmt(x.seriesDuras)}${x.seriesDurasPlan ? '/' + fmt(x.seriesDurasPlan) : ''}`], ['Reps', x => fmt(x.reps)],
+        ['Series', x => fmt(x.series)], ['Duras', x => `${fmt(x.seriesDuras)}${x.seriesDurasPlan ? '/' + fmt(x.seriesDurasPlan) : ''}`], ['Reps', x => fmt(x.reps)], ['Tonelaje', x => x.tonelaje ? fmt(x.tonelaje) + ' kg' : '—'],
         ['RIR medio', x => fmt(x.rirMedio, 1)], ['Desv. RIR', x => x.desvRIR == null ? '—' : (x.desvRIR > 0 ? '+' : '') + fmt(x.desvRIR, 1)], ['C. esfuerzo', x => x.ce == null ? '—' : fmt(x.ce * 100) + ' %']];
       const tSes = h('div', { class: 'card' }, h('h3', { text: 'Sesiones de fuerza realizadas' }),
         h('p', { class: 'sub', text: '«falta» = el entrenado no lo ha apuntado. Duras: hechas / previstas.' }),
@@ -3899,7 +4073,24 @@ border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 4px 16px rgba(0,0
           h('thead', {}, h('tr', {}, cols.map(c => h('th', { text: c[0] })))),
           h('tbody', {}, reales.map(x => h('tr', {}, cols.map(([nn, f]) => { const v = f(x), td = h('td', { text: v });
             if (v === 'falta' || (nn === 'Desv. RIR' && x.desvRIR >= 1)) td.className = 'warn'; return td; })))))));
-      raiz.replaceChildren(...[cab, kpis, sAl, h('div', { class: 'row2' }, g1, g2), h('div', { style: 'height:16px' }), tPat, tSes, tipEl].filter(Boolean));
+      // progresión del 1RM estimado por ejercicio
+      const prog = FZ.progresion1RM(an, { fecha: C.fecha, semanas: estado.semanas, hasta: estado.hasta });
+      let tRM = null;
+      if (prog.length) {
+        const colsR = [['Ejercicio', x => x.nombre], ['Patrón', x => x.patron],
+          ['1.ª vez', x => fmt(x.valorPrimera, 1) + ' kg'], ['Última', x => fmt(x.valorUltima, 1) + ' kg'],
+          ['Cambio', x => x.cambio == null ? '—' : (x.cambio > 0 ? '+' : '') + fmt(x.cambio, 1) + ' %'], ['Semanas', x => fmt(x.n)]];
+        tRM = h('div', { class: 'card' }, h('h3', { text: 'Fuerza estimada por ejercicio (1RM)' }),
+          h('p', { class: 'sub', text: 'Estimación con la fórmula de Epley ajustada por el RIR, a partir de los kg que apunta el entrenado. Solo sale cuando quedan 12 repeticiones o menos para el fallo.' }),
+          h('div', { class: 'tabla' }, h('table', { class: 'tabla-ses' },
+            h('thead', {}, h('tr', {}, colsR.map(c => h('th', { text: c[0] })))),
+            h('tbody', {}, prog.map(x => h('tr', {}, colsR.map(([nn, f]) => {
+              const td = h('td', { text: f(x) });
+              if (nn === 'Cambio' && x.cambio != null) td.style.color = x.cambio >= 0 ? 'var(--good-text)' : 'var(--crit)';
+              return td;
+            })))))));
+      }
+      raiz.replaceChildren(...[cab, kpis, sAl, h('div', { class: 'row2' }, g1, g2), h('div', { style: 'height:16px' }), tPat, tRM, tSes, tipEl].filter(Boolean));
       tip.ocultar();
     }
     pintar();
@@ -4242,6 +4433,7 @@ async function cargaFuerzaCliente(clienteId) {
     if (a.rpe == null) info.sinRPE++;
     if (a.min == null) info.sinMin++;
     if (a.ejerciciosSinEsfuerzo) info.sinRIR++;
+    if (a.ejerciciosSinKg) info.sinKg = (info.sinKg || 0) + 1;
   }
   return { sesiones: out, info };
 }
@@ -4250,6 +4442,7 @@ function cargaNotaFuerza(i) {
   if (i.sinRPE) p.push(`${i.sinRPE} de ${i.total} sesiones sin «RPE total» (no suman sRPE)`);
   if (i.sinMin) p.push(`${i.sinMin} sin duración (no suman sRPE)`);
   if (i.sinRIR) p.push(`${i.sinRIR} con ejercicios sin RIR ni RPE (no cuentan como series duras)`);
+  if (i.sinKg) p.push(`${i.sinKg} con ejercicios sin kg (no suman tonelaje ni estiman el 1RM)`);
   return p.length ? 'Datos: ' + p.join(' · ') + '.' : '';
 }
 
@@ -4271,7 +4464,9 @@ async function tabCarga(host, clienteId, nombre) {
       } else {
         const { sesiones, info } = await cargaSesionesCliente(clienteId);
         if (!sesiones.some(s => s.estado === 'realizada')) { cont.innerHTML = `<div class="card"><h3>Control de carga</h3><p class="muted">${esc(nombre || 'Este cliente')} todavía no tiene sesiones hechas ni actividades de Strava.</p></div>`; return; }
-        ATLCargaUI.panelEntrenador(cont, { sesiones, atleta: nombre, nota: cargaNota(info), detalle: true });
+            const desdeB = ATLCarga.fecha.sumarDias(ATLCarga.fecha.lunes(ATLCarga.fecha.hoyISO()), -7 * 11);
+        const bien = typeof bienestarSemanal === 'function' ? await bienestarSemanal(clienteId, desdeB) : null;
+        ATLCargaUI.panelEntrenador(cont, { sesiones, atleta: nombre, nota: cargaNota(info), detalle: true, bienestar: bien });
       }
     } catch (e) {
       cont.innerHTML = `<div class="card"><p class="muted">No se pudo calcular la carga: ${esc(e.message)}</p></div>`;
@@ -4385,6 +4580,222 @@ function abrirEditorRes(p, zonas, alGuardar) {
     }
   };
   pintar();
+}
+
+</script>
+<script>
+/* =====================================================================
+ * Alex Training Lab · Funciones añadidas sobre el control de carga
+ *  1. Bienestar diario del entrenado (sueño, fatiga, dolor, ánimo)
+ *  2. Aviso de sesiones hechas sin RPE
+ *  3. Vista de carga simplificada para el entrenado
+ *  4. Resumen de carga de todos los clientes (entrenador)
+ * Usa funciones de la app: db, esc, $, isoLocal, parseFecha, shell.
+ * ===================================================================== */
+
+/* ---------- 1. Bienestar diario ---------- */
+const BIEN_CAMPOS = [
+  { k: 'sueno',  et: 'Sueño',            bajo: 'Muy mal',      alto: 'Muy bien' },
+  { k: 'fatiga', et: 'Energía',          bajo: 'Agotado',      alto: 'Fresco' },
+  { k: 'dolor',  et: 'Agujetas / dolor', bajo: 'Muy dolorido', alto: 'Sin dolor' },
+  { k: 'animo',  et: 'Ánimo',            bajo: 'Muy bajo',     alto: 'Muy bien' }
+];
+const BIEN_CARAS = ['', '😖', '😕', '😐', '🙂', '😄'];
+
+async function bienestarHoy(clienteId, fecha) {
+  try { return (await db('GET', 'bienestar', `?cliente_id=eq.${clienteId}&fecha=eq.${fecha}&select=*`))[0] || null; }
+  catch (e) { return e.message && /bienestar/.test(e.message) ? { __falta: true } : null; }
+}
+
+/** Tarjeta de bienestar para el entrenado. Se guarda al tocar, sin botón. */
+async function tarjetaBienestar(host) {
+  const hoy = isoLocal(new Date());
+  const el = typeof host === 'string' ? $(host) : host;
+  if (!el) return;
+  const actual = await bienestarHoy(S.user.id, hoy) || {};
+  if (actual.__falta) return;
+  const val = Object.assign({}, actual);
+  const pintar = () => {
+    const puesto = BIEN_CAMPOS.filter(c => val[c.k] != null).length;
+    el.innerHTML = `<div class="card bien-card">
+      <div class="bien-cab"><b>¿Cómo estás hoy?</b><span class="muted">${puesto === 4 ? 'Guardado ✓' : 'Tarda 10 segundos'}</span></div>
+      ${BIEN_CAMPOS.map(c => `<div class="bien-fila"><span class="bien-et">${c.et}</span>
+        <span class="bien-ops">${[1, 2, 3, 4, 5].map(n => `<button type="button" class="bien-op${val[c.k] === n ? ' on' : ''}" data-b="${c.k}" data-v="${n}" title="${n === 1 ? esc(c.bajo) : n === 5 ? esc(c.alto) : n}" aria-label="${esc(c.et)}: ${n} de 5">${BIEN_CARAS[n]}</button>`).join('')}</span></div>`).join('')}
+      <div class="bien-msg muted" id="bien-msg"></div></div>`;
+  };
+  pintar();
+  el.onclick = async ev => {
+    const b = ev.target.closest('[data-b]'); if (!b) return;
+    const k = b.dataset.b, v = Number(b.dataset.v);
+    val[k] = val[k] === v ? null : v;
+    pintar();
+    const msg = $('#bien-msg');
+    try {
+      await db('POST', 'bienestar', '', { cliente_id: S.user.id, fecha: hoy, sueno: val.sueno ?? null, fatiga: val.fatiga ?? null, dolor: val.dolor ?? null, animo: val.animo ?? null },
+        'resolution=merge-duplicates,return=minimal');
+      if (msg) msg.textContent = 'Guardado ✓';
+    } catch (e) { if (msg) msg.textContent = 'No se pudo guardar: ' + e.message; }
+  };
+}
+
+/** Media de bienestar por semana, para el panel del entrenador. */
+async function bienestarSemanal(clienteId, desde) {
+  let datos = [];
+  try { datos = await db('GET', 'bienestar', `?cliente_id=eq.${clienteId}&fecha=gte.${desde}&select=*&order=fecha.asc`); } catch (e) { return null; }
+  if (!datos.length) return null;
+  const F = ATLCarga.fecha, porSem = {};
+  datos.forEach(d => {
+    const k = F.lunes(d.fecha);
+    porSem[k] = porSem[k] || { semana: k, n: 0, sueno: [], fatiga: [], dolor: [], animo: [] };
+    porSem[k].n++;
+    BIEN_CAMPOS.forEach(c => { if (d[c.k] != null) porSem[k][c.k].push(d[c.k]); });
+  });
+  const media = a => a.length ? Math.round(a.reduce((x, y) => x + y, 0) / a.length * 10) / 10 : null;
+  return Object.values(porSem).map(w => ({ semana: w.semana, dias: w.n, sueno: media(w.sueno), fatiga: media(w.fatiga), dolor: media(w.dolor), animo: media(w.animo),
+    global: media([...w.sueno, ...w.fatiga, ...w.dolor, ...w.animo]) })).sort((a, b) => a.semana < b.semana ? -1 : 1);
+}
+
+/* ---------- 2. Aviso de sesiones hechas sin RPE ---------- */
+/** Devuelve las sesiones hechas sin RPE de los últimos días (resistencia y fuerza). */
+async function sesionesSinRPE(clienteId, dias = 14) {
+  const desde = isoLocal(new Date(Date.now() - dias * 86400000));
+  const out = [];
+  try {
+    const at = (await db('GET', 'atletas', `?user_id=eq.${clienteId}&select=id`)).map(a => a.id);
+    if (at.length) {
+      const ps = await db('GET', 'sesiones_planificadas', `?atleta_id=in.(${at.join(',')})&estado=eq.hecha&fecha=gte.${desde}&select=id,fecha,tipo,descripcion,rpe&order=fecha.desc`);
+      (ps || []).forEach(p => { if (p.rpe == null) out.push({ tipo: 'res', id: p.id, fecha: p.fecha, nombre: String(p.descripcion || p.tipo || 'Sesión').split(' — ')[0] }); });
+    }
+  } catch (e) {}
+  try {
+    const ses = await db('GET', 'sesiones', `?cliente_id=eq.${clienteId}&select=id,fecha,titulo,bloques,registro`);
+    (ses || []).forEach(s => {
+      const d = parseFecha(s.fecha); if (!d || isoLocal(d) < desde) return;
+      if (!hecho(s)) return;
+      const r = (s.registro || {}).s || {};
+      if (r.rpe === '' || r.rpe == null) out.push({ tipo: 'fza', id: s.id, fecha: isoLocal(d), nombre: s.titulo || 'Fuerza' });
+    });
+  } catch (e) {}
+  return out.sort((a, b) => a.fecha < b.fecha ? 1 : -1);
+}
+
+/** Pinta el aviso al principio del panel del entrenado, si hay sesiones sin esfuerzo. */
+async function avisoRPE(host, alAbrir) {
+  const el = typeof host === 'string' ? $(host) : host;
+  if (!el) return;
+  const faltan = await sesionesSinRPE(S.user.id);
+  if (!faltan.length) { el.innerHTML = ''; return; }
+  const fTxt = f => { const d = new Date(f + 'T00:00:00'); return d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }); };
+  el.innerHTML = `<div class="card aviso-rpe"><b>⚡ Te falta decir cómo de duras fueron ${faltan.length === 1 ? 'una sesión' : faltan.length + ' sesiones'}</b>
+    <p class="muted">Sin el esfuerzo (RPE) no se puede calcular tu carga. Toca una para apuntarlo.</p>
+    ${faltan.slice(0, 6).map(f => `<button class="sec aviso-rpe-b" data-f="${esc(f.fecha)}" data-t="${f.tipo}">${esc(fTxt(f.fecha))} · ${esc(f.nombre)}</button>`).join('')}
+    ${faltan.length > 6 ? `<p class="muted">y ${faltan.length - 6} más</p>` : ''}</div>`;
+  el.querySelectorAll('.aviso-rpe-b').forEach(b => b.onclick = () => alAbrir && alAbrir(b.dataset.f, b.dataset.t));
+}
+
+/* ---------- 3. Vista de carga del entrenado (simplificada) ---------- */
+async function tabCargaCliente(host) {
+  const el = typeof host === 'string' ? $(host) : host;
+  el.innerHTML = '<div class="card"><p class="muted">Calculando tu carga…</p></div>';
+  try {
+    const { sesiones, info } = await cargaSesionesCliente(S.user.id);
+    const reales = sesiones.filter(s => s.estado === 'realizada');
+    if (!reales.length) { el.innerHTML = '<div class="card"><h3>Tu carga</h3><p class="muted">Todavía no tienes sesiones hechas. Cuando marques alguna y digas cómo de dura fue, aquí verás tu carga.</p></div>'; return; }
+    const hasta = ATLCarga.fecha.hoyISO();
+    const sem = ATLCarga.resumenSemanal(sesiones, { semanas: 8, hasta });
+    const desde = ATLCarga.fecha.sumarDias(sem[0].semana, -56);
+    const diario = ATLCarga.serieDiaria(sesiones.map(ATLCarga.normalizarSesion), desde, hasta, 'srpe');
+    const ac = ATLCarga.agudoCronico(diario), ff = ATLCarga.formaFatiga(diario);
+    const ult = [...ac].reverse().find(x => x.ratio != null), f = ff[ff.length - 1];
+    const act = sem[sem.length - 1], ant = sem[sem.length - 2] || {};
+    const n = x => x == null ? '—' : String(Math.round(x)).replace('.', ',');
+    // semáforo sencillo a partir del ratio agudo:crónico
+    let est = { t: 'Carga normal', d: 'Vas en línea con lo que llevas entrenando.', c: 'ok' };
+    if (ult && ult.ratio > 1.5) est = { t: 'Semana muy fuerte', d: 'Has subido bastante de golpe. Cuida el descanso y el sueño estos días.', c: 'alto' };
+    else if (ult && ult.ratio > 1.3) est = { t: 'Carga alta', d: 'Estás entrenando por encima de tu media. Atento a cómo te recuperas.', c: 'medio' };
+    else if (ult && ult.ratio < 0.8) est = { t: 'Semana suave', d: 'Estás por debajo de tu media. Bien si toca descargar.', c: 'info' };
+    const bien = await bienestarSemanal(S.user.id, sem[0].semana);
+    const bs = bien && bien[bien.length - 1];
+    el.innerHTML = `<div class="card"><h3>Tu carga</h3>
+      <div class="cli-estado ${est.c}"><b>${esc(est.t)}</b><p>${esc(est.d)}</p></div>
+      <div class="cli-kpis">
+        <div><span class="l">Esta semana</span><span class="v">${n(act.srpe)}</span><span class="d">unidades de carga${ant.srpe ? ` · antes ${n(ant.srpe)}` : ''}</span></div>
+        <div><span class="l">Sesiones</span><span class="v">${act.sesiones}</span><span class="d">${n(act.minutos)} min${act.km ? ` · ${String(act.km).replace('.', ',')} km` : ''}</span></div>
+        <div><span class="l">Frescura</span><span class="v">${f && f.balance > 0 ? '🟢' : f && f.balance > -10 ? '🟡' : '🔴'}</span><span class="d">${f && f.balance > 0 ? 'descansado' : f && f.balance > -10 ? 'con algo de fatiga' : 'cansado'}</span></div>
+        ${bs ? `<div><span class="l">Cómo te sientes</span><span class="v">${BIEN_CARAS[Math.round(bs.global)] || '—'}</span><span class="d">${bs.dias} día(s) apuntados</span></div>` : ''}
+      </div>
+      <div id="cli-graf"></div>
+      <p class="muted" style="margin-top:10px">Cada barra es una semana; la última, más clara, es la que llevas ahora. La carga de cada sesión son los minutos multiplicados por lo dura que te pareció (del 1 al 10).</p>
+    </div>`;
+    // barras simples de las últimas 8 semanas
+    const max = Math.max(1, ...sem.map(w => w.srpe || 0));
+    $('#cli-graf').innerHTML = `<div class="cli-barras">${sem.map(w => {
+      const h = Math.round((w.srpe || 0) / max * 100);
+      const d = new Date(w.semana + 'T00:00:00');
+      return `<div class="cli-barra${w.enCurso ? ' curso' : ''}" title="Semana del ${d.toLocaleDateString('es-ES')}${w.enCurso ? ' (en curso)' : ''}: ${n(w.srpe)}"><span style="height:${h}%"></span><small>${d.getDate()}/${d.getMonth() + 1}</small></div>`;
+    }).join('')}</div>`;
+  } catch (e) {
+    el.innerHTML = `<div class="card"><p class="muted">No se pudo calcular tu carga: ${esc(e.message)}</p></div>`;
+  }
+}
+
+/* ---------- 4. Resumen de carga de todos los clientes ---------- */
+async function tabResumenCarga() {
+  shell(`<div id="tab"><div class="an-panel"><h2 class="ent-tit">Carga de todos</h2><div id="res-carga"><p class="muted">Calculando…</p></div></div></div>`);
+  $('#cnav').innerHTML = '<button id="volver">← Clientes</button><button class="on">📈 Carga de todos</button>';
+  $('#volver').onclick = listaClientes;
+  const cs = await db('GET', 'perfiles', '?rol=eq.cliente&order=nombre.asc&select=id,nombre');
+  const hasta = ATLCarga.fecha.hoyISO();
+  const filas = [];
+  for (const c of cs) {
+    try {
+      const { sesiones } = await cargaSesionesCliente(c.id);
+      const reales = sesiones.filter(s => s.estado === 'realizada');
+      if (!reales.length) { filas.push({ c, vacio: true }); continue; }
+      const sem = ATLCarga.resumenSemanal(sesiones, { semanas: 6, hasta });
+      const desde = ATLCarga.fecha.sumarDias(sem[0].semana, -56);
+      const ac = ATLCarga.agudoCronico(ATLCarga.serieDiaria(sesiones.map(ATLCarga.normalizarSesion), desde, hasta, 'srpe'));
+      const al = ATLCarga.alertas(sem, ac);
+      const ult = [...ac].reverse().find(x => x.ratio != null);
+      const act = sem[sem.length - 1];
+      const ultima = reales.map(s => s.fecha).sort().pop();
+      filas.push({ c, act, ratio: ult && ult.ratio, al, ultima, sinRPE: reales.filter(s => s.rpe == null).length });
+    } catch (e) { filas.push({ c, error: e.message }); }
+  }
+  const orden = { alto: 0, medio: 1, info: 2, ok: 3 };
+  filas.sort((a, b) => (orden[(a.al || [{}])[0].nivel] ?? 4) - (orden[(b.al || [{}])[0].nivel] ?? 4));
+  const n = x => x == null ? '—' : String(Math.round(x));
+  const dias = f => { if (!f) return '—'; const d = Math.round((new Date(hasta) - new Date(f)) / 86400000); return d === 0 ? 'hoy' : d === 1 ? 'ayer' : `hace ${d} días`; };
+  $('#res-carga').innerHTML = `<p class="muted">Ordenado por urgencia. Toca un entrenado para abrir su ficha.</p>
+    ${filas.map(f => {
+      if (f.vacio) return `<button class="res-fila vacia" data-c="${f.c.id}"><b>${esc(f.c.nombre || 'Sin nombre')}</b><span class="muted">Sin sesiones hechas todavía</span></button>`;
+      if (f.error) return `<button class="res-fila" data-c="${f.c.id}"><b>${esc(f.c.nombre || 'Sin nombre')}</b><span class="muted">No se pudo calcular: ${esc(f.error)}</span></button>`;
+      const a = f.al[0] || { nivel: 'ok', texto: '' };
+      return `<button class="res-fila" data-c="${f.c.id}">
+        <span class="res-cab"><b>${esc(f.c.nombre || 'Sin nombre')}</b><span class="chip ${a.nivel}">${{ alto: 'Alto', medio: 'Atención', info: 'Info', ok: 'OK' }[a.nivel]}</span></span>
+        <span class="res-datos">${n(f.act.srpe)} UA esta semana · ratio ${f.ratio == null ? '—' : String(f.ratio).replace('.', ',')} · ${f.act.sesiones} sesión(es) · última ${dias(f.ultima)}${f.sinRPE ? ` · ${f.sinRPE} sin RPE` : ''}</span>
+        <span class="res-aviso">${esc(a.texto)}</span></button>`;
+    }).join('')}`;
+  document.querySelectorAll('[data-c]').forEach(b => b.onclick = () => fichaCliente(b.dataset.c));
+}
+
+/* ---------- 5. Deshacer el último borrado ---------- */
+let ULTIMO_BORRADO = null;
+/** Vuelve a crear las sesiones borradas en el último borrado de ese cliente. */
+async function restaurarBorradas(clienteId) {
+  const b = ULTIMO_BORRADO;
+  if (!b || b.clienteId !== clienteId || !b.lista || !b.lista.length) throw new Error('No hay nada que restaurar');
+  const limpia = x => { const o = Object.assign({}, x); ['_res', '_fun', 'created_at'].forEach(k => delete o[k]); return o; };
+  const fza = b.lista.filter(x => !x._res).map(limpia);
+  const res = b.lista.filter(x => x._res).map(limpia);
+  const meter = async (tabla, filas) => {
+    if (!filas.length) return;
+    try { await db('POST', tabla, '', filas, 'resolution=merge-duplicates,return=minimal'); }
+    catch (e) { await db('POST', tabla, '', filas.map(f => { const o = Object.assign({}, f); delete o.id; return o; }), 'return=minimal'); }
+  };
+  await meter('sesiones', fza);
+  await meter('sesiones_planificadas', res);
+  ULTIMO_BORRADO = null;
 }
 
 </script>
