@@ -3226,7 +3226,22 @@ html.oscuro .cli-kpis>div{background:rgba(255,255,255,.06);border-color:rgba(255
 .cli-barra span{width:100%;min-height:2px;background:var(--acento,#b8860b);border-radius:4px 4px 0 0;opacity:.85}
 .cli-barra.curso span{opacity:.4}
 .cli-barra.curso small{font-weight:700}
-.cli-barra small{font-size:9.5px;opacity:.6}
+.cli-barra small{font-size:9.5px;opacity:.6;white-space:nowrap}
+@media(max-width:600px){.cli-barras.densa .cli-barra:nth-child(even) small{visibility:hidden}}
+/* Selector de periodo del entrenado */
+.cli-filtros{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+.cli-et{font-size:13px;opacity:.75}
+.cli-seg{display:inline-flex;border:1px solid rgba(0,0,0,.14);border-radius:9px;overflow:hidden}
+html.oscuro .cli-seg{border-color:rgba(255,255,255,.16)}
+.cli-seg button{border:0;background:transparent;color:inherit;font:inherit;font-size:12.5px;padding:7px 11px;margin:0;width:auto;cursor:pointer;opacity:.7}
+.cli-seg button.on{background:rgba(184,134,11,.18);font-weight:700;opacity:1}
+.carga-nav{display:inline-flex;align-items:center;gap:6px}
+.carga-nav button{border:1px solid rgba(0,0,0,.14);background:rgba(255,255,255,.6);color:inherit;font:inherit;font-size:13px;border-radius:9px;padding:6px 11px;margin:0;width:auto;min-width:36px;cursor:pointer}
+html.oscuro .carga-nav button{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.16)}
+.carga-nav button:disabled{opacity:.35;cursor:default}
+.carga-nav button.hoy{font-weight:600}
+.cli-rango{font-size:12.5px;opacity:.75;white-space:nowrap;text-align:center;min-width:130px}
+@media(max-width:600px){.carga-nav{flex:1 0 100%;justify-content:space-between}.cli-rango{min-width:0}}
 
 .res-fila{display:block;width:100%;text-align:left;margin:6px 0;padding:11px 13px;border-radius:10px}
 .res-fila.vacia{opacity:.6}
@@ -4871,49 +4886,78 @@ async function avisoRPE(host, alAbrir) {
 }
 
 /* ---------- 3. Vista de carga del entrenado (simplificada) ---------- */
+const CARGA_CLI = { unidad: 'semana', n: null, desplaz: 0 };
+
 async function tabCargaCliente(host) {
   const el = typeof host === 'string' ? $(host) : host;
   el.innerHTML = '<div class="card"><p class="muted">Calculando tu carga…</p></div>';
-  try {
-    const { sesiones, info } = await cargaSesionesCliente(S.user.id);
-    const reales = sesiones.filter(s => s.estado === 'realizada');
-    if (!reales.length) { el.innerHTML = '<div class="card"><h3>Tu carga</h3><p class="muted">Todavía no tienes sesiones hechas. Cuando marques alguna y digas cómo de dura fue, aquí verás tu carga.</p></div>'; return; }
-    const hasta = ATLCarga.fecha.hoyISO();
-    const sem = ATLCarga.resumenSemanal(sesiones, { semanas: 8, hasta });
-    const desde = ATLCarga.fecha.sumarDias(sem[0].semana, -56);
-    const diario = ATLCarga.serieDiaria(sesiones.map(ATLCarga.normalizarSesion), desde, hasta, 'srpe');
-    const ac = ATLCarga.agudoCronico(diario), ff = ATLCarga.formaFatiga(diario);
-    const ult = [...ac].reverse().find(x => x.ratio != null), f = ff[ff.length - 1];
-    const act = sem[sem.length - 1], ant = sem[sem.length - 2] || {};
-    const n = x => x == null ? '—' : String(Math.round(x)).replace('.', ',');
-    // semáforo sencillo a partir del ratio agudo:crónico
-    let est = { t: 'Carga normal', d: 'Vas en línea con lo que llevas entrenando.', c: 'ok' };
-    if (ult && ult.ratio > 1.5) est = { t: 'Semana muy fuerte', d: 'Has subido bastante de golpe. Cuida el descanso y el sueño estos días.', c: 'alto' };
-    else if (ult && ult.ratio > 1.3) est = { t: 'Carga alta', d: 'Estás entrenando por encima de tu media. Atento a cómo te recuperas.', c: 'medio' };
-    else if (ult && ult.ratio < 0.8) est = { t: 'Semana suave', d: 'Estás por debajo de tu media. Bien si toca descargar.', c: 'info' };
-    const bien = await bienestarSemanal(S.user.id, sem[0].semana);
-    const bs = bien && bien[bien.length - 1];
-    el.innerHTML = `<div class="card"><h3>Tu carga</h3>
-      <div class="cli-estado ${est.c}"><b>${esc(est.t)}</b><p>${esc(est.d)}</p></div>
-      <div class="cli-kpis">
-        <div><span class="l">Esta semana</span><span class="v">${n(act.srpe)}</span><span class="d">unidades de carga${ant.srpe ? ` · antes ${n(ant.srpe)}` : ''}</span></div>
-        <div><span class="l">Sesiones</span><span class="v">${act.sesiones}</span><span class="d">${n(act.minutos)} min${act.km ? ` · ${String(act.km).replace('.', ',')} km` : ''}</span></div>
-        <div><span class="l">Frescura</span><span class="v">${f && f.balance > 0 ? '🟢' : f && f.balance > -10 ? '🟡' : '🔴'}</span><span class="d">${f && f.balance > 0 ? 'descansado' : f && f.balance > -10 ? 'con algo de fatiga' : 'cansado'}</span></div>
-        ${bs ? `<div><span class="l">Cómo te sientes</span><span class="v">${BIEN_CARAS[Math.round(bs.global)] || '—'}</span><span class="d">${bs.dias} día(s) apuntados</span></div>` : ''}
-      </div>
-      <div id="cli-graf"></div>
-      <p class="muted" style="margin-top:10px">Cada barra es una semana; la última, más clara, es la que llevas ahora. La carga de cada sesión son los minutos multiplicados por lo dura que te pareció (del 1 al 10).</p>
-    </div>`;
-    // barras simples de las últimas 8 semanas
-    const max = Math.max(1, ...sem.map(w => w.srpe || 0));
-    $('#cli-graf').innerHTML = `<div class="cli-barras">${sem.map(w => {
-      const h = Math.round((w.srpe || 0) / max * 100);
-      const d = new Date(w.semana + 'T00:00:00');
-      return `<div class="cli-barra${w.enCurso ? ' curso' : ''}" title="Semana del ${d.toLocaleDateString('es-ES')}${w.enCurso ? ' (en curso)' : ''}: ${n(w.srpe)}"><span style="height:${h}%"></span><small>${d.getDate()}/${d.getMonth() + 1}</small></div>`;
-    }).join('')}</div>`;
-  } catch (e) {
-    el.innerHTML = `<div class="card"><p class="muted">No se pudo calcular tu carga: ${esc(e.message)}</p></div>`;
+  let datos;
+  try { datos = await cargaSesionesCliente(S.user.id); }
+  catch (e) { el.innerHTML = `<div class="card"><p class="muted">No se pudo calcular tu carga: ${esc(e.message)}</p></div>`; return; }
+  const { sesiones } = datos;
+  if (!sesiones.some(s => s.estado === 'realizada')) {
+    el.innerHTML = '<div class="card"><h3>Tu carga</h3><p class="muted">Todavía no tienes sesiones hechas. Cuando marques alguna y digas cómo de dura fue, aquí verás tu carga.</p></div>';
+    return;
   }
+  const bien = await bienestarSemanal(S.user.id, ATLCarga.fecha.sumarDias(ATLCarga.fecha.hoyISO(), -84));
+  pintarCargaCliente(el, sesiones, bien);
+}
+
+function pintarCargaCliente(el, sesiones, bien) {
+  const F = ATLCarga.fecha, hoy = F.hoyISO();
+  const U = CARGA_CLI.unidad, P = ATLCarga.PERIODOS[U];
+  const cuantos = CARGA_CLI.n || (U === 'semana' ? 8 : U === 'mes' ? 12 : U === 'semestre' ? 6 : 5);
+  const finVista = CARGA_CLI.desplaz === 0 ? hoy
+    : F.finPeriodo(U, F.moverPeriodo(U, F.inicioPeriodo(U, hoy), -CARGA_CLI.desplaz));
+  const sem = ATLCarga.resumenPeriodo(sesiones, { unidad: U, n: cuantos, hasta: finVista });
+  const finDatos = sem[sem.length - 1].fin > finVista ? finVista : sem[sem.length - 1].fin;
+  const desde = F.sumarDias(sem[0].semana, -56);
+  const diario = ATLCarga.serieDiaria(sesiones.map(ATLCarga.normalizarSesion), desde, finDatos, 'srpe');
+  const ac = ATLCarga.agudoCronico(diario), ff = ATLCarga.formaFatiga(diario);
+  const ult = [...ac].reverse().find(x => x.ratio != null), f = ff[ff.length - 1];
+  const act = sem[sem.length - 1], ant = sem[sem.length - 2] || {};
+  const n = x => x == null ? '—' : String(Math.round(x)).replace('.', ',');
+  const uNom = P.nombre.toLowerCase();
+
+  let est = { t: 'Carga normal', d: 'Vas en línea con lo que llevas entrenando.', c: 'ok' };
+  if (ult && ult.ratio > 1.5) est = { t: 'Semana muy fuerte', d: 'Has subido bastante de golpe. Cuida el descanso y el sueño estos días.', c: 'alto' };
+  else if (ult && ult.ratio > 1.3) est = { t: 'Carga alta', d: 'Estás entrenando por encima de tu media. Atento a cómo te recuperas.', c: 'medio' };
+  else if (ult && ult.ratio < 0.8) est = { t: 'Semana suave', d: 'Estás por debajo de tu media. Bien si toca descargar.', c: 'info' };
+  const bs = bien && bien[bien.length - 1];
+  const rango = `${F.parse(sem[0].semana).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: '2-digit' })} – ${F.parse(finDatos).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: '2-digit' })}`;
+
+  el.innerHTML = `<div class="card"><h3>Tu carga</h3>
+    <div class="cli-estado ${est.c}"><b>${esc(est.t)}</b><p>${esc(est.d)}</p></div>
+    <div class="cli-filtros">
+      <span class="cli-et">Ver por</span>
+      <span class="cli-seg">${Object.entries(ATLCarga.PERIODOS).map(([k, p]) => `<button data-u="${k}"${U === k ? ' class="on"' : ''}>${p.nombre}</button>`).join('')}</span>
+      <span class="carga-nav">
+        <button data-mov="-1" aria-label="${esc(P.nombre)} anterior" title="${esc(P.nombre)} anterior">‹</button>
+        <span class="cli-rango">${esc(rango)}</span>
+        <button data-mov="1" aria-label="${esc(P.nombre)} siguiente" title="${esc(P.nombre)} siguiente"${CARGA_CLI.desplaz === 0 ? ' disabled' : ''}>›</button>
+        ${CARGA_CLI.desplaz ? '<button data-hoy class="hoy">Hoy</button>' : ''}
+      </span>
+    </div>
+    <div class="cli-kpis">
+      <div><span class="l">${esc(act.etiqueta)}</span><span class="v">${n(act.srpe)}</span><span class="d">unidades de carga${ant.srpe ? ` · ${esc(uNom)} anterior ${n(ant.srpe)}` : ''}</span></div>
+      <div><span class="l">Sesiones</span><span class="v">${act.sesiones}</span><span class="d">${n(act.minutos)} min${act.km ? ` · ${String(act.km).replace('.', ',')} km` : ''}</span></div>
+      <div><span class="l">Frescura</span><span class="v">${f && f.balance > 0 ? '🟢' : f && f.balance > -10 ? '🟡' : '🔴'}</span><span class="d">${f && f.balance > 0 ? 'descansado' : f && f.balance > -10 ? 'con algo de fatiga' : 'cansado'}</span></div>
+      ${bs ? `<div><span class="l">Cómo te sientes</span><span class="v">${BIEN_CARAS[Math.round(bs.global)] || '—'}</span><span class="d">${bs.dias} día(s) apuntados</span></div>` : ''}
+    </div>
+    <div id="cli-graf"></div>
+    <p class="muted" style="margin-top:10px">Cada barra es ${U === 'semana' ? 'una semana' : U === 'mes' ? 'un mes' : U === 'semestre' ? 'medio año' : 'un año'}; la última, más clara, es ${U === 'semana' ? 'la que llevas ahora' : 'el periodo en curso'}. La carga de cada sesión son los minutos multiplicados por lo dura que te pareció (del 1 al 10).</p>
+  </div>`;
+
+  const max = Math.max(1, ...sem.map(w => w.srpe || 0));
+  $('#cli-graf').innerHTML = `<div class="cli-barras${sem.length > 8 ? ' densa' : ''}">${sem.map(w => {
+    const alto = Math.round((w.srpe || 0) / max * 100);
+    return `<div class="cli-barra${w.enCurso ? ' curso' : ''}" title="${esc(w.etiqueta)}${w.enCurso ? ' (en curso)' : ''}: ${n(w.srpe)}"><span style="height:${alto}%"></span><small>${esc(w.etiqueta)}</small></div>`;
+  }).join('')}</div>`;
+
+  el.querySelectorAll('[data-u]').forEach(b => b.onclick = () => { CARGA_CLI.unidad = b.dataset.u; CARGA_CLI.n = null; CARGA_CLI.desplaz = 0; pintarCargaCliente(el, sesiones, bien); });
+  el.querySelectorAll('[data-mov]').forEach(b => b.onclick = () => { CARGA_CLI.desplaz = Math.max(0, CARGA_CLI.desplaz - Number(b.dataset.mov)); pintarCargaCliente(el, sesiones, bien); });
+  const bh = el.querySelector('[data-hoy]');
+  if (bh) bh.onclick = () => { CARGA_CLI.desplaz = 0; pintarCargaCliente(el, sesiones, bien); };
 }
 
 /* ---------- 4. Resumen de carga de todos los clientes ---------- */
