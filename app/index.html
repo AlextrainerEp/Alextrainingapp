@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="es">
 <head>
+<meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Alex Training Lab</title>
@@ -122,6 +123,33 @@ html .grow.xc .pick .obj{font-size:15px}
 html .grow.xc input.pl-ej{height:44px;text-align:left;font-size:17px}
 html.oscuro .grow.xc{background:rgba(30,32,34,.92);color:#f2f2f2}
 html.oscuro .xf>i{color:#bbb}
+/* término medio: tarjetas más compactas */
+html .grow.xc{padding:10px 12px;margin:6px 0;border-radius:12px}
+.grow.xc .gname{font-size:16px;margin:0 0 5px}
+.grow.xc .gsub{font-size:13px;margin-top:2px}
+.xdatos{gap:6px;margin-bottom:8px}
+.xdos{font-size:20px}
+.xint-t{padding:4px 10px;font-size:13px;border-radius:10px}
+.xreg{gap:6px}
+.xf>i{font-size:10.5px;margin-bottom:2px}
+html .grow.xc input,html .grow.xc .pick{height:38px;font-size:15px}
+html .grow.xc input.pl{font-size:14px}
+html .grow.xc input.pl-ej{height:38px;font-size:15px}
+html .grow.xc .pick .obj{font-size:13px}
+.ecard{padding:10px 12px;margin:6px 0;border-radius:12px}
+.ec-t{font-size:17px}.ec-main{font-size:22px;margin:4px 0 0}
+.ec-chip{font-size:13px;padding:4px 10px}.ec-nota{font-size:14px;margin-top:5px}
+@media(min-width:700px){
+  html .grow.xc:not(.pl-row){display:grid;grid-template-columns:minmax(0,1fr) minmax(0,420px);grid-template-rows:auto auto;column-gap:18px;align-items:center}
+  .plan-edit .grow.xc{display:block!important}
+  .grow.xc .gname{grid-column:1;grid-row:1;margin:0}
+  .grow.xc .xdatos{grid-column:1;grid-row:2;margin:4px 0 0}
+  .grow.xc .xreg{grid-column:2;grid-row:1/span 2}
+  html .grow.xc input,html .grow.xc .pick{height:36px}
+  .plan-edit .xdatos{grid-template-columns:1fr 1fr 2fr}
+  .plan-edit .xdatos .xint{grid-column:auto}
+  .plan-edit .xdatos .xint:last-child{grid-column:1/-1}
+}
 .ghead,.grow{display:grid;grid-template-columns:minmax(0,1.7fr) .38fr .38fr .5fr .5fr 1fr .46fr .5fr;gap:3px;align-items:center}
 .ghead{font-size:11px;color:#555;text-align:center;padding:4px 0;border-bottom:1px solid #ccc;font-weight:700}
 .ghead span:first-child{text-align:left}
