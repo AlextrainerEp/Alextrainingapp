@@ -293,6 +293,7 @@ body.cli .card{background:rgba(255,255,255,.85);backdrop-filter:none;-webkit-bac
 .sesion-res .res-abrir{display:inline-block;margin-top:6px;font-weight:700}
 .res-pasos{margin:4px 0 8px 18px;padding:0;line-height:1.5}
 .emb-wrap{width:100%}
+.st-act{border-top:1px solid rgba(128,128,128,.25);padding:10px 0}.st-act:first-of-type{border-top:0}.st-cab{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}.st-datos{margin-top:4px;font-size:.92em;line-height:1.5}.st-zonas{display:flex;flex-wrap:wrap;gap:6px 12px;margin:8px 0}.st-zonas b{width:100%}.st-zonas span{font-size:.9em}
 iframe.emb{width:100%;min-height:500px;border:0;background:transparent;display:block}
 .cli-nav button.otra-app{width:100%;text-align:left;cursor:pointer;background:transparent}
 .res-reg{margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,0,0,.12)}
@@ -1871,6 +1872,42 @@ const resLeyenda=lista=>{
   return `<div class="res-leyenda">${todos.map(t=>`<span class="leg"><i style="background:${RES_COLOR[t]}"></i>${RES_NOMBRE[t]}</span>`).join("")}</div>`;
 };
 
+/* ---------- Strava y zonas del entrenado (dentro de la misma página, sin iframe ni pestaña nueva) ---------- */
+async function tabStravaCliente(host){
+  const cont=$(host); if(!cont) return;
+  cont.innerHTML=`<div class="card"><h3>🔗 Strava y zonas</h3><p class="muted">Cargando tus actividades…</p></div>`;
+  const dur=s=>{s=Math.round(+s||0);const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return h?`${h}h ${String(m).padStart(2,"0")}′`:`${m}′ ${String(x).padStart(2,"0")}″`};
+  const ritmo=sk=>{if(!sk||!isFinite(sk))return "—";sk=Math.round(sk);return `${Math.floor(sk/60)}:${String(sk%60).padStart(2,"0")} /km`};
+  const fechaTxt=f=>{try{return new Date(String(f).slice(0,10)+"T12:00:00").toLocaleDateString("es-ES",{weekday:"short",day:"numeric",month:"short"})}catch(e){return f}};
+  const icono=t=>/trail/i.test(t||"")?"⛰️":/run|carrera/i.test(t||"")?"🏃":/ride|bici|cycl/i.test(t||"")?"🚴":/walk|hike/i.test(t||"")?"🥾":/swim/i.test(t||"")?"🏊":/weight|workout|fuerza/i.test(t||"")?"🏋️":"⏱️";
+  try{
+    const atl=await db("GET","atletas",`?user_id=eq.${S.user.id}&select=id`);
+    const ids=(atl||[]).map(a=>a.id);
+    if(!ids.length){cont.innerHTML=`<div class="card"><h3>🔗 Strava y zonas</h3><p class="muted">Tu entrenador todavía no ha vinculado tu perfil de running. En cuanto lo haga, aquí verás tus actividades de Strava.</p></div>`;return}
+    const desde=isoLocal(new Date(Date.now()-90*86400000));
+    const [acts,zs,perf]=await Promise.all([
+      db("GET","actividades",`?atleta_id=in.(${ids.join(",")})&fecha=gte.${desde}&select=*&order=inicio.desc&limit=60`).catch(()=>[]),
+      db("GET","zonas",`?atleta_id=in.(${ids.join(",")})&select=*`).catch(()=>[]),
+      db("GET","perfil_atleta",`?atleta_id=in.(${ids.join(",")})&select=*`).catch(()=>[])
+    ]);
+    const zonas=cargaZonasAtleta(zs,(perf||[])[0]);
+    const lista=(acts||[]).map(a=>{
+      const km=a.distancia_m?a.distancia_m/1000:null, sk=km&&a.duracion_s?a.duracion_s/km:null;
+      const zFC=a.fc_media?cargaZonaPorFC(+a.fc_media,zonas):null;
+      const datos=[km!=null?`<b>${km.toFixed(2)} km</b>`:"",a.duracion_s?`⏱ ${dur(a.duracion_s)}`:"",sk?`⚡ ${ritmo(sk)}`:"",a.desnivel_m!=null?`⛰ +${Math.round(a.desnivel_m)} m`:"",a.fc_media?`❤️ ${Math.round(a.fc_media)} ppm${zFC?` (Z${zFC})`:""}`:"",(a.rpe??a.perceived_exertion)!=null?`RPE ${a.rpe??a.perceived_exertion}`:""].filter(Boolean).join(" · ");
+      return `<div class="st-act"><div class="st-cab"><span>${icono(a.tipo)} <b>${esc(a.nombre||"Actividad")}</b></span><small class="muted">${esc(fechaTxt(a.fecha||a.inicio))}</small></div><div class="st-datos">${datos||'<span class="muted">Sin datos</span>'}</div></div>`;
+    }).join("");
+    const filaZ=t=>{const z=zonas.filter(x=>x.tipo===t).sort((a,b)=>a.zona-b.zona);if(!z.length)return "";
+      const f=v=>t==="ritmo"?ritmo(v).replace(" /km",""):Math.round(v);
+      return `<div class="st-zonas"><b>${t==="fc"?"❤️ Zonas de FC (ppm)":"⚡ Zonas de ritmo (min/km)"}</b>${z.map(x=>`<span>Z${x.zona}: ${f(Math.min(+x.minimo,+x.maximo))}–${f(Math.max(+x.minimo,+x.maximo))}</span>`).join("")}</div>`};
+    const zonasHtml=filaZ("fc")+filaZ("ritmo");
+    const n=(acts||[]).length, kmTot=(acts||[]).reduce((t,a)=>t+(+a.distancia_m||0),0)/1000;
+    cont.innerHTML=`<div class="card"><h3>🔗 Mis actividades de Strava</h3>
+      ${n?`<p class="muted">Últimos 90 días: ${n} actividad(es) · ${kmTot.toFixed(1)} km</p>${lista}`:`<p class="muted">Todavía no hay actividades de Strava sincronizadas en los últimos 90 días. Si acabas de entrenar, puede tardar un poco en aparecer; si no aparece nada, avisa a tu entrenador.</p>`}
+    </div>${zonasHtml?`<div class="card"><h3>Mis zonas</h3>${zonasHtml}</div>`:""}`;
+  }catch(e){cont.innerHTML=`<div class="card"><h3>🔗 Strava y zonas</h3><p class="muted">No se han podido cargar tus actividades (${esc(e.message)}).</p></div>`}
+}
+
 /* ---------- Resistencia integrada en la página general ---------- */
 function embebido(host,ruta){
   $(host).innerHTML=`<div class="emb-wrap"><iframe class="emb" src="../resistencia/?embed=1&${ruta}" title="Resistencia" loading="eager"></iframe></div>`;
@@ -2523,7 +2560,7 @@ async function panelCliente(tab,sub){
   const soloRes=misMods.includes("resistencia")&&!misMods.includes("funcional");
   const lista=[[soloRes?"Mis carreras":"Entrenamientos",verEntrenosCli],["Mi carga",()=>{limpiarTab();return tabCargaCliente("#sub")}],["Historial",()=>{limpiarTab();return tabHistorialCliente("#sub")}]];
   if(subs.length) lista.push(["Valoración inicial",()=>subTabs(subs)]);
-  if(misMods.includes("resistencia")) lista.push(["Strava y zonas",()=>{limpiarTab();embebido("#sub","tab=strava")}]);
+  if(misMods.includes("resistencia")) lista.push(["Strava y zonas",()=>{limpiarTab();return tabStravaCliente("#sub")}]);
   lista.push(["Mensajes",()=>{limpiarTab();return tabMensajes(S.user.id,false,"#sub")}],["Foto y contraseña",()=>{limpiarTab();return tabPerfil()}]);
   const claves={strava:"Strava y zonas",entrenamientos:lista[0][0],calendario:lista[0][0],carga:"Mi carga",historial:"Historial",valoracion:"Valoración inicial",mensajes:"Mensajes",anamnesis:"Valoración inicial",perfil:"Foto y contraseña"};
   const key=tab==="perfil"?(sub||"perfil"):(tab||"entrenamientos");
@@ -3183,6 +3220,7 @@ function textoErrorEnlace(code,desc){
   return "No se ha podido completar el acceso desde el enlace del correo"+(desc?": "+desc:".")+" Prueba a entrar con tu email y contraseña.";
 }
 async function init(){
+  if(window.top!==window&&new URLSearchParams(location.search).get("embed")){document.body.innerHTML='<p style="padding:16px;font-family:sans-serif">No se ha encontrado la app de resistencia en esta ruta.</p>';return}
   const h=new URLSearchParams(location.hash.slice(1));
   const q=new URLSearchParams(location.search);
   if(q.get("ir")){try{sessionStorage.setItem("ir",q.get("ir"))}catch(e){} history.replaceState(null,"",location.pathname+location.hash);}
