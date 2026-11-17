@@ -212,6 +212,17 @@ h3{margin:12px 0 6px;font-size:15px}
 .act-rpe{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px;font-size:13px}
 .act-rpe label{display:inline-flex;align-items:center;gap:6px;margin:0}
 .act-rpe select{width:auto;margin:0;padding:4px 8px}
+.aviso-rpe{border-left:4px solid #eda100}
+.aviso-rpe p{margin:4px 0 8px;font-size:13px}
+.aviso-rpe-b{display:block;width:100%;text-align:left;margin:4px 0;font-size:13px;padding:9px 12px}
+.bien-card{padding:12px 14px}
+.bien-cab{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px;font-size:15px}
+.bien-fila{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;padding:5px 0}
+.bien-et{font-size:14px;font-weight:600;line-height:1.2}
+.bien-ops{display:flex;gap:6px}
+.bien-op{width:38px;height:38px;min-width:38px;padding:0;margin:0;border:1px solid rgba(0,0,0,.18);border-radius:10px;background:rgba(255,255,255,.85);font-size:19px;line-height:1;cursor:pointer;filter:grayscale(1);opacity:.55}
+.bien-op.on{filter:none;opacity:1;border-color:#b8860b;box-shadow:0 0 0 2px rgba(184,134,11,.3)}
+.bien-msg{font-size:12px;min-height:16px;margin-top:4px}
 .pie-strava{font-size:11px;color:#555;margin-top:6px}
 
 
@@ -586,6 +597,8 @@ html.embed .banner-mover{position:absolute!important;top:var(--modal-top,0px)!im
     <div id="objetivo-a" class="card oculto" style="font-weight:600"></div>
 
     <section class="seca on" data-sa="cal">
+      <div id="aviso-rpe-a" class="card aviso-rpe oculto"></div>
+      <div id="bienestar-a" class="card bien-card oculto"></div>
       <div class="card">
         <div class="cab">Mi calendario</div>
         <div class="nav">
@@ -1172,6 +1185,8 @@ async function modoAtleta(a) {
   cargarTodoAtleta();
   cargarMetricasAtleta(a.id);
   iniciarStravaAtleta();
+  avisoEsfuerzoPendiente();
+  pintarBienestarAtleta();
 }
 
 async function cargarBibliotecaAtleta() {
@@ -1309,6 +1324,66 @@ function cajaRpeActividad(a, diasHechos) {
   caja.append(et, st);
   return caja;
 }
+/* ---------- Aviso de esfuerzo (RPE) pendiente y bienestar diario del atleta ---------- */
+const BIEN_CAMPOS_R = [
+  { k: 'sueno', et: 'Sueño' }, { k: 'fatiga', et: 'Energía' },
+  { k: 'dolor', et: 'Agujetas / dolor' }, { k: 'animo', et: 'Ánimo' }
+];
+const BIEN_CARAS_R = ['', '😖', '😕', '😐', '🙂', '😄'];
+
+/** Sesiones hechas (también las que marca Strava al sincronizar) a las que les falta el esfuerzo. */
+async function avisoEsfuerzoPendiente() {
+  const box = $('aviso-rpe-a');
+  if (!box || !miAtleta) return;
+  const desde = iso(sumarDias(new Date(), -14));
+  const { data } = await sb.from('sesiones_planificadas')
+    .select('id,fecha,tipo,descripcion,rpe,estado')
+    .eq('atleta_id', miAtleta.id).eq('estado', 'hecha').gte('fecha', desde).order('fecha', { ascending: false });
+  const faltan = (data || []).filter(p => p.rpe == null);
+  if (!faltan.length) { box.classList.add('oculto'); box.innerHTML = ''; return; }
+  box.classList.remove('oculto');
+  box.innerHTML = `<div class="cab">⚡ Te falta decir cómo de ${faltan.length === 1 ? 'dura fue 1 sesión' : 'duras fueron ' + faltan.length + ' sesiones'}</div>
+    <p class="muted">Sin el esfuerzo no se puede calcular tu carga. Toca una para apuntarlo.</p>`;
+  faltan.slice(0, 6).forEach(p => {
+    const b = document.createElement('button');
+    b.className = 'sec aviso-rpe-b';
+    const d = new Date(p.fecha + 'T00:00:00');
+    b.textContent = `${d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })} · ${(p.descripcion || p.tipo || 'Sesión').split(' — ')[0]}`;
+    b.onclick = () => { semanaInicio = lunesDe(d); vistaMes = false; cargarSemana(); mostrarDetalle(p); };
+    box.appendChild(b);
+  });
+  if (faltan.length > 6) { const m = document.createElement('p'); m.className = 'muted'; m.textContent = `y ${faltan.length - 6} más`; box.appendChild(m); }
+}
+
+/** Bienestar de hoy: cuatro toques y se guarda solo. */
+async function pintarBienestarAtleta() {
+  const box = $('bienestar-a');
+  if (!box || !miUserId) return;
+  const hoy = iso(new Date());
+  let val = {};
+  const { data, error } = await sb.from('bienestar').select('*').eq('cliente_id', miUserId).eq('fecha', hoy).maybeSingle();
+  if (error) { box.classList.add('oculto'); return; }   // la tabla aún no existe: no se muestra nada
+  if (data) val = data;
+  box.classList.remove('oculto');
+  const pintar = () => {
+    const puesto = BIEN_CAMPOS_R.filter(c => val[c.k] != null).length;
+    box.innerHTML = `<div class="bien-cab"><b>¿Cómo estás hoy?</b><span class="muted">${puesto === 4 ? 'Guardado ✓' : 'Tarda 10 segundos'}</span></div>
+      ${BIEN_CAMPOS_R.map(c => `<div class="bien-fila"><span class="bien-et">${c.et}</span><span class="bien-ops">${
+        [1, 2, 3, 4, 5].map(n => `<button type="button" class="bien-op${val[c.k] === n ? ' on' : ''}" data-b="${c.k}" data-v="${n}" aria-label="${c.et}: ${n} de 5">${BIEN_CARAS_R[n]}</button>`).join('')
+      }</span></div>`).join('')}<div class="bien-msg muted"></div>`;
+  };
+  pintar();
+  box.onclick = async ev => {
+    const b = ev.target.closest('[data-b]'); if (!b) return;
+    const k = b.dataset.b, v = Number(b.dataset.v);
+    val[k] = val[k] === v ? null : v;
+    pintar();
+    const m = box.querySelector('.bien-msg');
+    const { error } = await sb.from('bienestar').upsert({ cliente_id: miUserId, fecha: hoy, sueno: val.sueno ?? null, fatiga: val.fatiga ?? null, dolor: val.dolor ?? null, animo: val.animo ?? null });
+    if (m) m.textContent = error ? 'No se pudo guardar: ' + error.message : 'Guardado ✓';
+  };
+}
+
 function pintarEstadoStrava() {
   const con = !!(miAtleta && miAtleta.strava_conectado);
   $('strava-estado').textContent = con ? 'Tu cuenta de Strava está conectada.' : 'Tu cuenta de Strava no está conectada.';
@@ -1349,7 +1424,7 @@ async function iniciarStravaAtleta() {
   } else if (miAtleta.strava_conectado) {
     // Sincronización silenciosa al entrar
     llamarStrava({ accion: 'sincronizar' }).then(r => {
-      if (r.actividades) { pintarActividades($('actividades-a'), miAtleta.id); if (r.marcadas) { cargarSemana(); cargarTodoAtleta(); } }
+      if (r.actividades) { pintarActividades($('actividades-a'), miAtleta.id); if (r.marcadas) { cargarSemana(); cargarTodoAtleta(); } avisoEsfuerzoPendiente(); }
     }).catch(e => { $('strava-estado').textContent = 'Strava conectado, pero la última sincronización falló: ' + e.message; });
   }
   pintarActividades($('actividades-a'), miAtleta.id);
@@ -1374,6 +1449,7 @@ $('btn-strava-sync').onclick = async () => {
     pintarActividades($('actividades-a'), miAtleta.id);
     cargarSemana();
     cargarTodoAtleta();
+    avisoEsfuerzoPendiente();
   } catch (e) {
     $('strava-estado').textContent = '';
     alert(e.message);
@@ -2300,6 +2376,7 @@ function mostrarDetalle(p) {
   $('det-comentario').textContent = p.comentario_entrenador ? 'Comentario de tu entrenador:\n' + p.comentario_entrenador : '';
   $('det-notas').value = p.notas_atleta || '';
   $('det-guardar').onclick = async () => {
+
     const rpe = $('det-rpe').value ? Number($('det-rpe').value) : null;
     const kmTxt = $('det-km').value.trim().replace(',', '.');
     const km = kmTxt ? Number(kmTxt) : null;
@@ -2314,6 +2391,7 @@ function mostrarDetalle(p) {
     if (error) return alert(error.message);
     $('detalle-atleta').classList.add('oculto');
     cargarSemana();
+    avisoEsfuerzoPendiente();
     cargarTodoAtleta();
   };
   $('detalle-atleta').classList.remove('oculto');
