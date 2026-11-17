@@ -604,6 +604,19 @@ html body:not(.cli) .login .msg.ok{color:#bfe8b0!important}
 .res-acceso button{width:100%;text-align:left;font-size:13.5px}
 .res-vuelta{align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
 .res-vuelta button{width:auto}
+
+/* Casillas del plan editables por el entrenador dentro de la tarjeta */
+.grow input.pl{width:100%;min-width:0;margin:0;padding:4px 3px;font-size:13px;text-align:center;background:rgba(255,255,255,.92);border:1px dashed #b8860b;border-radius:6px}
+.grow input.pl-ej{text-align:left;font-weight:600;flex:1}
+.grow .gname:has(input.pl-ej){display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.grow .gname:has(input.pl-ej) .gsub{flex-basis:100%}
+@media(max-width:600px){
+  .plan-edit .ghead,.plan-edit .grow{grid-template-columns:repeat(7,minmax(0,1fr))}
+  .plan-edit .ghead span:first-child,.plan-edit .grow .gname{grid-column:1/-1;text-align:left}
+  .plan-edit .grow .gname{margin-bottom:4px}
+}
+.grow input.pl-int{text-align:center;font-size:12px}
+html.oscuro .grow input.pl{background:rgba(255,255,255,.10);border-color:#c98500}
 </style>
 </head>
 <body>
@@ -1058,7 +1071,7 @@ function abrirPicker(btn){
   document.body.appendChild(ov);
   hojaPick=ov;
 }
-function sesionHTML(s,editable,conLeyenda=editable){
+function sesionHTML(s,editable,conLeyenda=editable,plan=false){
   const R=s.registro||{};
   const dis=editable?"":"disabled";
   const RIR_OPTS=[0,1,2,3,4,5];
@@ -1078,17 +1091,34 @@ function sesionHTML(s,editable,conLeyenda=editable){
     const cab=`<div class="cab">${esc(g.nombre)}</div>`;
     const letra=x=>String((normEj(x).cod)||"").replace(/[^A-Za-z]/g,"").charAt(0).toUpperCase();
     return cab+cabeza+g.items.map(({x,bi,ei},idx)=>{const e=normEj(x),k=bi+"-"+ei,r=R[k]||{};const sep=idx>0&&letra(x)!==letra(g.items[idx-1].x)?" sep":"";return `<div class="grow${sep}">
-      <div class="gname">${e.cod?`<b>${esc(e.cod)}</b> `:""}${nombreVideo(e)}${btnVideoMini(e)}${e.nota?`<div class="gsub">📝 ${esc(e.nota)}</div>`:""}${e.prog?`<div class="gsub">📈 ${esc(e.prog)}</div>`:""}</div>
-      <span>${esc(e.ser)}</span><span>${esc(e.rep)}</span>
+      <div class="gname">${plan
+        ?`${e.cod?`<b>${esc(e.cod)}</b> `:""}<input class="pl pl-ej" data-pk="${k}" data-pf="ej" value="${esc(e.ej)}" placeholder="Ejercicio">${btnVideoMini(e)}`
+        :`${e.cod?`<b>${esc(e.cod)}</b> `:""}${nombreVideo(e)}${btnVideoMini(e)}`}${e.nota?`<div class="gsub">📝 ${esc(e.nota)}</div>`:""}${e.prog?`<div class="gsub">📈 ${esc(e.prog)}</div>`:""}</div>
+      ${plan?`<input class="pl" data-pk="${k}" data-pf="ser" value="${esc(e.ser)}"><input class="pl" data-pk="${k}" data-pf="rep" value="${esc(e.rep)}">`
+            :`<span>${esc(e.ser)}</span><span>${esc(e.rep)}</span>`}
       <input data-k="${k}" data-f="reps" value="${esc(r.reps)}" ${dis}>
       <input data-k="${k}" data-f="kg" inputmode="decimal" placeholder="kg" value="${esc(r.kg)}" ${dis}>
-      <div class="intb">${esc(e.int)}</div>
+      ${plan?`<input class="pl pl-int" data-pk="${k}" data-pf="int" value="${esc(e.int)}" placeholder="kg, %, ritmo…">`:`<div class="intb">${esc(e.int)}</div>`}
       ${pick(k,"rir",r.rir,false,editable,e.rir)}
       ${pick(k,"rpe",r.rpe,true,editable,e.rpe)}
     </div>`}).join("");
   }).join("");
   const hayObj=grupos.some(g=>g.items.some(({x})=>{const e=normEj(x);return e.rir||e.rpe}));
+  if(plan) return `<div class="plan-edit">`+bloques+`</div>`+`<p class="obj-ayuda">Puedes escribir directamente en <b>Ejercicio</b>, <b>Series</b>, <b>Reps</b>, <b>Intensidad</b>, <b>RIR</b> y <b>RPE</b>, y guardar con «Guardar cambios». Para añadir o quitar ejercicios y bloques, usa «Editar».</p>`+`<div class="muted" style="margin-top:10px">Comentario del entrenamiento</div><textarea data-k="s" data-f="com" placeholder="Cómo ha ido la sesión" rows="2">${esc((R.s||{}).com)}</textarea>`;
   return bloques+(hayObj?`<p class="obj-ayuda">En <b>RIR</b> y <b>RPE</b> ves en gris el <b>objetivo</b> que te marca tu entrenador. Tócalo para apuntar lo que has hecho de verdad. En <b>Kg</b> apunta el peso que has usado: con él se calcula tu fuerza estimada.</p>`:"")+`<div class="rpe-tot"><b>RPE total del entrenamiento</b><div class="rpe-tot-pick">${pick("s","rpe",(R.s||{}).rpe,true,editable)}</div></div><div class="rpe-tot"><b>Duración del entrenamiento (min)</b><div class="rpe-tot-pick"><input data-k="s" data-f="min" inputmode="numeric" placeholder="min" value="${esc((R.s||{}).min??"")}" ${dis} style="margin:0;text-align:center;font-weight:700"></div></div><div class="muted" style="margin-top:10px">Comentario del entrenamiento</div><textarea data-k="s" data-f="com" placeholder="Cómo ha ido la sesión" rows="2" ${dis}>${esc((R.s||{}).com)}</textarea>${conLeyenda?`<div style="margin-top:12px">${leyendaRPE()}</div>`:""}`;
+}
+// Lee lo que el entrenador haya escrito en la tarjeta (ejercicio, series, reps, intensidad)
+function leerPlan(raiz,s){
+  const bloques=JSON.parse(JSON.stringify(s.bloques||[]));
+  const gemelo={ej:"ejercicio",ser:"series",rep:"reps",int:"intensidad"};
+  raiz.querySelectorAll("[data-pf]").forEach(el=>{
+    const p=String(el.dataset.pk||"").split("-"), bi=+p[0], ei=+p[1];
+    const b=bloques[bi]; if(!b||!Array.isArray(b.ejercicios)||!b.ejercicios[ei]) return;
+    const ej=b.ejercicios[ei], f=el.dataset.pf;
+    ej[f]=el.value.trim();
+    if(gemelo[f] in ej) delete ej[gemelo[f]];   // evita que quede el nombre antiguo del campo
+  });
+  return bloques;
 }
 function leerRegistro(raiz){
   const reg={};
@@ -1951,7 +1981,7 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
   meterRes();
   const sinFecha=todas.filter(s=>!parseFecha(s.fecha));
   const tarjeta=(s,abierta)=>`<details class="card sesion${hecho(s)?" hecha":""}"${abierta?" open":""}><summary class="dia-sum" data-arr="${s.id}">${badgeFecha(s)}<h3>${nombreEntreno(s)}</h3></summary>
-      ${sesionHTML(s,true)}
+      ${sesionHTML(s,true,true,admin)}
       <div class="row"><button data-save="${s.id}">${admin?"Guardar cambios":"Guardar registro"}</button>${admin?`<button class="sec" data-ed="${s.id}">Editar</button><button class="danger" data-del="${s.id}">Borrar</button>`:""}<span class="muted" data-st="${s.id}"></span></div>
       <div class="row mover"><label>${admin?"Mover o copiar a otro día":"Mover a otro día"} <input type="date" data-mover-in="${s.id}"></label><button class="sec" data-mover="${s.id}">${admin?"Mover / copiar":"Mover"}</button></div></details>`;
   const moverA=async(id,val)=>{
@@ -2171,9 +2201,13 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
     cont.querySelectorAll("[data-save]").forEach(b=>b.onclick=async()=>{
       const id=b.dataset.save, st=cont.querySelector(`[data-st="${id}"]`);
       try{
-        const reg=leerRegistro(b.closest(".card"));
-        await db("PATCH","sesiones",`?id=eq.${id}`,{registro:reg},"return=minimal");
-        const s=todas.find(x=>x.id===id); if(s) s.registro=reg;
+        const card=b.closest(".card");
+        const reg=leerRegistro(card);
+        const s=todas.find(x=>String(x.id)===String(id));
+        const cambios={registro:reg};
+        if(admin&&s) cambios.bloques=leerPlan(card,s);
+        await db("PATCH","sesiones",`?id=eq.${id}`,cambios,"return=minimal");
+        if(s){s.registro=reg; if(cambios.bloques) s.bloques=cambios.bloques}
         if(!admin&&hecho({registro:reg})){st.textContent="Completado ✓ · pasa al historial";setTimeout(()=>tabEntrenosCal(host,clienteId,admin),1000)}
         else st.textContent="Guardado ✓";
       }catch(e){st.textContent="Error: "+e.message}
@@ -3301,6 +3335,42 @@ html.oscuro .cli-kpis>div{background:rgba(255,255,255,.06);border-color:rgba(255
   const media = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
   const desv = a => { if (a.length < 2) return 0; const m = media(a); return Math.sqrt(a.reduce((s, x) => s + (x - m) ** 2, 0) / (a.length - 1)); };
 
+  // ---------- periodos: semana, mes, semestre y año ----------
+  const PERIODOS = {
+    semana:   { nombre: 'Semana',   corto: 'sem',  porDefecto: 12 },
+    mes:      { nombre: 'Mes',      corto: 'mes',  porDefecto: 12 },
+    semestre: { nombre: 'Semestre', corto: 'sem.', porDefecto: 6 },
+    anio:     { nombre: 'Año',      corto: 'año',  porDefecto: 5 }
+  };
+
+  /** Primer día del periodo que contiene esa fecha. */
+  function inicioPeriodo(unidad, f) {
+    const d = parse(f);
+    if (unidad === 'semana') return lunes(f);
+    if (unidad === 'mes') return iso(new Date(d.getFullYear(), d.getMonth(), 1));
+    if (unidad === 'semestre') return iso(new Date(d.getFullYear(), d.getMonth() < 6 ? 0 : 6, 1));
+    return iso(new Date(d.getFullYear(), 0, 1));
+  }
+  /** Mueve n periodos (negativo = hacia atrás) desde el inicio de uno. */
+  function moverPeriodo(unidad, ini, n) {
+    const d = parse(ini);
+    if (unidad === 'semana') return sumarDias(ini, 7 * n);
+    if (unidad === 'mes') return iso(new Date(d.getFullYear(), d.getMonth() + n, 1));
+    if (unidad === 'semestre') return iso(new Date(d.getFullYear(), d.getMonth() + 6 * n, 1));
+    return iso(new Date(d.getFullYear() + n, 0, 1));
+  }
+  /** Último día del periodo. */
+  const finPeriodo = (unidad, ini) => sumarDias(moverPeriodo(unidad, ini, 1), -1);
+
+  /** Etiqueta corta para los ejes y la tabla. */
+  function etiquetaPeriodo(unidad, ini) {
+    const d = parse(ini);
+    if (unidad === 'semana') return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).replace('.', '');
+    if (unidad === 'mes') return d.toLocaleDateString('es-ES', { month: 'short', year: '2-digit' }).replace('.', '');
+    if (unidad === 'semestre') return (d.getMonth() < 6 ? '1.er sem ' : '2.º sem ') + d.getFullYear();
+    return String(d.getFullYear());
+  }
+
   // ---------- resumen semanal (lunes a domingo) ----------
   function resumenSemanal(sesiones, { semanas = 12, hasta = hoyISO() } = {}) {
     const ses = sesiones.map(normalizarSesion);
@@ -3325,7 +3395,7 @@ html.oscuro .cli-kpis>div{background:rgba(255,255,255,.06);border-color:rgba(255
       const sd = desv(diarios);
       const monotonia = sd > 0 ? media(diarios) / sd : (srpe > 0 ? null : 0);
       out.push({
-        semana: ini, fin,
+        semana: ini, fin, unidad: 'semana', etiqueta: etiquetaPeriodo('semana', ini),
         sesiones: real.length, sesionesPlan: plan.length,
         minutos: r1(real.reduce((a, s) => a + (Number(s.duracion_min) || 0), 0)),
         km: r1(real.reduce((a, s) => a + (Number(s.distancia_km) || 0), 0)),
@@ -3348,6 +3418,55 @@ html.oscuro .cli-kpis>div{background:rgba(255,255,255,.06);border-color:rgba(255
       // subida respecto a la semana más alta de las 4 anteriores (evita falsos avisos al volver de una descarga)
       const max4 = Math.max(0, ...out.slice(Math.max(0, i - 4), i).map(w => w.srpe || 0));
       out[i].sobreMax4 = max4 > 0 ? r2((cur - max4) / max4) : null;
+    }
+    return out;
+  }
+
+  /**
+   * Resumen por periodo (semana, mes, semestre o año).
+   * Las sumas se calculan con las sesiones de cada periodo; la monotonía y el strain
+   * vienen de las semanas que empiezan dentro de él, porque están definidos por semana.
+   */
+  function resumenPeriodo(sesiones, { unidad = 'semana', n = null, hasta = hoyISO() } = {}) {
+    const cuantos = n || (PERIODOS[unidad] || PERIODOS.semana).porDefecto;
+    if (unidad === 'semana') return resumenSemanal(sesiones, { semanas: cuantos, hasta });
+    const ses = sesiones.map(normalizarSesion);
+    const ultimo = inicioPeriodo(unidad, hasta);
+    const primero = moverPeriodo(unidad, ultimo, -(cuantos - 1));
+    // semanas que abarcan todo el rango, para monotonía y strain
+    const semanasTot = Math.ceil((parse(sumarDias(hasta, 7)) - parse(lunes(primero))) / (7 * 86400000)) + 1;
+    const sem = resumenSemanal(sesiones, { semanas: Math.max(1, semanasTot), hasta });
+    const out = [];
+    for (let i = 0; i < cuantos; i++) {
+      const ini = moverPeriodo(unidad, primero, i), fin = finPeriodo(unidad, ini);
+      const dentro = ses.filter(x => x.fecha >= ini && x.fecha <= fin);
+      const real = dentro.filter(x => x.estado === 'realizada');
+      const plan = dentro.filter(x => x.estado === 'planificada');
+      const semEn = sem.filter(w => w.semana >= ini && w.semana <= fin);
+      const monots = semEn.map(w => w.monotonia).filter(x => x != null);
+      const ecosRealConPlan = real.filter(x => x.ecos != null).reduce((a, x) => a + x.ecos, 0);
+      const srpeConEcos = real.filter(x => x.ecos != null && x.srpe != null).reduce((a, x) => a + x.srpe, 0);
+      const ecosPlanHastaHoy = plan.filter(x => x.fecha <= hasta).reduce((a, x) => a + (x.ecos || 0), 0);
+      const srpe = real.reduce((a, x) => a + (x.srpe || 0), 0);
+      out.push({
+        semana: ini, fin, unidad, etiqueta: etiquetaPeriodo(unidad, ini), enCurso: hasta < fin,
+        sesiones: real.length, sesionesPlan: plan.length,
+        minutos: r1(real.reduce((a, x) => a + (Number(x.duracion_min) || 0), 0)),
+        km: r1(real.reduce((a, x) => a + (Number(x.distancia_km) || 0), 0)),
+        desnivel: Math.round(real.reduce((a, x) => a + (Number(x.desnivel_m) || 0), 0)),
+        ecosPlan: r1(plan.reduce((a, x) => a + (x.ecos || 0), 0)), ecosReal: r1(real.reduce((a, x) => a + (x.ecos || 0), 0)),
+        cumplimiento: ecosPlanHastaHoy > 0 ? r2(ecosRealConPlan / ecosPlanHastaHoy) : null,
+        srpe: r1(srpe), srpeFuerza: r1(real.filter(x => x.deporte === 'fuerza').reduce((a, x) => a + (x.srpe || 0), 0)),
+        monotonia: monots.length ? r2(monots.reduce((a, b) => a + b, 0) / monots.length) : null,
+        strain: semEn.reduce((a, w) => a + (w.strain || 0), 0) || null,
+        coste: ecosRealConPlan > 0 && srpeConEcos > 0 ? r2(srpeConEcos / ecosRealConPlan) : null,
+        semanas: semEn.length, variacion: null, sobreMax4: null
+      });
+    }
+    for (let i = 1; i < out.length; i++) {
+      if (out[i].enCurso) continue;
+      const prev = out[i - 1].srpe;
+      out[i].variacion = prev > 0 ? r2((out[i].srpe - prev) / prev) : null;
     }
     return out;
   }
@@ -3483,9 +3602,10 @@ html.oscuro .cli-kpis>div{background:rgba(255,255,255,.06);border-color:rgba(255
       [5, 'Duro'], [6, ''], [7, 'Muy duro'], [8, ''], [9, ''], [10, 'Máximo']
     ],
     calcularECOs, calcularSRPE, minutosTotales, normalizarSesion,
-    serieDiaria, resumenSemanal, agudoCronico, formaFatiga, alertas,
+    serieDiaria, resumenSemanal, resumenPeriodo, agudoCronico, formaFatiga, alertas,
+    PERIODOS, inicioPeriodo, moverPeriodo, finPeriodo, etiquetaPeriodo,
     limitesFCKarvonen, minutosZonaDesdeFC, sesionDesdeStrava,
-    fecha: { iso, parse, sumarDias, lunes, hoyISO }
+    fecha: { iso, parse, sumarDias, lunes, hoyISO, inicioPeriodo, moverPeriodo, finPeriodo, etiquetaPeriodo }
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   global.ATLCarga = API;
@@ -3625,19 +3745,21 @@ html.oscuro .cli-kpis>div{background:rgba(255,255,255,.06);border-color:rgba(255
   }
 
   /** Resumen semanal (lunes a domingo) a partir de sesiones analizadas con fecha ISO. */
-  function resumenSemanal(analizadas, { semanas = 12, hasta, fecha }) {
+  function resumenSemanal(analizadas, { semanas = 12, hasta, fecha, unidad = 'semana', n = null }) {
     const F = fecha; // ATLCarga.fecha
-    const ultimoLunes = F.lunes(hasta), primer = F.sumarDias(ultimoLunes, -7 * (semanas - 1));
+    const cuantos = n || semanas;
+    const primer = F.moverPeriodo ? F.moverPeriodo(unidad, F.inicioPeriodo(unidad, hasta), -(cuantos - 1)) : F.sumarDias(F.lunes(hasta), -7 * (cuantos - 1));
     const out = [];
-    for (let i = 0; i < semanas; i++) {
-      const ini = F.sumarDias(primer, 7 * i), fin = F.sumarDias(ini, 6);
+    for (let i = 0; i < cuantos; i++) {
+      const ini = F.moverPeriodo ? F.moverPeriodo(unidad, primer, i) : F.sumarDias(primer, 7 * i);
+      const fin = F.finPeriodo ? F.finPeriodo(unidad, ini) : F.sumarDias(ini, 6);
       const ss = analizadas.filter(s => s.fecha >= ini && s.fecha <= fin);
       const porPatron = {};
       ss.forEach(s => s.ejercicios.forEach(e => { if (e.duras) porPatron[e.patron] = (porPatron[e.patron] || 0) + e.duras; }));
       const sum = f => ss.reduce((a, s) => a + (f(s) || 0), 0);
       const media = (f, w) => { const v = ss.filter(s => f(s) != null); const ws = v.reduce((a, s) => a + (w(s) || 1), 0); return ws ? v.reduce((a, s) => a + f(s) * (w(s) || 1), 0) / ws : null; };
       out.push({
-        semana: ini, fin, enCurso: hasta < fin, sesiones: ss.length,
+        semana: ini, fin, unidad, etiqueta: F.etiquetaPeriodo ? F.etiquetaPeriodo(unidad, ini) : ini, enCurso: hasta < fin, sesiones: ss.length,
         srpe: r1(sum(s => s.srpe)), minutos: r1(sum(s => s.min)),
         seriesDuras: sum(s => s.seriesDuras), seriesDurasPlan: sum(s => s.seriesDurasPlan), series: sum(s => s.series), reps: sum(s => s.reps),
         tonelaje: sum(s => s.tonelaje) || null,
@@ -3762,6 +3884,12 @@ border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 4px 16px rgba(0,0
 .atl-carga .seg button{border:0;background:transparent;color:var(--ink2);padding:5px 10px;font:inherit;font-size:12px;cursor:pointer}
 .atl-carga .seg button[aria-pressed="true"]{background:var(--plane);color:var(--ink);font-weight:600}
 .atl-carga .filtros{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:0}
+.atl-carga .nav-per{display:inline-flex;align-items:center;gap:6px}
+.atl-carga .seg-b{border:1px solid var(--ring);background:var(--surface);color:var(--ink);border-radius:8px;padding:5px 11px;font:inherit;font-size:13px;cursor:pointer;min-width:34px}
+.atl-carga .seg-b:disabled{opacity:.35;cursor:default}
+.atl-carga .seg-b.hoy{font-weight:600}
+.atl-carga .rango{font-size:12.5px;color:var(--ink2);white-space:nowrap;min-width:140px;text-align:center}
+@media(max-width:600px){.atl-carga .nav-per{flex:1 0 100%;justify-content:space-between}.atl-carga .rango{min-width:0}}
 .atl-carga .cab-carga .sub{margin-bottom:8px}
 .atl-carga label{font-size:13px;color:var(--ink2)}
 .atl-carga input,.atl-carga select,.atl-carga textarea{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--axis);border-radius:8px;padding:6px 8px}
@@ -3829,7 +3957,7 @@ border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 4px 16px rgba(0,0
   function barrasAgrupadas(datos, series, tip, titulo) {
     const svg = s('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': titulo });
     const max = niceMax(Math.max(1, ...datos.flatMap(d => series.map(x => d[x.key] || 0))));
-    const { ih, iw } = ejes(svg, max, datos.length, datos.map(d => fmtSem(d.semana)), datos.length > 8 ? 2 : 1);
+    const { ih, iw } = ejes(svg, max, datos.length, datos.map(d => d.etiqueta || fmtSem(d.semana)), datos.length > 8 ? 2 : 1);
     const bw = Math.min(24, (iw * 0.7 - 2 * (series.length - 1)) / series.length);
     datos.forEach((d, i) => {
       const g = s('g', { class: 'grp' });
@@ -3839,7 +3967,7 @@ border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 4px 16px rgba(0,0
         g.append(s('path', { class: 'bar', d: barPath(x0 + k * (bw + 2), M.t + ih - bh, bw, bh), fill: se.color }));
       });
       const hit = s('rect', { class: 'hit', x: M.l + iw * i, y: M.t, width: iw, height: ih, tabindex: 0 });
-      const show = ev => tip.mostrar(ev, `Semana del ${fmtSem(d.semana)}`, series.map(se => ({ color: se.color, valor: fmt(d[se.key]), nombre: se.label })));
+      const show = ev => tip.mostrar(ev, d.unidad && d.unidad !== 'semana' ? d.etiqueta : `Semana del ${fmtSem(d.semana)}`, series.map(se => ({ color: se.color, valor: fmt(d[se.key]), nombre: se.label })));
       hit.addEventListener('pointermove', show); hit.addEventListener('focus', show);
       hit.addEventListener('pointerleave', tip.ocultar); hit.addEventListener('blur', tip.ocultar);
       g.append(hit); svg.append(g);
@@ -3851,7 +3979,7 @@ border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 4px 16px rgba(0,0
   function barrasApiladas(datos, series, tip, titulo) {
     const svg = s('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': titulo });
     const max = niceMax(Math.max(1, ...datos.map(d => series.reduce((a, x) => a + (d[x.key] || 0), 0))));
-    const { ih, iw } = ejes(svg, max, datos.length, datos.map(d => fmtSem(d.semana)), datos.length > 8 ? 2 : 1);
+    const { ih, iw } = ejes(svg, max, datos.length, datos.map(d => d.etiqueta || fmtSem(d.semana)), datos.length > 8 ? 2 : 1);
     const bw = Math.min(24, iw * 0.6);
     datos.forEach((d, i) => {
       const g = s('g', { class: 'grp' }); const x = M.l + iw * i + (iw - bw) / 2;
@@ -3864,7 +3992,7 @@ border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 4px 16px rgba(0,0
         acc += v;
       });
       const hit = s('rect', { class: 'hit', x: M.l + iw * i, y: M.t, width: iw, height: ih, tabindex: 0 });
-      const show = ev => tip.mostrar(ev, `Semana del ${fmtSem(d.semana)}`, [
+      const show = ev => tip.mostrar(ev, d.unidad && d.unidad !== 'semana' ? d.etiqueta : `Semana del ${fmtSem(d.semana)}`, [
         ...series.map(se => ({ color: se.color, valor: fmt(d[se.key]), nombre: se.label })),
         { valor: fmt(series.reduce((a, se) => a + (d[se.key] || 0), 0)), nombre: 'Total' }]);
       hit.addEventListener('pointermove', show); hit.addEventListener('focus', show);
@@ -3922,37 +4050,57 @@ border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 4px 16px rgba(0,0
   // ---------- PANEL DEL ENTRENADOR ----------
   function panelEntrenador(el, opts) {
     estilos();
-    const estado = Object.assign({ semanas: 12, hasta: C.fecha.hoyISO(), metodoAC: 'ewma' }, opts);
+    const estado = Object.assign({ unidad: 'semana', n: null, desplaz: 0, hasta: C.fecha.hoyISO(), metodoAC: 'ewma' }, opts);
+    const hoy = estado.hasta;
     const raiz = h('div', { class: 'atl-carga' }); el.replaceChildren(raiz);
     const tip = crearTooltip(raiz);
 
     function pintar() {
       const sesiones = estado.sesiones.map(C.normalizarSesion);
-      const sem = C.resumenSemanal(sesiones, { semanas: estado.semanas, hasta: estado.hasta });
+      const U = estado.unidad, uNom = C.PERIODOS[U].nombre.toLowerCase();
+      const cuantos = estado.n || C.PERIODOS[U].porDefecto;
+      // «hasta» se mueve con las flechas: 0 = hasta hoy
+      const finVista = estado.desplaz === 0 ? hoy
+        : C.fecha.finPeriodo(U, C.fecha.moverPeriodo(U, C.fecha.inicioPeriodo(U, hoy), -estado.desplaz));
+      const sem = C.resumenPeriodo(sesiones, { unidad: U, n: cuantos, hasta: finVista });
       const desde = C.fecha.sumarDias(sem[0].semana, -56); // historial extra para la carga crónica
-      const diario = C.serieDiaria(sesiones, desde, sem[sem.length - 1].fin > estado.hasta ? estado.hasta : sem[sem.length - 1].fin, 'srpe');
+      const finDatos = sem[sem.length - 1].fin > finVista ? finVista : sem[sem.length - 1].fin;
+      const diario = C.serieDiaria(sesiones, desde, finDatos, 'srpe');
       const ac = C.agudoCronico(diario, { metodo: estado.metodoAC });
       const ff = C.formaFatiga(diario);
-      const acVis = ac.filter(d => d.fecha >= sem[0].semana);
+      // el ratio agudo:crónico es diario: se muestran siempre las últimas 16 semanas de la vista
+      const iniAC = C.fecha.sumarDias(finDatos, -111);
+      const acVis = ac.filter(d => d.fecha >= iniAC);
       const act = sem[sem.length - 1], ant = sem[sem.length - 2] || {};
-      const ref = act.enCurso && sem.length > 1 ? ant : act; // última semana completa
+      const ref = act.enCurso && sem.length > 1 ? ant : act; // último periodo completo
       const ultAC = [...ac].reverse().find(d => d.ratio != null);
       const ultFF = ff[ff.length - 1];
-      const alertas = C.alertas(sem, ac);
+      // los avisos se calculan siempre por semana, aunque se esté mirando por mes o por año
+      const semAvisos = U === 'semana' ? sem : C.resumenSemanal(sesiones, { semanas: 12, hasta: finVista });
+      const alertas = C.alertas(semAvisos, ac);
 
+      const rangoTxt = `${C.fecha.parse(sem[0].semana).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: '2-digit' })} – ${C.fecha.parse(finDatos).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: '2-digit' })}`;
       const filtros = h('div', { class: 'filtros' },
-        h('label', { text: 'Periodo' }),
-        h('div', { class: 'seg' }, [6, 12, 24].map(n => h('button', { 'aria-pressed': String(estado.semanas === n), text: `${n} sem`, onclick: () => { estado.semanas = n; pintar(); } }))),
+        h('label', { text: 'Ver por' }),
+        h('div', { class: 'seg' }, Object.entries(C.PERIODOS).map(([k, p]) => h('button', { 'aria-pressed': String(U === k), text: p.nombre, onclick: () => { estado.unidad = k; estado.n = null; estado.desplaz = 0; pintar(); } }))),
+        h('div', { class: 'nav-per' },
+          h('button', { class: 'seg-b', title: `${C.PERIODOS[U].nombre} anterior`, 'aria-label': `${C.PERIODOS[U].nombre} anterior`, text: '‹', onclick: () => { estado.desplaz++; pintar(); } }),
+          h('span', { class: 'rango', text: rangoTxt }),
+          h('button', { class: 'seg-b', title: `${C.PERIODOS[U].nombre} siguiente`, 'aria-label': `${C.PERIODOS[U].nombre} siguiente`, text: '›', disabled: estado.desplaz === 0 ? '' : null, onclick: () => { estado.desplaz = Math.max(0, estado.desplaz - 1); pintar(); } }),
+          estado.desplaz ? h('button', { class: 'seg-b hoy', text: 'Hoy', onclick: () => { estado.desplaz = 0; pintar(); } }) : null),
+        h('label', { text: 'Cuántos' }),
+        h('div', { class: 'seg' }, (U === 'semana' ? [6, 12, 24] : U === 'mes' ? [6, 12, 24] : U === 'semestre' ? [4, 6, 10] : [3, 5, 10])
+          .map(k => h('button', { 'aria-pressed': String(cuantos === k), text: String(k), onclick: () => { estado.n = k; pintar(); } }))),
         h('label', { text: 'Ratio A:C' }),
         h('div', { class: 'seg' }, [['ewma', 'EWMA'], ['media', 'Media móvil']].map(([k, t]) => h('button', { 'aria-pressed': String(estado.metodoAC === k), text: t, onclick: () => { estado.metodoAC = k; pintar(); } }))));
 
       const kpi = (l, v, d) => h('div', { class: 'kpi' }, h('div', { class: 'l', text: l }), h('div', { class: 'v', text: v }), h('div', { class: 'd', text: d }));
       const kpis = h('div', { class: 'kpis' },
-        kpi('ECOs esta semana', fmt(act.ecosReal), act.ecosPlan ? `de ${fmt(act.ecosPlan)} planificados${act.cumplimiento != null ? ` · ${fmt(act.cumplimiento * 100)} % de lo previsto hasta hoy` : ''}` : 'sin planificación'),
-        kpi('sRPE esta semana', fmt(act.srpe) + ' UA', ant.srpe != null ? `semana pasada ${fmt(ant.srpe)} UA` : ''),
+        kpi(`ECOs · ${act.etiqueta}`, fmt(act.ecosReal), act.ecosPlan ? `de ${fmt(act.ecosPlan)} planificados${act.cumplimiento != null ? ` · ${fmt(act.cumplimiento * 100)} % de lo previsto` : ''}` : 'sin planificación'),
+        kpi(`sRPE · ${act.etiqueta}`, fmt(act.srpe) + ' UA', ant.srpe != null ? `${uNom} anterior ${fmt(ant.srpe)} UA` : ''),
         kpi('Ratio agudo:crónico', ultAC ? fmt(ultAC.ratio, 2) : '—', `orientativo ${fmt(C.UMBRALES.acMin, 1)}–${fmt(C.UMBRALES.acMax, 1)}`),
-        kpi('Monotonía (sem. pasada)', fmt(ref.monotonia, 2), `strain ${fmt(ref.strain)} · aviso > ${fmt(C.UMBRALES.monotoniaMax, 1)}`),
-        kpi('Coste percibido (sem. pasada)', ref.coste != null ? fmt(ref.coste, 2) : '—', 'UA de sRPE por cada ECO'),
+        kpi(`Monotonía · ${ref.etiqueta}`, fmt(ref.monotonia, 2), `strain ${fmt(ref.strain)} · aviso > ${fmt(C.UMBRALES.monotoniaMax, 1)}` + (U === 'semana' ? '' : ' (media de sus semanas)')),
+        kpi(`Coste percibido · ${ref.etiqueta}`, ref.coste != null ? fmt(ref.coste, 2) : '—', 'UA de sRPE por cada ECO'),
         kpi('Balance forma-fatiga', fmt(ultFF && ultFF.balance), `forma ${fmt(ultFF && ultFF.forma)} · fatiga ${fmt(ultFF && ultFF.fatiga)}`));
 
       // aviso de bienestar: si la media baja y la carga sube
@@ -3962,22 +4110,22 @@ border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 4px 16px rgba(0,0
         const m = bPrev.reduce((a, b) => a + (b.global || 0), 0) / bPrev.length;
         if (m && bAct.global < m - 0.5) alertas.unshift({ nivel: 'medio', texto: `Dice sentirse peor que de costumbre (${fmt(bAct.global, 1)} sobre 5 frente a ${fmt(m, 1)} de media). Si la carga va alta, conviene aflojar.` });
       }
-      const sAlert = h('div', { class: 'card' }, h('h3', { text: 'Avisos de la semana' }), h('p', { class: 'sub', text: 'Para decidir si subir, mantener o bajar la carga.' }),
+      const sAlert = h('div', { class: 'card' }, h('h3', { text: 'Avisos de la última semana' }), h('p', { class: 'sub', text: 'Para decidir si subir, mantener o bajar la carga.' }),
         h('ul', { class: 'alertas' }, alertas.map(a => h('li', {}, h('span', { class: 'chip ' + a.nivel, text: { alto: 'Alto', medio: 'Atención', info: 'Info', ok: 'OK' }[a.nivel] }), h('span', { text: a.texto })))));
 
       const serECO = [{ key: 'ecosPlan', label: 'Planificado', color: 'var(--s-plan)' }, { key: 'ecosReal', label: 'Realizado', color: 'var(--s-real)' }];
       const serSRPE = [{ key: 'srpeRes', label: 'Resistencia', color: 'var(--s-res)' }, { key: 'srpeFuerza', label: 'Fuerza', color: 'var(--s-fza)' }];
       const semS = sem.map(w => Object.assign({}, w, { srpeRes: Math.max(0, (w.srpe || 0) - (w.srpeFuerza || 0)) }));
 
-      const g1 = h('div', { class: 'card' }, h('h3', { text: 'Carga objetiva (ECOs) por semana' }), h('p', { class: 'sub', text: 'Lo que planificas frente a lo que ha hecho.' }),
+      const g1 = h('div', { class: 'card' }, h('h3', { text: `Carga objetiva (ECOs) por ${uNom}` }), h('p', { class: 'sub', text: 'Lo que planificas frente a lo que ha hecho.' }),
         leyenda(serECO), barrasAgrupadas(sem, serECO, tip, 'ECOs planificados y realizados por semana'));
-      const g2 = h('div', { class: 'card' }, h('h3', { text: 'Carga interna (sRPE) por semana' }), h('p', { class: 'sub', text: 'Minutos × RPE, sumando carrera y fuerza.' }),
+      const g2 = h('div', { class: 'card' }, h('h3', { text: `Carga interna (sRPE) por ${uNom}` }), h('p', { class: 'sub', text: 'Minutos × RPE, sumando carrera y fuerza.' }),
         leyenda(serSRPE), barrasApiladas(semS, serSRPE, tip, 'sRPE semanal de resistencia y fuerza'));
       const g3 = h('div', { class: 'card' }, h('h3', { text: 'Ratio agudo:crónico (sRPE)' }),
-        h('p', { class: 'sub', text: 'Carga de los últimos 7 días frente a las 4 últimas semanas. Franja sombreada: zona orientativa 0,8–1,3. Sirve para detectar picos bruscos, no predice lesiones.' }),
+        h('p', { class: 'sub', text: 'Últimas 16 semanas del periodo que estás viendo: carga de los 7 días anteriores frente a la de las 4 semanas anteriores. Franja sombreada: zona orientativa 0,8–1,3. Sirve para detectar picos bruscos, no predice lesiones.' }),
         lineaRatio(acVis, tip));
 
-      const cols = [['Semana', w => fmtSem(w.semana) + (w.enCurso ? ' (en curso)' : '')], ['Hechas/plan.', w => `${w.sesiones}${w.sesionesPlan ? '/' + w.sesionesPlan : ''}`], ['Min', w => fmt(w.minutos)], ['Km', w => fmt(w.km, 1)],
+      const cols = [[C.PERIODOS[U].nombre, w => (w.etiqueta || fmtSem(w.semana)) + (w.enCurso ? ' (en curso)' : '')], ['Hechas/plan.', w => `${w.sesiones}${w.sesionesPlan ? '/' + w.sesionesPlan : ''}`], ['Min', w => fmt(w.minutos)], ['Km', w => fmt(w.km, 1)],
         ['D+ (m)', w => fmt(w.desnivel)], ['ECOs plan', w => fmt(w.ecosPlan)], ['ECOs real', w => fmt(w.ecosReal)], ['Cumpl.', w => w.cumplimiento == null ? '—' : fmt(w.cumplimiento * 100) + ' %'],
         ['sRPE', w => fmt(w.srpe)], ['Var.', w => w.variacion == null ? '—' : (w.variacion > 0 ? '+' : '') + fmt(w.variacion * 100) + ' %'],
         ['Monot.', w => fmt(w.monotonia, 2)], ['Strain', w => fmt(w.strain)], ['sRPE/ECO', w => fmt(w.coste, 2)]];
@@ -3987,7 +4135,7 @@ border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 4px 16px rgba(0,0
         ['Energía', w => fmt((bienPorSem[w.semana] || {}).fatiga, 1)],
         ['Dolor', w => fmt((bienPorSem[w.semana] || {}).dolor, 1)],
         ['Ánimo', w => fmt((bienPorSem[w.semana] || {}).animo, 1)]);
-      const tabla = h('div', { class: 'card' }, h('h3', { text: 'Tabla semanal' }), h('div', { class: 'tabla' }, h('table', {},
+      const tabla = h('div', { class: 'card' }, h('h3', { text: `Tabla por ${uNom}` }), h('div', { class: 'tabla' }, h('table', {},
         h('thead', {}, h('tr', {}, cols.map(c => h('th', { text: c[0] })))),
         h('tbody', {}, [...sem].reverse().map(w => h('tr', {}, cols.map(([n, f]) => {
           const td = h('td', { text: f(w) });
@@ -3997,7 +4145,7 @@ border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 4px 16px rgba(0,0
 
       let detalle = null;
       if (estado.detalle) {
-        const reales = sesiones.filter(x => x.estado === 'realizada' && x.fecha >= sem[0].semana && x.fecha <= estado.hasta)
+        const reales = sesiones.filter(x => x.estado === 'realizada' && x.fecha >= sem[0].semana && x.fecha <= finDatos)
           .sort((a, b) => a.fecha < b.fecha ? 1 : a.fecha > b.fecha ? -1 : 0);
         const dep = d => (C.DEPORTES[d] || {}).nombre || d;
         const colsD = [['Fecha', x => C.fecha.parse(x.fecha).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })],
@@ -4033,50 +4181,65 @@ border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 4px 16px rgba(0,0
   function panelFuerza(el, opts) {
     estilos();
     const FZ = global.ATLFuerza;
-    const estado = Object.assign({ semanas: 12, hasta: C.fecha.hoyISO() }, opts);
+    const estado = Object.assign({ unidad: 'semana', n: null, desplaz: 0, hasta: C.fecha.hoyISO() }, opts);
+    const hoy = estado.hasta;
     const raiz = h('div', { class: 'atl-carga' }); el.replaceChildren(raiz);
     const tip = crearTooltip(raiz); const tipEl = raiz.querySelector('.tip');
     function pintar() {
       const an = estado.sesiones; // analizadas (ATLFuerza.analizarSesion) con fecha ISO
-      const sem = FZ.resumenSemanal(an, { semanas: estado.semanas, hasta: estado.hasta, fecha: C.fecha });
+      const U = estado.unidad, uNom = C.PERIODOS[U].nombre.toLowerCase();
+      const cuantos = estado.n || C.PERIODOS[U].porDefecto;
+      const finVista = estado.desplaz === 0 ? hoy
+        : C.fecha.finPeriodo(U, C.fecha.moverPeriodo(U, C.fecha.inicioPeriodo(U, hoy), -estado.desplaz));
+      const sem = FZ.resumenSemanal(an, { unidad: U, n: cuantos, hasta: finVista, fecha: C.fecha });
       const n = sem.length, cur = sem[n - 1], ref = cur.enCurso && n > 1 ? sem[n - 2] : cur;
-      const al = FZ.alertas(sem);
+      const al = FZ.alertas(U === 'semana' ? sem : FZ.resumenSemanal(an, { semanas: 12, hasta: finVista, fecha: C.fecha }));
+      const finDatos = cur.fin > finVista ? finVista : cur.fin;
+      const rangoTxt = `${C.fecha.parse(sem[0].semana).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: '2-digit' })} – ${C.fecha.parse(finDatos).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: '2-digit' })}`;
       const kpi = (l, v, d) => h('div', { class: 'kpi' }, h('div', { class: 'l', text: l }), h('div', { class: 'v', text: v }), h('div', { class: 'd', text: d }));
       const cab = h('div', { class: 'card cab-carga' },
         h('h2', { text: `Carga de fuerza${estado.atleta ? ' · ' + estado.atleta : ''}` }),
         h('p', { class: 'sub', text: 'Sin encoder: sRPE de la sesión (min × RPE total) y, por ejercicio, series duras (RIR ≤ 4), carácter del esfuerzo (reps / (reps + RIR)) y desviación del RIR respecto al objetivo.' }),
         estado.nota ? h('p', { class: 'sub nota-datos', text: estado.nota }) : null,
-        h('div', { class: 'filtros' }, h('label', { text: 'Periodo' }),
-          h('div', { class: 'seg' }, [6, 12, 24].map(k => h('button', { 'aria-pressed': String(estado.semanas === k), text: `${k} sem`, onclick: () => { estado.semanas = k; pintar(); } })))));
+        h('div', { class: 'filtros' }, h('label', { text: 'Ver por' }),
+          h('div', { class: 'seg' }, Object.entries(C.PERIODOS).map(([k, p]) => h('button', { 'aria-pressed': String(U === k), text: p.nombre, onclick: () => { estado.unidad = k; estado.n = null; estado.desplaz = 0; pintar(); } }))),
+          h('div', { class: 'nav-per' },
+            h('button', { class: 'seg-b', title: `${C.PERIODOS[U].nombre} anterior`, 'aria-label': `${C.PERIODOS[U].nombre} anterior`, text: '‹', onclick: () => { estado.desplaz++; pintar(); } }),
+            h('span', { class: 'rango', text: rangoTxt }),
+            h('button', { class: 'seg-b', title: `${C.PERIODOS[U].nombre} siguiente`, 'aria-label': `${C.PERIODOS[U].nombre} siguiente`, text: '›', disabled: estado.desplaz === 0 ? '' : null, onclick: () => { estado.desplaz = Math.max(0, estado.desplaz - 1); pintar(); } }),
+            estado.desplaz ? h('button', { class: 'seg-b hoy', text: 'Hoy', onclick: () => { estado.desplaz = 0; pintar(); } }) : null),
+          h('label', { text: 'Cuántos' }),
+          h('div', { class: 'seg' }, (U === 'semana' ? [6, 12, 24] : U === 'mes' ? [6, 12, 24] : U === 'semestre' ? [4, 6, 10] : [3, 5, 10])
+            .map(k => h('button', { 'aria-pressed': String(cuantos === k), text: String(k), onclick: () => { estado.n = k; pintar(); } })))));
       const kpis = h('div', { class: 'kpis' },
-        kpi('sRPE fuerza esta semana', fmt(cur.srpe) + ' UA', `${cur.sesiones} sesión(es) · semana pasada ${fmt((sem[n - 2] || {}).srpe)} UA`),
-        kpi('Series duras (sem. pasada)', fmt(ref.seriesDuras), ref.seriesDurasPlan ? `de ${fmt(ref.seriesDurasPlan)} previstas · RIR ≤ ${FZ.RIR_DURA}` : `RIR ≤ ${FZ.RIR_DURA}`),
-        kpi('RIR medio (sem. pasada)', fmt(ref.rirMedio, 1), 'repeticiones que le quedaban'),
+        kpi(`sRPE fuerza · ${cur.etiqueta}`, fmt(cur.srpe) + ' UA', `${cur.sesiones} sesión(es) · ${uNom} anterior ${fmt((sem[n - 2] || {}).srpe)} UA`),
+        kpi(`Series duras · ${ref.etiqueta}`, fmt(ref.seriesDuras), ref.seriesDurasPlan ? `de ${fmt(ref.seriesDurasPlan)} previstas · RIR ≤ ${FZ.RIR_DURA}` : `RIR ≤ ${FZ.RIR_DURA}`),
+        kpi(`RIR medio · ${ref.etiqueta}`, fmt(ref.rirMedio, 1), 'repeticiones que le quedaban'),
         kpi('Desviación de RIR', ref.desvRIR == null ? '—' : (ref.desvRIR > 0 ? '+' : '') + fmt(ref.desvRIR, 1), '+ = más duro de lo previsto'),
         kpi('Carácter del esfuerzo', ref.ce == null ? '—' : fmt(ref.ce * 100) + ' %', 'reps hechas / reps posibles'),
-        kpi('Tonelaje (sem. pasada)', ref.tonelaje ? fmt(ref.tonelaje) + ' kg' : '—', 'kg × repeticiones'));
+        kpi(`Tonelaje · ${ref.etiqueta}`, ref.tonelaje ? fmt(ref.tonelaje) + ' kg' : '—', 'kg × repeticiones'));
       const sAl = h('div', { class: 'card' }, h('h3', { text: 'Avisos de fuerza' }),
         h('ul', { class: 'alertas' }, al.map(a => h('li', {}, h('span', { class: 'chip ' + a.nivel, text: { alto: 'Alto', medio: 'Atención', info: 'Info', ok: 'OK' }[a.nivel] }), h('span', { text: a.texto })))));
       const serS = [{ key: 'seriesDurasPlan', label: 'Previstas', color: 'var(--s-plan)' }, { key: 'seriesDuras', label: 'Hechas', color: 'var(--s-real)' }];
-      const g1 = h('div', { class: 'card' }, h('h3', { text: 'Series duras por semana' }), h('p', { class: 'sub', text: `Series a ${FZ.RIR_DURA} repeticiones o menos del fallo (sin calentamiento).` }),
-        leyenda(serS), barrasAgrupadas(sem, serS, tip, 'Series duras previstas y hechas por semana'));
+      const g1 = h('div', { class: 'card' }, h('h3', { text: `Series duras por ${uNom}` }), h('p', { class: 'sub', text: `Series a ${FZ.RIR_DURA} repeticiones o menos del fallo (sin calentamiento).` }),
+        leyenda(serS), barrasAgrupadas(sem, serS, tip, `Series duras previstas y hechas por ${uNom}`));
       const serR = [{ key: 'srpe', label: 'sRPE fuerza', color: 'var(--s-fza)' }];
-      const g2 = h('div', { class: 'card' }, h('h3', { text: 'sRPE de fuerza por semana' }), h('p', { class: 'sub', text: 'Minutos × RPE total del entrenamiento.' }),
-        barrasAgrupadas(sem, serR, tip, 'sRPE de fuerza por semana'));
+      const g2 = h('div', { class: 'card' }, h('h3', { text: `sRPE de fuerza por ${uNom}` }), h('p', { class: 'sub', text: 'Minutos × RPE total del entrenamiento.' }),
+        barrasAgrupadas(sem, serR, tip, `sRPE de fuerza por ${uNom}`));
       // tabla por patrón (últimas 6 semanas)
       const ult = sem.slice(-6);
       const usados = FZ.PATRONES.filter(p => ult.some(w => w.porPatron[p] > 0) || FZ.PRIORITARIOS.includes(p));
       const tPat = h('div', { class: 'card' }, h('h3', { text: 'Series duras por patrón de movimiento' }),
-        h('p', { class: 'sub', text: 'Últimas 6 semanas. En rojo, patrones prioritarios para el corredor sin series duras esa semana.' }),
+        h('p', { class: 'sub', text: `Últimos 6 periodos de los que estás viendo. En rojo, patrones prioritarios para el corredor sin series duras en ese ${uNom}.` }),
         h('div', { class: 'tabla' }, h('table', {},
-          h('thead', {}, h('tr', {}, h('th', { text: 'Patrón' }), ult.map(w => h('th', { text: fmtSem(w.semana) + (w.enCurso ? '*' : '') })))),
+          h('thead', {}, h('tr', {}, h('th', { text: 'Patrón' }), ult.map(w => h('th', { text: (w.etiqueta || fmtSem(w.semana)) + (w.enCurso ? '*' : '') })))),
           h('tbody', {}, usados.map(p => h('tr', {}, h('td', { text: p }), ult.map(w => {
             const v = w.porPatron[p] || 0, td = h('td', { text: v ? fmt(v) : '—' });
             if (!v && FZ.PRIORITARIOS.includes(p) && w.sesiones && !w.enCurso) td.className = 'warn';
             return td;
           })))))));
       // tabla de sesiones
-      const reales = an.filter(x => x.fecha >= sem[0].semana && x.fecha <= estado.hasta).sort((a, b) => a.fecha < b.fecha ? 1 : -1);
+      const reales = an.filter(x => x.fecha >= sem[0].semana && x.fecha <= finDatos).sort((a, b) => a.fecha < b.fecha ? 1 : -1);
       const cols = [['Fecha', x => C.fecha.parse(x.fecha).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })], ['Sesión', x => x.titulo],
         ['Min', x => x.min == null ? 'falta' : fmt(x.min)], ['RPE', x => x.rpe == null ? 'falta' : fmt(x.rpe, x.rpe % 1 ? 1 : 0)], ['sRPE', x => fmt(x.srpe)],
         ['Series', x => fmt(x.series)], ['Duras', x => `${fmt(x.seriesDuras)}${x.seriesDurasPlan ? '/' + fmt(x.seriesDurasPlan) : ''}`], ['Reps', x => fmt(x.reps)], ['Tonelaje', x => x.tonelaje ? fmt(x.tonelaje) + ' kg' : '—'],
