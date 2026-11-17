@@ -4,7 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Alex Training Lab</title>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+<script>
+// Si el servidor de SheetJS no responde, se carga la versión antigua para no quedarse sin importar Excel
+if(typeof XLSX==="undefined"){
+  document.write('<scr'+'ipt src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"><\/scr'+'ipt>');
+}
+</script>
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%}
@@ -665,6 +671,14 @@ function sesionCompartida(){
   }catch(e){}
 }
 const modulosDe=p=>Array.isArray(p&&p.modulos)?p.modulos:["funcional"];
+// La foto la guarda el propio cliente: solo se pinta si es de verdad una imagen,
+// para que nadie pueda colar código en la pantalla del entrenador.
+function fotoSegura(v){
+  const s=String(v??"").trim();
+  if(/^data:image\/(png|jpe?g|webp|gif|avif);base64,[A-Za-z0-9+/=\s]+$/i.test(s)) return s;
+  if(/^https:\/\/[^\s"'<>]+$/i.test(s)) return s;
+  return "";
+}
 async function login(email,pw){
   const j=await auth("token?grant_type=password",{email,password:pw});
   S={access:j.access_token,refresh:j.refresh_token};
@@ -768,8 +782,8 @@ function shell(inner,ficha){
   const p=(S&&S.perfil)||{};
   const vistaCliente=true;
   document.body.classList.toggle("cli",vistaCliente);
-  const fotoCab=ficha?ficha.foto:(p.rol!=="admin"?p.foto:"");
-  const cab=fotoCab?`<button class="foto-hdr" id="ir-foto" title="${ficha?"Perfil del entrenado":"Mi perfil"}"><img src="${fotoCab}" alt=""></button>`:`<img class="logo" src="logo-alex.png" alt="" onerror="this.remove()">`;
+  const fotoCab=fotoSegura(ficha?ficha.foto:(p.rol!=="admin"?p.foto:""));
+  const cab=fotoCab?`<button class="foto-hdr" id="ir-foto" title="${ficha?"Perfil del entrenado":"Mi perfil"}"><img src="${esc(fotoCab)}" alt=""></button>`:`<img class="logo" src="logo-alex.png" alt="" onerror="this.remove()">`;
   let centro;
   if(ficha) centro=`<span class="nombre-cli">${esc(ficha.nombre||"Sin nombre")}</span>`;
   else if(p.rol==="admin") centro=`<span class="t">Panel del entrenador</span>`;
@@ -1309,7 +1323,7 @@ async function listaClientes(){
     <h2 class="ent-tit">Entrenados (${cs.length})</h2>
     ${nPend?`<p class="card pend-aviso">⏳ ${nPend===1?"Hay 1 entrenado nuevo":"Hay "+nPend+" entrenados nuevos"} esperando a que le${nPend===1?"":"s"} digas qué entrena${nPend===1?"":"n"}. Ábrelo${nPend===1?"":"s"} y marca Fuerza, Running / trail o las dos.</p>`:""}
     ${cs.length?"":`<p class="muted">Todavía no hay entrenados. Se registran ellos desde la pantalla de inicio.</p>`}
-    ${cs.map(c=>`<button class="ent-abrir${pendiente(c)?" pendiente":""}" data-c="${c.id}">${c.foto?`<img class="ent-av" src="${c.foto}" alt="">`:`<span class="ent-av ent-ini">${esc((c.nombre||"?")[0].toUpperCase())}</span>`}<span>${esc(c.nombre||"Sin nombre")}${pendiente(c)?'<small class="pend-chip">⏳ sin asignar</small>':""}</span><span class="badge-msg" data-bc="${c.id}"></span></button>`).join("")}
+    ${cs.map(c=>`<button class="ent-abrir${pendiente(c)?" pendiente":""}" data-c="${c.id}">${fotoSegura(c.foto)?`<img class="ent-av" src="${esc(fotoSegura(c.foto))}" alt="">`:`<span class="ent-av ent-ini">${esc((c.nombre||"?")[0].toUpperCase())}</span>`}<span>${esc(c.nombre||"Sin nombre")}${pendiente(c)?'<small class="pend-chip">⏳ sin asignar</small>':""}</span><span class="badge-msg" data-bc="${c.id}"></span></button>`).join("")}
   </div></div>`);
   $("#cnav").innerHTML='<button class="on">Entrenados</button><button id="rescarga">📈 Carga de todos</button>';
   $("#rescarga").onclick=tabResumenCarga;
@@ -2983,7 +2997,7 @@ async function anValoracionVer(c){
 
 function tabPerfil(){
   const p=S.perfil;
-  $("#sub").innerHTML=`<div class="row">${p.foto?`<img class="avatar" style="width:90px;height:90px" src="${p.foto}" alt="">`:`<span class="muted">Sin foto</span>`}
+  $("#sub").innerHTML=`<div class="row">${fotoSegura(p.foto)?`<img class="avatar" style="width:90px;height:90px" src="${esc(fotoSegura(p.foto))}" alt="">`:`<span class="muted">Sin foto</span>`}
     <label>Foto de perfil <input type="file" id="foto" accept="image/*"></label></div>
     <h3>Apariencia</h3>
     <label class="row"><input type="checkbox" id="oscuro" ${temaOscuro()?"checked":""}> Modo oscuro</label>
