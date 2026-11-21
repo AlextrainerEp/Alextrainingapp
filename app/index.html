@@ -184,6 +184,9 @@ textarea{font-size:14px;width:100%;margin:4px 0 8px}
 .cab{background:#2e3133;color:#D9DDE0;padding:6px 10px;border-radius:8px;margin:12px 0 4px;font-size:15px;font-weight:700}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);overflow:auto;padding:16px;z-index:50}
 .modal-card{max-width:980px;margin:0 auto;background:#fff;border-radius:12px;padding:18px}
+.e-modos{gap:8px;margin:10px 0 4px;flex-wrap:wrap}
+.e-ayuda{font-size:13px;margin:4px 0 8px}
+.e-txt{width:100%;box-sizing:border-box;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px;line-height:1.55;min-height:260px;white-space:pre;overflow-x:auto}
 /* Anamnesis */
 .anam [hidden]{display:none!important}
 .anam .an-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0 14px}
@@ -1304,7 +1307,61 @@ function rellenarBib(ov){
     sel.value=v;
   });
 }
+/* ---------- Editar una sesión como texto (copiar y pegar) ----------
+ * Una línea por ejercicio. Se puede escribir de corrido: «A1 Sentadilla goblet 3x10 10kg RIR 2-3 descanso 90s»
+ * o por columnas separadas con | (o pegadas de Excel, con tabuladores):
+ * Código | Ejercicio | Series | Reps | Intensidad | RIR | RPE | Progresión | Nota | Vídeo
+ * «# Nombre» empieza un bloque. Las líneas que empiezan por // no cuentan. */
+const COLS_EJ=["cod","ej","ser","rep","int","rir","rpe","prog","nota","video"];
+const esCodigo=t=>/^[A-Z]{1,2}\d{0,2}[a-z]?$/i.test(String(t).trim())&&String(t).trim().length<=4;
+function lineaAEj(l){
+  let cols=null;
+  if(l.includes("\t")) cols=l.split("\t");
+  else if(l.includes("|")) cols=l.split("|");
+  if(cols){
+    cols=cols.map(c=>c.trim());
+    const conCod=cols[0]===""||esCodigo(cols[0]);
+    const nombres=conCod?COLS_EJ:COLS_EJ.slice(1);
+    const o={}; nombres.forEach((k,i)=>{ if(cols[i]!==undefined) o[k]=cols[i]; });
+    return normEj(o);
+  }
+  // escrito de corrido
+  let t=l.trim(), o={};
+  const v=t.match(/https?:\/\/\S+/); if(v){o.video=v[0];t=t.replace(v[0]," ")}
+  const pr=t.match(/\b(?:progresi[oó]n|prog\.?)\s*:\s*(.+?)(?=\s+\bnota\s*:|$)/i); if(pr){o.prog=pr[1].trim();t=t.replace(pr[0]," ")}
+  const no=t.match(/\bnota\s*:\s*(.+)$/i); if(no){o.nota=no[1].trim();t=t.replace(no[0]," ")}
+  const c=t.match(/^\s*([A-Z]{1,2}\d{1,2}[a-z]?)[\s.):\-]+/); if(c){o.cod=c[1];t=t.slice(c[0].length)}
+  o.ej=t.replace(/\s{2,}/g," ").trim();
+  return normEj(o);
+}
+function textoABloques(txt,bloqueInicial){
+  const bloques=[]; let actual=null;
+  String(txt||"").split(/\r?\n/).forEach(l0=>{
+    const l=l0.replace(/\s+$/,"");
+    if(!l.trim()||/^\s*\/\//.test(l)) return;
+    const b=l.match(/^\s*#+\s*(.*)$/);
+    if(b){actual={nombre:b[1].trim()||"Bloque",seguimiento:true,ejercicios:[]};bloques.push(actual);return}
+    if(!actual){actual={nombre:bloqueInicial||"Parte principal",seguimiento:true,ejercicios:[]};bloques.push(actual)}
+    const e=lineaAEj(l); if(e.ej||e.cod) actual.ejercicios.push(e);
+  });
+  return bloques;
+}
+function bloquesATexto(bloques){
+  const cel=v=>String(v??"").replace(/[|\n\t]+/g," ").trim();
+  return "// Código | Ejercicio | Series | Reps | Intensidad | RIR | RPE | Progresión | Nota | Vídeo\n"+
+    (bloques||[]).map(b=>`# ${b.nombre||"Bloque"}\n`+(b.ejercicios||[]).map(e0=>{
+      const e=normEj(e0); const c=COLS_EJ.map(k=>cel(e[k]));
+      while(c.length>2&&c[c.length-1]==="") c.pop();
+      return c.join(" | ");
+    }).join("\n")).join("\n\n");
+}
+async function copiarTexto(t){
+  try{await navigator.clipboard.writeText(t);return true}
+  catch(e){const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();let ok=false;try{ok=document.execCommand("copy")}catch(x){}a.remove();return ok}
+}
+
 function abrirEditor(s,alGuardar){
+  let modoTexto=false;
   let st={titulo:s.titulo||"",fecha:s.fecha||"",bloques:(s.bloques||[]).map(b=>({nombre:b.nombre||"",seguimiento:esSeguimiento(b),ejercicios:(b.ejercicios||[]).map(normEj)}))};
   const ov=document.createElement("div");
   ov.className="modal";
@@ -1313,7 +1370,7 @@ function abrirEditor(s,alGuardar){
   const leer=()=>({
     titulo:ov.querySelector("#e-tit").value.trim(),
     fecha:ov.querySelector("#e-fe").value.trim(),
-    bloques:[...ov.querySelectorAll(".e-bl")].map(bd=>({
+    bloques:modoTexto?textoABloques(ov.querySelector("#e-txt").value):[...ov.querySelectorAll(".e-bl")].map(bd=>({
       nombre:bd.querySelector(".e-bn").value.trim(),
       seguimiento:true,
       ejercicios:[...bd.querySelectorAll(".e-ex")].map(tr=>{const o={};tr.querySelectorAll("[data-f]").forEach(i=>o[i.dataset.f]=i.value.trim());return normEj(o)})
@@ -1323,6 +1380,15 @@ function abrirEditor(s,alGuardar){
     ov.querySelector("#ed").innerHTML=`
       <label>Título <input id="e-tit" value="${esc(st.titulo)}"></label>
       <label>Fecha <span class="row" style="gap:8px"><input id="e-fe" value="${esc(st.fecha)}" placeholder="dd/mm/aaaa" style="flex:1"><input type="date" id="e-fe-d" value="${parseFecha(st.fecha)?isoLocal(parseFecha(st.fecha)):""}" style="flex:1" title="Elegir en el calendario"></span></label>
+      <div class="row e-modos">
+        <button class="${modoTexto?"sec":"gold"}" data-act="modo-tabla">▦ Tabla</button>
+        <button class="${modoTexto?"gold":"sec"}" data-act="modo-texto">✏️ Texto (copiar y pegar)</button>
+        <button class="sec" data-act="copiar">📋 Copiar sesión</button>
+        <button class="sec" data-act="pegar">📥 Pegar sesión</button>
+      </div>
+      ${modoTexto?`<p class="muted e-ayuda">Una línea por ejercicio. Puedes escribirlo de corrido (<b>A1 Sentadilla goblet 3x10 10kg RIR 2-3 descanso 90s</b>) y cada dato va a su casilla, o por columnas separadas con <b>|</b>. También puedes pegar filas copiadas de Excel. Con <b># Nombre</b> empiezas un bloque.</p>
+      <textarea id="e-txt" class="e-txt" rows="18" spellcheck="false">${esc(bloquesATexto(st.bloques))}</textarea>`:`
+      <p class="muted e-ayuda">Consejo: si pegas varias líneas (o filas de Excel) en la casilla de un ejercicio, se crean varios ejercicios de golpe.</p>
       ${st.bloques.map((b,bi)=>`<div class="bloque e-bl">
         <div class="row"><input class="e-bn" value="${esc(b.nombre)}" placeholder="Nombre del bloque" style="flex:1;font-weight:700"><button class="sec" data-act="delb" data-bi="${bi}">Borrar bloque</button></div>
         <div class="ses"><table>
@@ -1342,7 +1408,7 @@ function abrirEditor(s,alGuardar){
             <td><button class="danger" data-act="dele" data-bi="${bi}" data-ei="${ei}">×</button></td></tr>`).join("")}
         </table></div>
         <button class="sec" style="margin-top:8px" data-act="adde" data-bi="${bi}">+ Ejercicio</button></div>`).join("")}
-      <button class="sec" data-act="addb">+ Bloque</button>
+      <button class="sec" data-act="addb">+ Bloque</button>`}
       <div class="row" style="margin-top:12px"><button class="gold" data-act="guardar">Guardar cambios</button><button class="sec" data-act="cerrar">Cancelar</button><span class="msg" id="e-m"></span></div>
       <p class="muted">Si borras o añades ejercicios, los registros que ya haya hecho el cliente pueden quedar desplazados. Revísalos después.</p>`;
   rellenarBib(ov);
@@ -1358,16 +1424,44 @@ function abrirEditor(s,alGuardar){
     }
     sel.value="";
   };
+  ov.addEventListener("paste",ev=>{
+    if(modoTexto)return;
+    const fila=ev.target.closest(".e-ex"); if(!fila)return;
+    const t=(ev.clipboardData||window.clipboardData).getData("text");
+    if(!t||!/[\n\t]/.test(t.trim()))return;          // una sola cosa: pegado normal en la casilla
+    ev.preventDefault();
+    const bloqueDom=fila.closest(".e-bl"), bi=[...ov.querySelectorAll(".e-bl")].indexOf(bloqueDom), ei=[...bloqueDom.querySelectorAll(".e-ex")].indexOf(fila);
+    st=leer();
+    const nuevos=textoABloques(t,st.bloques[bi].nombre);
+    const vacia=e=>!COLS_EJ.some(k=>String(e[k]||"").trim());
+    const lista=st.bloques[bi].ejercicios, quitar=vacia(lista[ei])?1:0;
+    lista.splice(quitar?ei:ei+1,quitar,...nuevos[0].ejercicios);
+    st.bloques.splice(bi+1,0,...nuevos.slice(1));
+    pintar();
+    const m=ov.querySelector("#e-m");m.textContent=`Pegados ${nuevos.reduce((n,b)=>n+b.ejercicios.length,0)} ejercicios`;m.className="msg ok";
+  });
   ov.onclick=async ev=>{
     const b=ev.target.closest("[data-act]");if(!b)return;
     const a=b.dataset.act,bi=+b.dataset.bi,ei=+b.dataset.ei;
     st=leer();
     if(a==="cerrar"){ov.remove();return}
+    const aviso=(t,ok=true)=>{const m=ov.querySelector("#e-m");m.textContent=t;m.className="msg "+(ok?"ok":"err")};
+    if(a==="modo-texto"){modoTexto=true;pintar();const t=ov.querySelector("#e-txt");t.focus();return}
+    if(a==="modo-tabla"){modoTexto=false;pintar();return}
+    if(a==="copiar"){const ok=await copiarTexto(bloquesATexto(st.bloques));aviso(ok?"Sesión copiada. Abre otra sesión y pulsa «📥 Pegar sesión».":"No se pudo copiar; usa el modo Texto y copia con Ctrl+C",ok);return}
+    if(a==="pegar"){
+      let t="";try{t=await navigator.clipboard.readText()}catch(e){}
+      if(!t){modoTexto=true;pintar();aviso("Pega aquí con Ctrl+V (o mantén pulsado y «Pegar» en el móvil)");ov.querySelector("#e-txt").select();return}
+      const nb=textoABloques(t); if(!nb.length){aviso("Lo copiado no tiene ejercicios",false);return}
+      if(st.bloques.some(b=>b.ejercicios.length)&&!confirm("¿Sustituir los ejercicios de esta sesión por los copiados?"))return;
+      st.bloques=nb;pintar();aviso(`Pegados ${nb.reduce((n,b)=>n+b.ejercicios.length,0)} ejercicios. Revisa y pulsa Guardar.`);return;
+    }
     if(a==="addb") st.bloques.push({nombre:"Nuevo bloque",ejercicios:[]});
     if(a==="delb"){if(!confirm("¿Borrar este bloque y sus ejercicios?"))return;st.bloques.splice(bi,1)}
     if(a==="adde") st.bloques[bi].ejercicios.push(normEj({}));
     if(a==="dele") st.bloques[bi].ejercicios.splice(ei,1);
     if(a==="guardar"){
+      if(modoTexto&&!st.bloques.some(b=>b.ejercicios.length)&&!confirm("La sesión se quedará sin ejercicios. ¿Guardar igualmente?"))return;
       try{await alGuardar(st);ov.remove()}
       catch(e){const m=ov.querySelector("#e-m");m.textContent=e.message;m.className="msg err"}
       return;
@@ -4851,7 +4945,33 @@ function preguntarMoverCopiar(titulo, fechaTxt) {
   });
 }
 
+// Pasos de resistencia como texto: «Calentamiento: 15 min Z1», «Series: 6x800 m Z4 rec 2», «Vuelta a la calma: 10 min Z1»
+function pasoATexto(x) {
+  const n = v => v == null || v === '' ? '' : String(v).replace('.', ',');
+  const cuerpo = `${x.rep > 1 ? x.rep + 'x' : ''}${n(x.cantidad)} ${x.unidad || 'min'}${x.zona ? ' Z' + x.zona : ''}${x.rec && x.rep > 1 ? ' rec ' + n(x.rec) : ''}`.trim();
+  return (x.nombre ? x.nombre + ': ' : '') + cuerpo;
+}
+function textoAPasos(txt) {
+  const num = t => t == null || t === '' ? null : Number(String(t).replace(',', '.'));
+  return String(txt || '').split(/\r?\n/).map(l => l.trim()).filter(l => l && !l.startsWith('//')).map(l => {
+    if (l.includes('\t')) {   // filas pegadas de Excel: Paso, Rep, Cantidad, Unidad, Zona, Recup
+      const c = l.split('\t').map(x => x.trim());
+      return { nombre: c[0] || '', rep: num(c[1]) || 1, cantidad: num(c[2]), unidad: /^(m|km|min)$/i.test(c[3] || '') ? c[3].toLowerCase() : 'min', zona: num(String(c[4] || '').replace(/z/i, '')), rec: num(c[5]) };
+    }
+    let nombre = '', t = l;
+    const dp = l.match(/^([^:\d][^:]{0,40}):\s*(.*)$/); if (dp) { nombre = dp[1].trim(); t = dp[2]; }
+    const o = { nombre, rep: 1, cantidad: null, unidad: 'min', zona: null, rec: null };
+    let m;
+    if ((m = t.match(/\b(?:rec(?:up(?:eraci[oó]n)?)?\.?)\s*:?\s*(\d+(?:[.,]\d+)?)\s*(?:'|min)?/i))) { o.rec = num(m[1]); t = t.replace(m[0], ' '); }
+    if ((m = t.match(/\bZ(?:ona)?\s*([1-5])\b/i))) { o.zona = Number(m[1]); t = t.replace(m[0], ' '); }
+    if ((m = t.match(/(\d+)\s*[x×]\s*/i))) { o.rep = Number(m[1]); t = t.replace(m[0], ' '); }
+    if ((m = t.match(/(\d+(?:[.,]\d+)?)\s*(km|m|min|'|minutos?)(?![a-z])/i))) { o.cantidad = num(m[1]); o.unidad = /^km$/i.test(m[2]) ? 'km' : /^m$/i.test(m[2]) ? 'm' : 'min'; t = t.replace(m[0], ' '); }
+    if (!o.nombre) o.nombre = t.replace(/\s{2,}/g, ' ').trim();
+    return o;
+  });
+}
 function abrirEditorRes(p, zonas, alGuardar) {
+  let pasosTexto = false;
   const partes = (() => { const d = String(p.descripcion || ''), i = d.indexOf(' — '); return i > 0 ? [d.slice(0, i), d.slice(i + 3)] : [d, '']; })();
   let pasos = (Array.isArray(p.pasos) ? p.pasos : []).map(x => Object.assign({ nombre: '', rep: 1, cantidad: '', unidad: 'min', zona: '', rec: '' }, x));
   const ov = document.createElement('div');
@@ -4860,7 +4980,7 @@ function abrirEditorRes(p, zonas, alGuardar) {
   document.body.appendChild(ov);
   const opt = (o, v) => Object.entries(o).map(([k, t]) => `<option value="${esc(k)}"${String(v ?? '') === String(k) ? ' selected' : ''}>${esc(t)}</option>`).join('');
   const val = (sel) => { const el = ov.querySelector(sel); return el ? el.value.trim() : ''; };
-  const leerPasos = () => [...ov.querySelectorAll('.er-paso')].map(tr => {
+  const leerPasos = () => pasosTexto ? textoAPasos(ov.querySelector('#er-pasos-txt').value) : [...ov.querySelectorAll('.er-paso')].map(tr => {
     const g = f => tr.querySelector(`[data-p="${f}"]`).value.trim();
     const n = t => t === '' ? null : Number(String(t).replace(',', '.'));
     return { nombre: g('nombre'), rep: n(g('rep')) || 1, cantidad: n(g('cantidad')), unidad: g('unidad') || 'min', zona: g('zona') ? Number(g('zona')) : null, rec: n(g('rec')) };
@@ -4875,6 +4995,9 @@ function abrirEditorRes(p, zonas, alGuardar) {
       <label>Nombre <input id="er-nombre" value="${esc(partes[0])}"></label>
       <label>Explicación (una idea por línea; «Ritmos: 4:30» sale en negrita) <textarea id="er-desc" rows="4">${esc(partes[1])}</textarea></label>
       <h3 style="margin-top:12px">Pasos</h3>
+      <div class="row e-modos"><button class="${pasosTexto ? 'sec' : 'gold'}" data-a="pasos-tabla">▦ Tabla</button><button class="${pasosTexto ? 'gold' : 'sec'}" data-a="pasos-texto">✏️ Texto (copiar y pegar)</button><button class="sec" data-a="copiar-res">📋 Copiar sesión</button><button class="sec" data-a="pegar-res">📥 Pegar sesión</button></div>
+      ${pasosTexto ? `<p class="muted e-ayuda">Un paso por línea: <b>Calentamiento: 15 min Z1</b> · <b>Series: 6x800 m Z4 rec 2</b> · <b>Vuelta a la calma: 10 min</b>. También puedes pegar filas de Excel.</p>
+      <textarea id="er-pasos-txt" class="e-txt" rows="8" spellcheck="false">${esc(pasos.map(pasoATexto).join('\n'))}</textarea>` : `
       <div class="ses"><table><tr><th>Paso</th><th>Rep.</th><th>Cantidad</th><th>Unidad</th><th>Zona</th><th>Recup. (min)</th><th></th></tr>
         ${pasos.map((x, i) => `<tr class="er-paso">
           <td><input data-p="nombre" value="${esc(x.nombre)}" placeholder="Calentamiento"></td>
@@ -4885,7 +5008,7 @@ function abrirEditorRes(p, zonas, alGuardar) {
           <td><input class="n" data-p="rec" inputmode="decimal" value="${esc(x.rec ?? '')}"></td>
           <td><button class="danger" data-a="delp" data-i="${i}">×</button></td></tr>`).join('')}
       </table></div>
-      <button class="sec" data-a="addp" style="margin-top:6px">+ Paso</button>
+      <button class="sec" data-a="addp" style="margin-top:6px">+ Paso</button>`}
       <h3 style="margin-top:14px">Registro</h3>
       <div class="row">
         <label>Estado <select id="er-estado">${opt({ pendiente: 'Pendiente', hecha: 'Hecha', omitida: 'No hecha' }, p.estado || 'pendiente')}</select></label>
@@ -4907,6 +5030,27 @@ function abrirEditorRes(p, zonas, alGuardar) {
     const a = b.dataset.a;
     if (a === 'cerrar') { ov.remove(); return; }
     guardarEstado();
+    const avisoR = (t, ok = true) => { const m = ov.querySelector('#er-m'); m.textContent = t; m.className = 'msg ' + (ok ? 'ok' : 'err'); };
+    if (a === 'pasos-texto') { pasosTexto = true; pintar(); return; }
+    if (a === 'pasos-tabla') { pasosTexto = false; pintar(); return; }
+    if (a === 'copiar-res') {
+      const txt = ['## SESIÓN RESISTENCIA', 'Tipo: ' + (RES_NOMBRE[p.tipo] || p.tipo || ''), 'Duración: ' + (p.duracion_min || ''), 'Nombre: ' + partes[0], '### Explicación', partes[1], '### Pasos', ...pasos.map(pasoATexto)].join('\n');
+      const ok = await copiarTexto(txt); avisoR(ok ? 'Sesión copiada. Abre otra y pulsa «📥 Pegar sesión».' : 'No se pudo copiar', ok); return;
+    }
+    if (a === 'pegar-res') {
+      let t = ''; try { t = await navigator.clipboard.readText(); } catch (e) {}
+      if (!t) { pasosTexto = true; pintar(); avisoR('Pega los pasos aquí con Ctrl+V'); return; }
+      if (/^## SESIÓN RESISTENCIA/m.test(t)) {
+        const sec = (ini, fin) => { const i = t.indexOf(ini); if (i < 0) return ''; const j = fin ? t.indexOf(fin, i) : -1; return t.slice(i + ini.length, j < 0 ? undefined : j).trim(); };
+        const campo = k => { const m = t.match(new RegExp('^' + k + ':\\s*(.*)$', 'm')); return m ? m[1].trim() : ''; };
+        const tp = Object.entries(RES_NOMBRE).find(([k, v]) => v === campo('Tipo')); if (tp) p.tipo = tp[0];
+        if (campo('Duración')) p.duracion_min = campo('Duración');
+        partes[0] = campo('Nombre') || partes[0];
+        partes[1] = sec('### Explicación', '### Pasos');
+        pasos = textoAPasos(sec('### Pasos'));
+      } else pasos = textoAPasos(t);
+      pasosTexto = false; pintar(); avisoR('Pegado. Revisa y pulsa Guardar cambios.'); return;
+    }
     if (a === 'addp') { pasos.push({ nombre: '', rep: 1, cantidad: '', unidad: 'min', zona: '', rec: '' }); pintar(); return; }
     if (a === 'delp') { pasos.splice(+b.dataset.i, 1); pintar(); return; }
     if (a === 'guardar') {
