@@ -3674,7 +3674,25 @@ async function autorizarPlan(p, atletaId) {
   pintarPlanes(atletaId);
   cargarBloques();
 }
+function verPlan(p, d) {
+  const viejo = d.querySelector('.plan-detalle');
+  if (viejo) { viejo.remove(); return; }
+  const det = document.createElement('div');
+  det.className = 'plan-detalle';
+  const sesiones = (p.contenido && p.contenido.sesiones) || [];
+  const dias = { 2: 'Martes', 4: 'Jueves', 5: 'Viernes', 6: 'Sábado' };
+  [...new Set(sesiones.map(s => s.semana))].forEach(w => {
+    det.appendChild(elx('h3', `Semana ${w}`));
+    sesiones.filter(s => s.semana === w).forEach(s => {
+      det.appendChild(elx('div',
+        `${dias[s.dia_semana] || ''} · ${s.nombre} · ${s.duracion_min} min · RPE ${s.rpe_objetivo}${s.doble_umbral ? ' · doble umbral' : ''}`,
+        'zona'));
+    });
+  });
+  d.appendChild(det);
+}
 
+esto donde lo pego
 async function pintarPlanes(atletaId) {
   const box = document.getElementById('planes-motor');
   const [{ data: at }, { data, error }] = await Promise.all([
@@ -3708,8 +3726,12 @@ async function pintarPlanes(atletaId) {
     d.className = 'zona';
     d.appendChild(elx('div', `${String(p.created_at).slice(0, 10)} · ${p.estado} · ${n} sesiones`));
     (p.avisos || []).forEach(a => d.appendChild(elx('div', '⚠ ' + a, 'muted')));
+         const ver = elx('button', 'Ver sesiones', 'mini');
+    ver.type = 'button';
+    ver.onclick = () => verPlan(p, d);
+    d.appendChild(ver);
     if (p.estado === 'borrador') {
-      const ok = elx('button', 'Autorizar', 'gold mini');
+    const nuevo = elx('button', 'Generar propuesta');
       ok.type = 'button';
       ok.onclick = () => autorizarPlan(p, atletaId);
       const del = elx('button', 'Borrar', 'danger mini');
