@@ -948,9 +948,8 @@ async function arrancarPush(){
 function entrar(){
   if(S.perfil.rol==="admin"){
     shell(`<div id="tab"></div>`);
-    $("#cnav").innerHTML='<button id="ent">Entrenados</button><button id="res">Resistencia</button>';
+    $("#cnav").innerHTML='<button id="ent">Entrenados</button>';
     $("#ent").onclick=listaClientes;
-    $("#res").onclick=abrirResistenciaAdmin;
   } else if(!accesoActivo(S.perfil)) pantallaCaducado();
   else {
     const m=modulosDe(S.perfil);
@@ -959,9 +958,6 @@ function entrar(){
     panelCliente(ir==="strava"?"strava":ir==="mensajes"?"mensajes":"entrenamientos");
   }
   arrancarPush();
-}
-function abrirResistenciaAdmin(){
-  $("#tab").innerHTML=`<div class="emb-wrap"><iframe class="emb" src="../resistencia/?embed=1" title="Resistencia" loading="eager"></iframe></div>`;
 }
 function pantallaSinModulos(){
   $("#app").innerHTML=`<div class="login card">
@@ -2049,10 +2045,20 @@ const resLeyenda=lista=>{
 
 /* ---------- Resistencia integrada en la página general ---------- */
 function embebido(host,ruta){
+  sesionCompartida(); // la sesión debe estar guardada antes de que el iframe la lea
   $(host).innerHTML=`<div class="emb-wrap"><iframe class="emb" src="../resistencia/?embed=1&${ruta}" title="Resistencia" loading="eager"></iframe></div>`;
 }
+let reintentosEmbed=0;
 window.addEventListener("message",ev=>{
-  if(ev.origin!==location.origin||!ev.data||!ev.data.alexAltura) return;
+  if(ev.origin!==location.origin||!ev.data) return;
+  // El iframe no encuentra sesión: se vuelve a guardar y se recarga él solo (una sola vez, sin tener que pulsar F5)
+  if((ev.data.alexSinSesion||ev.data.alexSinAcceso)&&reintentosEmbed<2){
+    reintentosEmbed++;
+    if(S&&S.access) sesionCompartida();
+    document.querySelectorAll("iframe.emb").forEach(f=>{if(f.contentWindow===ev.source) f.src=f.src});
+    return;
+  }
+  if(!ev.data.alexAltura) return;
   document.querySelectorAll("iframe.emb").forEach(f=>{if(f.contentWindow===ev.source) f.style.height=Math.max(500,ev.data.alexAltura+20)+"px"});
 });
 function panelResEntrenador(sec){
