@@ -946,20 +946,22 @@ async function arrancarPush(){
   }catch(e){console.warn("push:",e.message)}
 }
 function entrar(){
-    if(S.perfil.rol==="admin"){
+  if(S.perfil.rol==="admin"){
     shell(`<div id="tab"></div>`);
-    $("#cnav").innerHTML='<button id="ent">Entrenados</button>';
+    $("#cnav").innerHTML='<button id="ent">Entrenados</button><button id="res">Resistencia</button>';
     $("#ent").onclick=listaClientes;
+    $("#res").onclick=abrirResistenciaAdmin;
   } else if(!accesoActivo(S.perfil)) pantallaCaducado();
-  function abrirResistenciaAdmin(){
-  $("#tab").innerHTML=`<div class="emb-wrap"><iframe class="emb" src="../resistencia/?embed=1" title="Resistencia" loading="eager"></iframe></div>`;
-}
+  else {
     const m=modulosDe(S.perfil);
     let ir="";try{ir=sessionStorage.getItem("ir")||"";sessionStorage.removeItem("ir")}catch(e){}
     if(!m.length) return pantallaSinModulos();
     panelCliente(ir==="strava"?"strava":ir==="mensajes"?"mensajes":"entrenamientos");
   }
   arrancarPush();
+}
+function abrirResistenciaAdmin(){
+  $("#tab").innerHTML=`<div class="emb-wrap"><iframe class="emb" src="../resistencia/?embed=1" title="Resistencia" loading="eager"></iframe></div>`;
 }
 function pantallaSinModulos(){
   $("#app").innerHTML=`<div class="login card">
