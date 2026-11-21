@@ -1457,7 +1457,7 @@ $('btn-strava-sync').onclick = async () => {
   }
 };
 $('btn-strava-quitar').onclick = async () => {
-  if (!confirm('¿Desconectar Strava? Se borrarán de la app las actividades traídas. Las sesiones ya marcadas como hechas se conservan.')) return;
+  if (!confirm('¿Desconectar Strava? Las actividades ya traídas se conservan. Solo se quita la conexión con Strava.')) return;
   try {
     await llamarStrava({ accion: 'desconectar' });
     miAtleta.strava_conectado = false;
