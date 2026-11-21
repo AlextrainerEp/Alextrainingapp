@@ -186,6 +186,7 @@ textarea{font-size:14px;width:100%;margin:4px 0 8px}
 .modal-card{max-width:980px;margin:0 auto;background:#fff;border-radius:12px;padding:18px}
 .e-modos{gap:8px;margin:10px 0 4px;flex-wrap:wrap}
 .e-ayuda{font-size:13px;margin:4px 0 8px}
+.ses-barra{margin:6px 0 10px}.ses-barra button{padding:8px 12px;font-size:14px}
 .e-txt{width:100%;box-sizing:border-box;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px;line-height:1.55;min-height:260px;white-space:pre;overflow-x:auto}
 /* Anamnesis */
 .anam [hidden]{display:none!important}
@@ -1360,8 +1361,8 @@ async function copiarTexto(t){
   catch(e){const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();let ok=false;try{ok=document.execCommand("copy")}catch(x){}a.remove();return ok}
 }
 
-function abrirEditor(s,alGuardar){
-  let modoTexto=false;
+function abrirEditor(s,alGuardar,opc={}){
+  let modoTexto=!!opc.texto;
   let st={titulo:s.titulo||"",fecha:s.fecha||"",bloques:(s.bloques||[]).map(b=>({nombre:b.nombre||"",seguimiento:esSeguimiento(b),ejercicios:(b.ejercicios||[]).map(normEj)}))};
   const ov=document.createElement("div");
   ov.className="modal";
@@ -1469,6 +1470,15 @@ function abrirEditor(s,alGuardar){
     pintar();
   };
   pintar();
+  if(modoTexto){
+    const t=ov.querySelector("#e-txt");
+    if(opc.pegar!==undefined){
+      const nb=opc.pegar?textoABloques(opc.pegar):[];
+      if(nb.length){t.value=bloquesATexto(nb);const m=ov.querySelector("#e-m");m.textContent=`Pegados ${nb.reduce((n,b)=>n+b.ejercicios.length,0)} ejercicios en lugar de los anteriores. Revisa y pulsa Guardar.`;m.className="msg ok"}
+      else{t.value="";const m=ov.querySelector("#e-m");m.textContent="Pega aquí la sesión con Ctrl+V (en el móvil: mantener pulsado → Pegar) y pulsa Guardar.";m.className="msg ok"}
+    }
+    t.focus();
+  }
   cargarBiblioteca().then(()=>rellenarBib(ov));
 }
 
@@ -2222,8 +2232,9 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
   meterRes();
   const sinFecha=todas.filter(s=>!parseFecha(s.fecha));
   const tarjeta=(s,abierta)=>`<details class="card sesion${hecho(s)?" hecha":""}"${abierta?" open":""}><summary class="dia-sum" data-arr="${s.id}">${badgeFecha(s)}<h3>${nombreEntreno(s)}</h3></summary>
+      ${admin?`<div class="row e-modos ses-barra"><button class="gold" data-edtxt="${s.id}">✏️ Editar como texto</button><button class="sec" data-ed="${s.id}">▦ Editar en tabla</button><button class="sec" data-copses="${s.id}">📋 Copiar sesión</button><button class="sec" data-pegses="${s.id}">📥 Pegar sesión</button><span class="muted" data-bst="${s.id}"></span></div>`:""}
       ${sesionHTML(s,true,true,admin)}
-      <div class="row"><button data-save="${s.id}">${admin?"Guardar cambios":"Guardar registro"}</button>${admin?`<button class="sec" data-ed="${s.id}">Editar</button><button class="danger" data-del="${s.id}">Borrar</button>`:""}<span class="muted" data-st="${s.id}"></span></div>
+      <div class="row"><button data-save="${s.id}">${admin?"Guardar cambios":"Guardar registro"}</button>${admin?`<button class="sec" data-edtxt="${s.id}">✏️ Editar como texto</button><button class="danger" data-del="${s.id}">Borrar</button>`:""}<span class="muted" data-st="${s.id}"></span></div>
       <div class="row mover"><label>${admin?"Mover o copiar a otro día":"Mover a otro día"} <input type="date" data-mover-in="${s.id}"></label><button class="sec" data-mover="${s.id}">${admin?"Mover / copiar":"Mover"}</button></div></details>`;
   const moverA=async(id,val)=>{
     const esRes=String(id).startsWith("r:"), rid=esRes?String(id).slice(2):String(id);
@@ -2536,12 +2547,22 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
       });
     });
     if(admin){
-      cont.querySelectorAll("[data-ed]").forEach(b=>b.onclick=()=>{
-        const s=todas.find(x=>x.id===b.dataset.ed);
+      const editarSes=(id,opc)=>{
+        const s=todas.find(x=>x.id===id);
         abrirEditor(s,async st=>{
           await db("PATCH","sesiones",`?id=eq.${s.id}`,{titulo:st.titulo,fecha:st.fecha,bloques:st.bloques},"return=minimal");
           fichaCliente(clienteId);
-        });
+        },opc);
+      };
+      cont.querySelectorAll("[data-ed]").forEach(b=>b.onclick=()=>editarSes(b.dataset.ed));
+      cont.querySelectorAll("[data-edtxt]").forEach(b=>b.onclick=()=>editarSes(b.dataset.edtxt,{texto:true}));
+      cont.querySelectorAll("[data-copses]").forEach(b=>b.onclick=async()=>{
+        const s=todas.find(x=>x.id===b.dataset.copses), st=cont.querySelector(`[data-bst="${s.id}"]`);
+        const ok=await copiarTexto(bloquesATexto(s.bloques)); st.textContent=ok?"✓ Copiada. Abre otra sesión y pulsa «📥 Pegar sesión».":"No se pudo copiar";
+      });
+      cont.querySelectorAll("[data-pegses]").forEach(b=>b.onclick=async()=>{
+        let t="";try{t=await navigator.clipboard.readText()}catch(e){}
+        editarSes(b.dataset.pegses,{texto:true,pegar:t});
       });
       cont.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{
         if(!confirm("¿Borrar esta sesión? Se pierden también los registros del cliente.")) return;
