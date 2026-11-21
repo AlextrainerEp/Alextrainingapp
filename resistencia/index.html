@@ -738,7 +738,7 @@ html.embed .banner-mover{position:absolute!important;top:var(--modal-top,0px)!im
 
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-
+import { generarBorrador, autorizar } from './motor.mjs';
 // Identificador público de tu aplicación de Strava (strava.com/settings/api → «ID de cliente»)
 const STRAVA_CLIENT_ID = '295862';
 
@@ -2633,6 +2633,7 @@ function abrirFicha(atleta) {
   pintarActividades($('actividades-t'), atleta.id);
   cargarZonas();
   cargarTests();
+   pintarPlanes(atleta.id);
   cargarSemana();
 }
 
@@ -3593,7 +3594,137 @@ $('btn-plan-aplicar').onclick = async () => {
     cargarBloques();
   }
 };
+/* ---------- PLAN PROPUESTO (motor) ---------- */
+const cajaPlanes = document.createElement('div');
+cajaPlanes.id = 'planes-motor';
+cajaPlanes.style.marginTop = '16px';
+document.querySelector('.subsec[data-sub="tests"]').appendChild(cajaPlanes);
 
+function elx(tag, texto, clase) {
+  const e = document.createElement(tag);
+  if (clase) e.className = clase;
+  e.textContent = texto;
+  return e;
+}
+
+// Semanas con actividades de Strava de los últimos 120 días, en minutos por semana
+async function historialAtleta(atletaId) {
+  const desde = iso(sumarDias(new Date(), -120));
+  const { data } = await sb.from('actividades').select('fecha, duracion_s')
+    .eq('atleta_id', atletaId).gte('fecha', desde);
+  const porSemana = {};
+  (data || []).forEach(a => {
+    const k = iso(lunesDe(new Date(a.fecha + 'T00:00:00')));
+    porSemana[k] = (porSemana[k] || 0) + (Number(a.duracion_s) || 0) / 60;
+  });
+  return Object.keys(porSemana).sort().map(k => ({ minutos: Math.round(porSemana[k]) }));
+}
+
+async function generarPropuesta(atletaId) {
+  const { data: at } = await sb.from('atletas').select('nivel, lesion_activa').eq('id', atletaId).maybeSingle();
+  const { data: pf } = await sb.from('perfil_atleta').select('dias_disponibles, km_semana_actual')
+    .eq('atleta_id', atletaId).maybeSingle();
+  if (!at || !at.nivel) return alert('Antes hay que fijar el nivel del atleta: haz un test o ponlo en su ficha.');
+  const historial = await historialAtleta(atletaId);
+  let plan;
+  try {
+    plan = generarBorrador({
+      nivel: at.nivel,
+      dias_disponibles: pf ? pf.dias_disponibles : 0,
+      km_semana_actual: pf ? pf.km_semana_actual : null,
+      semanas_historial: historial.length,
+      lesion_activa: at.lesion_activa
+    }, { historial });
+  } catch (e) { return alert(e.message); }
+  const { error } = await sb.from('planes_atleta').insert({
+    atleta_id: atletaId, estado: 'borrador', contenido: plan, avisos: plan.avisos
+  });
+  if (error) return alert(error.message);
+  pintarPlanes(atletaId);
+}
+
+async function autorizarPlan(p, atletaId) {
+  if (!confirm('¿Autorizar este plan? Sus sesiones pasarán al calendario del atleta.')) return;
+  const { data: { user } } = await sb.auth.getUser();
+  let aut;
+  try { aut = autorizar(p.contenido, user.id); } catch (e) { return alert(e.message); }
+  const inicio = sumarDias(lunesDe(new Date()), 7); // próximo lunes
+  const { data: bloque, error: eb } = await sb.from('bloques').insert({
+    atleta_id: atletaId,
+    nombre: `Plan propuesto · ${aut.nivel} · ${aut.semanas} semanas`,
+    fecha_inicio: iso(inicio),
+    fecha_fin: iso(sumarDias(inicio, aut.semanas * 7 - 1))
+  }).select().single();
+  if (eb) return alert(eb.message);
+  const filas = aut.sesiones.map(s => ({
+    atleta_id: atletaId, bloque_id: bloque.id,
+    fecha: iso(sumarDias(inicio, (s.semana - 1) * 7 + (s.dia_semana - 1))),
+    tipo: s.tipo,
+    descripcion: `${s.nombre} — RPE objetivo ${s.rpe_objetivo}`,
+    duracion_min: s.duracion_min
+  }));
+  const { error: es } = await sb.from('sesiones_planificadas').insert(filas);
+  if (es) return alert(es.message);
+  const { error: ep } = await sb.from('planes_atleta').update({
+    estado: 'autorizado', contenido: aut,
+    autorizado_por: aut.autorizado_por, autorizado_at: new Date().toISOString()
+  }).eq('id', p.id);
+  if (ep) return alert(ep.message);
+  alert(`Plan autorizado: ${filas.length} sesiones desde el ${iso(inicio)}.`);
+  pintarPlanes(atletaId);
+  cargarBloques();
+}
+
+async function pintarPlanes(atletaId) {
+  const box = document.getElementById('planes-motor');
+  const [{ data: at }, { data, error }] = await Promise.all([
+    sb.from('atletas').select('lesion_activa').eq('id', atletaId).maybeSingle(),
+    sb.from('planes_atleta').select('*').eq('atleta_id', atletaId).order('created_at', { ascending: false })
+  ]);
+  box.innerHTML = '';
+  box.appendChild(elx('h3', 'Planes propuestos'));
+  if (error) { box.appendChild(elx('div', error.message, 'muted')); return; }
+
+  const lab = document.createElement('label');
+  lab.className = 'ver';
+  const chk = document.createElement('input');
+  chk.type = 'checkbox';
+  chk.checked = !!(at && at.lesion_activa);
+  chk.onchange = async () => {
+    const { error: e } = await sb.from('atletas').update({ lesion_activa: chk.checked }).eq('id', atletaId);
+    if (e) alert(e.message);
+  };
+  lab.append(chk, ' Lesión activa (el motor baja la carga y quita las series)');
+  box.appendChild(lab);
+
+  const nuevo = elx('button', 'Generar propuesta', 'sec');
+  nuevo.type = 'button';
+  nuevo.onclick = () => generarPropuesta(atletaId);
+  box.appendChild(nuevo);
+
+  (data || []).forEach(p => {
+    const n = ((p.contenido && p.contenido.sesiones) || []).length;
+    const d = document.createElement('div');
+    d.className = 'zona';
+    d.appendChild(elx('div', `${String(p.created_at).slice(0, 10)} · ${p.estado} · ${n} sesiones`));
+    (p.avisos || []).forEach(a => d.appendChild(elx('div', '⚠ ' + a, 'muted')));
+    if (p.estado === 'borrador') {
+      const ok = elx('button', 'Autorizar', 'gold mini');
+      ok.type = 'button';
+      ok.onclick = () => autorizarPlan(p, atletaId);
+      const del = elx('button', 'Borrar', 'danger mini');
+      del.type = 'button';
+      del.onclick = async () => {
+        if (!confirm('¿Borrar este borrador?')) return;
+        const { error: e } = await sb.from('planes_atleta').delete().eq('id', p.id);
+        if (e) return alert(e.message);
+        pintarPlanes(atletaId);
+      };
+      d.append(ok, del);
+    }
+    box.appendChild(d);
+  });
+}
 await recogerSesionFuncional();
 mostrarSegunSesion();
 </script>
