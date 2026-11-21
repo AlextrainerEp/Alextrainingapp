@@ -951,6 +951,9 @@ function entrar(){
     $("#cnav").innerHTML='<button id="ent">Entrenados</button>';
     $("#ent").onclick=listaClientes;
   } else if(!accesoActivo(S.perfil)) pantallaCaducado();
+  function abrirResistenciaAdmin(){
+  $("#tab").innerHTML=`<div class="emb-wrap"><iframe class="emb" src="../resistencia/?embed=1" title="Resistencia" loading="eager"></iframe></div>`;
+}
     const m=modulosDe(S.perfil);
     let ir="";try{ir=sessionStorage.getItem("ir")||"";sessionStorage.removeItem("ir")}catch(e){}
     if(!m.length) return pantallaSinModulos();
