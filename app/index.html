@@ -946,12 +946,11 @@ async function arrancarPush(){
   }catch(e){console.warn("push:",e.message)}
 }
 function entrar(){
-  if(S.perfil.rol==="admin"){
+    if(S.perfil.rol==="admin"){
     shell(`<div id="tab"></div>`);
     $("#cnav").innerHTML='<button id="ent">Entrenados</button>';
     $("#ent").onclick=listaClientes;
   } else if(!accesoActivo(S.perfil)) pantallaCaducado();
-  else {
     const m=modulosDe(S.perfil);
     let ir="";try{ir=sessionStorage.getItem("ir")||"";sessionStorage.removeItem("ir")}catch(e){}
     if(!m.length) return pantallaSinModulos();
