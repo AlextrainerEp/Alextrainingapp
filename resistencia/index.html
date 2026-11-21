@@ -118,6 +118,10 @@ h3{margin:12px 0 6px;font-size:15px}
 .subt.on{background:#2e3133;color:#fff;font-weight:700}
 .subsec{display:none}
 .subsec.on{display:block}
+.subt-l{display:none}
+body.en-ficha .tabs-t .subt-l{display:block}
+.tabs-t .subt-l{width:100%;text-align:left;background:transparent;color:#D9DDE0;border-radius:6px;padding:8px 14px 8px 30px;font-size:14px;border-left:4px solid transparent}
+.tabs-t .subt-l.on{background:#4a4f52;color:#fff;border-left-color:#e0b43a;font-weight:700}
 .mes-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
 .mes-head{font-size:12px;text-align:center;font-weight:700;padding:4px 0}
 .mes-celda{background:rgba(255,255,255,.85);border-radius:6px;min-height:64px;padding:3px;font-size:11px;cursor:pointer;overflow:hidden}
@@ -348,8 +352,14 @@ html.embed .banner-mover{position:absolute!important;top:var(--modal-top,0px)!im
     <nav class="tabs-t" id="tabs-t">
       <a class="otra-app" href="../app/">🏠 Página general</a>
       <button class="tabt on" data-tab="atletas">Atletas</button>
-      <button class="tabt" data-tab="ficha">Ficha</button>
       <button class="tabt" data-tab="biblio">Biblioteca y planes</button>
+      <button class="tabt" data-tab="ficha">Ficha</button>
+      <button class="subt subt-l on" data-sub="calendario">Calendario</button>
+      <button class="subt subt-l" data-sub="tests">Tests y plan</button>
+      <button class="subt subt-l" data-sub="zonas">Zonas</button>
+      <button class="subt subt-l" data-sub="perfil">Perfil</button>
+      <button class="subt subt-l" data-sub="mensajes">Mensajes</button>
+      <button class="subt subt-l" data-sub="cuenta">Cuenta</button>
     </nav>
 
     <section class="secc on" data-sec="atletas">
@@ -371,14 +381,6 @@ html.embed .banner-mover{position:absolute!important;top:var(--modal-top,0px)!im
     <div id="ficha" class="card oculto">
       <div class="cab" id="ficha-nombre"></div>
       <div id="ficha-objetivo" class="muted" style="margin:6px 0"></div>
-      <nav class="subs">
-        <button class="subt on" data-sub="calendario">Calendario</button>
-        <button class="subt" data-sub="tests">Tests y plan</button>
-        <button class="subt" data-sub="zonas">Zonas</button>
-        <button class="subt" data-sub="perfil">Perfil</button>
-        <button class="subt" data-sub="mensajes">Mensajes</button>
-        <button class="subt" data-sub="cuenta">Cuenta</button>
-      </nav>
 
 <div class="subsec" data-sub="cuenta">
       <h3>Cuenta de acceso</h3>
@@ -492,28 +494,6 @@ html.embed .banner-mover{position:absolute!important;top:var(--modal-top,0px)!im
 
     <section class="secc" data-sec="biblio">
     <div class="card">
-      <div class="cab">Planes por nivel (12 semanas, 3 días a la semana)</div>
-      <div class="row">
-        <select id="plan-nivel">
-          <option value="principiante">Principiante</option>
-          <option value="intermedio">Intermedio</option>
-          <option value="avanzado">Avanzado</option>
-        </select>
-        <button id="btn-plan-ver" class="sec">Ver plan</button>
-        <button id="btn-plan-generar">Generar plan</button>
-      </div>
-      <div id="plan-vista"></div>
-
-      <h3>Aplicar este plan a un atleta</h3>
-      <div class="row">
-        <select id="plan-atleta"></select>
-        <input id="plan-fecha" type="date">
-      </div>
-      <button id="btn-plan-objetivo" class="sec" type="button">Ajustar la fecha para terminar en el objetivo del atleta</button>
-      <button id="btn-plan-aplicar">Aplicar plan al calendario</button>
-    </div>
-
-    <div class="card">
       <div class="cab">Subir entrenamiento desde Excel o Google Sheets</div>
       <p class="muted">Una fila por sesión, con las columnas Fecha, Tipo, Nombre, Descripción y Duración (min). Cualquier otra columna (Ejercicios, Explicación, Ritmos…) se añade a la explicación de la sesión, y las filas sin fecha se suman a la sesión de arriba. Desde Google Sheets: Archivo → Descargar → Microsoft Excel (.xlsx).</p>
       <div class="row">
@@ -540,7 +520,8 @@ html.embed .banner-mover{position:absolute!important;top:var(--modal-top,0px)!im
     </div>
 
     <div class="card">
-      <div class="cab">Biblioteca de sesiones</div>
+      <div class="cab">Biblioteca por niveles</div>
+      <p class="muted">Copia una sesión con «Copiar», abre la ficha de un atleta en Calendario y toca el día donde quieras pegarla. Las sesiones del calendario también se pueden mover.</p>
       <input id="s-nombre" placeholder="Nombre (ej. Series 6x800)">
       <select id="s-nivel">
         <option value="principiante">Principiante</option>
@@ -2033,17 +2014,6 @@ function textoObjetivo(perfil) {
   const fase = f.semanas > 12 ? 'base' : f.semanas >= 4 ? 'específica' : f.semanas >= 1 ? 'puesta a punto' : 'semana de carrera';
   return `Objetivo: ${nombre} · ${fecha} · faltan ${f.semanas} semanas (${f.dias} días) · fase ${fase}`;
 }
-$('btn-plan-objetivo').onclick = async () => {
-  const atletaId = $('plan-atleta').value;
-  if (!atletaId) return alert('Elige un atleta.');
-  const { data } = await sb.from('perfil_atleta').select('objetivo, fecha_objetivo').eq('atleta_id', atletaId).maybeSingle();
-  if (!data || !data.fecha_objetivo) return alert('Este atleta no tiene fecha objetivo en su perfil.');
-  const carrera = new Date(String(data.fecha_objetivo).slice(0, 10) + 'T00:00:00');
-  const inicio = sumarDias(lunesDe(carrera), -77);
-  $('plan-fecha').value = iso(inicio);
-  alert(`El plan de 12 semanas empezará el ${iso(inicio)} y su última semana será la del objetivo (${String(data.fecha_objetivo).slice(0, 10)}). Revisa la fecha y pulsa «Aplicar plan al calendario».`);
-};
-
 /* Cumplimiento, como en TrainingPeaks: verde 80-120 % de lo planificado,
    amarillo 50-79 % o 121-150 %, naranja fuera de eso, rojo sin hacer. */
 function cumplimiento(p) {
@@ -2585,13 +2555,7 @@ async function cargarAtletas() {
   const { data, error } = await sb.from('atletas').select('id, nombre, nivel, ve_biblioteca, email, user_id, entrenador_id').order('nombre');
   if (error) return alert(error.message);
   $('lista').innerHTML = '';
-  const selPlan = $('plan-atleta');
-  selPlan.innerHTML = '';
   data.forEach(a => {
-    const op = document.createElement('option');
-    op.value = a.id;
-    op.textContent = a.nombre;
-    selPlan.appendChild(op);
     const div = document.createElement('div');
     div.className = 'fila-atleta';
     const nom = document.createElement('div');
@@ -2617,7 +2581,6 @@ function abrirFicha(atleta) {
   $('ficha').classList.remove('oculto');
   $('ficha-nombre').textContent = atleta.nombre;
   semanaInicio = lunesDe(new Date());
-  if ($('plan-atleta')) $('plan-atleta').value = atleta.id;
   $('imp-atleta').value = atleta.id;
   $('ver-biblio-atleta').checked = !!atleta.ve_biblioteca;
   $('acceso-email').value = atleta.email || '';
@@ -2762,39 +2725,69 @@ async function cargarBiblioteca() {
   pintarBiblioteca(data);
 }
 
+function copiarParaPegar(s) {
+  portapapeles = s;
+  seleccion = null;
+  $('banner-texto').textContent = `Copiada «${s.nombre}». Abre la ficha de un atleta, ve a Calendario y toca el día donde quieras pegarla.`;
+  $('banner-mover').classList.remove('oculto');
+}
+
+async function pegarEnDia(dia) {
+  const x = portapapeles;
+  portapapeles = null;
+  cancelarSeleccion();
+  if (!atletaActual) return alert('Abre la ficha de un atleta para pegar la sesión.');
+  diaSeleccionado = dia;
+  await ponerEnDia(x);
+}
+
 function pintarBiblioteca(data) {
   const filtro = $('filtro-nivel').value;
   const visibles = filtro ? data.filter(s => s.nivel === filtro) : data;
-  $('biblioteca').innerHTML = '';
-  visibles.forEach(s => {
-    const div = document.createElement('div');
-    div.className = 'atleta';
+  const caja = $('biblioteca');
+  caja.innerHTML = '';
+  if (!visibles.length) { caja.textContent = 'La biblioteca está vacía.'; return; }
+  [['principiante', 'Principiante'], ['intermedio', 'Intermedio'], ['avanzado', 'Avanzado'], ['', 'Sin nivel']]
+    .forEach(([clave, titulo]) => {
+      const grupo = visibles.filter(s => (s.nivel || '') === clave);
+      if (!grupo.length) return;
+      const h = document.createElement('h3');
+      h.textContent = `${titulo} (${grupo.length})`;
+      caja.appendChild(h);
+      grupo.forEach(s => {
+        const div = document.createElement('div');
+        div.className = 'atleta';
 
-    const titulo = document.createElement('strong');
-    titulo.textContent = s.nombre;
+        const nombre = document.createElement('strong');
+        nombre.textContent = s.nombre;
 
-    const detalle = document.createElement('div');
-    detalle.className = 'muted';
-    detalle.textContent =
-      `${s.nivel || 'sin nivel'} · ${s.tipo || 'sin tipo'} · ${s.duracion_min ?? '-'} min · carga ${s.carga ?? '-'}`;
+        const detalle = document.createElement('div');
+        detalle.className = 'muted';
+        detalle.textContent = `${s.tipo || 'sin tipo'} · ${s.duracion_min ?? '-'} min`;
 
-    const acciones = document.createElement('div');
-    acciones.className = 'acciones';
+        const acciones = document.createElement('div');
+        acciones.className = 'acciones';
 
-    const editar = document.createElement('button');
-    editar.className = 'mini gold';
-    editar.textContent = 'Editar';
-    editar.onclick = () => editarSesion(s);
+        const copiar = document.createElement('button');
+        copiar.className = 'mini';
+        copiar.textContent = 'Copiar';
+        copiar.onclick = () => copiarParaPegar(s);
 
-    const borrar = document.createElement('button');
-    borrar.className = 'mini danger';
-    borrar.textContent = 'Borrar';
-    borrar.onclick = () => borrarSesion(s.id);
+        const editar = document.createElement('button');
+        editar.className = 'mini gold';
+        editar.textContent = 'Editar';
+        editar.onclick = () => editarSesion(s);
 
-    acciones.append(editar, borrar);
-    div.append(titulo, detalle, acciones);
-    $('biblioteca').appendChild(div);
-  });
+        const borrar = document.createElement('button');
+        borrar.className = 'mini danger';
+        borrar.textContent = 'Borrar';
+        borrar.onclick = () => borrarSesion(s.id);
+
+        acciones.append(copiar, editar, borrar);
+        div.append(nombre, detalle, acciones);
+        caja.appendChild(div);
+      });
+    });
 }
 
 function editarSesion(s) {
@@ -2908,6 +2901,7 @@ let mesActual = new Date();
 let arrastrando = null;
 let seleccion = null;
 let pendienteMover = null;
+let portapapeles = null;
 
 let diaSeleccionado = null;
 let bibliotecaDia = [];
@@ -2996,6 +2990,7 @@ function iniciarMover(p) {
 }
 function cancelarSeleccion() {
   seleccion = null;
+  portapapeles = null;
   $('banner-mover').classList.add('oculto');
 }
 function soltarEnDia(dia) {
@@ -3033,6 +3028,7 @@ $('mover-no').onclick = () => { pendienteMover = null; $('modal-mover').classLis
 $('banner-cancelar').onclick = cancelarSeleccion;
 
 function mostrarTab(id) {
+  document.body.classList.toggle('en-ficha', id === 'ficha');
   document.querySelectorAll('.secc').forEach(x => x.classList.toggle('on', x.dataset.sec === id));
   document.querySelectorAll('#tabs-t .tabt').forEach(x => x.classList.toggle('on', x.dataset.tab === id));
 }
@@ -3251,6 +3247,7 @@ async function cargarMes() {
     celda.ondrop = (e) => { e.preventDefault(); soltarEnDia(dia); };
     celda.onclick = () => {
       if (modoBorrar && !modoAtletaActivo) { const k = iso(dia); if (!delDia.length) return; diasBorrar.has(k) ? diasBorrar.delete(k) : diasBorrar.add(k); celda.classList.toggle('selb', diasBorrar.has(k)); pintarBarraSel(); return; }
+      if (portapapeles) return pegarEnDia(dia);
       if (seleccion) return soltarEnDia(dia);
       if (!modoAtletaActivo) return abrirPickerDia(dia);
       semanaInicio = lunesDe(dia);
@@ -3301,6 +3298,7 @@ async function cargarSemana() {
     col.ondragover = (e) => e.preventDefault();
     col.ondrop = (e) => { e.preventDefault(); soltarEnDia(dia); };
     col.onclick = () => {
+      if (portapapeles) return pegarEnDia(dia);
       if (seleccion) return soltarEnDia(dia);
       if (!modoAtletaActivo) abrirPickerDia(dia);
     };
@@ -3459,142 +3457,6 @@ async function cargarTests() {
 
 /* ---------- PLANES POR NIVEL ---------- */
 
-const FACTOR = [0.8, 0.85, 0.9, 0.75, 0.95, 1.0, 1.05, 0.8, 1.1, 1.15, 0.7, 0.5];
-const CONF_NIVEL = {
-  principiante: {
-    calidad: { nombre: 'Cuestas suaves', tipo: 'series', min: 35, desc: '6 subidas suaves de 20 s a ritmo cómodo, bajada caminando.' },
-    rodaje: { nombre: 'Rodaje suave', tipo: 'rodaje', base: 30, desc: 'Ritmo de conversación.' },
-    larga: { nombre: 'Tirada larga', tipo: 'tirada', base: 45, desc: 'Ritmo muy cómodo, puedes hablar sin cortarte.' }
-  },
-  intermedio: {
-    calidad: { nombre: 'Series 6x800', tipo: 'series', min: 60, desc: 'Calentamiento 15 min, 6x800 m a ritmo de 5 km con 2 min caminando.' },
-    rodaje: { nombre: 'Rodaje medio', tipo: 'rodaje', base: 45, desc: 'Ritmo cómodo, los últimos 10 min algo más rápido.' },
-    larga: { nombre: 'Tirada larga', tipo: 'tirada', base: 70, desc: '60 min suaves y el resto a ritmo de maratón.' }
-  },
-  avanzado: {
-    calidad: { nombre: 'Series 5x1000', tipo: 'series', min: 70, desc: 'Calentamiento 20 min, 5x1000 m a ritmo de 10 km con 90 s de recuperación.' },
-    rodaje: { nombre: 'Rodaje doble ritmo', tipo: 'rodaje', base: 55, desc: 'Dos mitades, la segunda más rápida.' },
-    larga: { nombre: 'Tirada larga con ritmo final', tipo: 'tirada', base: 100, desc: 'Los últimos 40 min a ritmo de maratón.' }
-  }
-};
-
-function generarSesiones(nivel) {
-  const c = CONF_NIVEL[nivel];
-  const out = [];
-  for (let w = 1; w <= 12; w++) {
-    if (w === 12) {
-      out.push({ semana: 12, dia_semana: 2, tipo: 'test', nombre: 'Test 5 km', duracion_min: null,
-        descripcion: 'Máximo esfuerzo controlado. Anota el tiempo en la ficha del atleta.' });
-      out.push({ semana: 12, dia_semana: 4, tipo: 'rodaje', nombre: 'Rodaje suave', duracion_min: 30,
-        descripcion: 'Ritmo muy suave.' });
-      out.push({ semana: 12, dia_semana: 6, tipo: 'test', nombre: 'Test Cooper 12 min', duracion_min: 12,
-        descripcion: 'Máxima distancia en 12 minutos. Anota los metros en la ficha del atleta.' });
-      continue;
-    }
-    const f = FACTOR[w - 1];
-    out.push({ semana: w, dia_semana: 2, tipo: c.calidad.tipo, nombre: c.calidad.nombre,
-      duracion_min: Math.round(c.calidad.min * f), descripcion: c.calidad.desc });
-    out.push({ semana: w, dia_semana: 4, tipo: c.rodaje.tipo, nombre: c.rodaje.nombre,
-      duracion_min: Math.round(c.rodaje.base * f), descripcion: c.rodaje.desc });
-    out.push({ semana: w, dia_semana: 6, tipo: c.larga.tipo, nombre: c.larga.nombre,
-      duracion_min: Math.round(c.larga.base * f), descripcion: c.larga.desc });
-  }
-  return out;
-}
-
-async function planDelNivel(nivel) {
-  const { data } = await sb.from('planes').select('*')
-    .eq('nivel', nivel).order('created_at', { ascending: false }).limit(1).maybeSingle();
-  return data;
-}
-
-async function generarPlan(nivel) {
-  const { data: { user } } = await sb.auth.getUser();
-  const { data: existentes } = await sb.from('planes').select('id')
-    .eq('entrenador_id', user.id).eq('nivel', nivel);
-  if (existentes && existentes.length) {
-    if (!confirm('Ya existe un plan de este nivel. ¿Sustituirlo por uno nuevo?')) return;
-    await sb.from('planes').delete().in('id', existentes.map(p => p.id));
-  }
-  const { data: plan, error } = await sb.from('planes')
-    .insert({ entrenador_id: user.id, nombre: `Plan ${nivel} · 12 semanas`, nivel, semanas: 12 })
-    .select().single();
-  if (error) return alert(error.message);
-  const filas = generarSesiones(nivel).map(s => ({ ...s, plan_id: plan.id }));
-  const { error: e2 } = await sb.from('plan_sesiones').insert(filas);
-  if (e2) return alert(e2.message);
-  verPlan(nivel);
-}
-
-async function verPlan(nivel) {
-  const plan = await planDelNivel(nivel);
-  const vista = $('plan-vista');
-  vista.innerHTML = '';
-  if (!plan) {
-    vista.innerHTML = '<p class="muted">No hay plan para este nivel. Pulsa «Generar plan».</p>';
-    return;
-  }
-  const { data: filas, error } = await sb.from('plan_sesiones').select('*')
-    .eq('plan_id', plan.id).order('semana').order('dia_semana');
-  if (error) return alert(error.message);
-  const DIA = { 2: 'Martes', 4: 'Jueves', 6: 'Sábado' };
-  for (let w = 1; w <= plan.semanas; w++) {
-    const h = document.createElement('h3');
-    h.textContent = `Semana ${w}`;
-    vista.appendChild(h);
-    filas.filter(f => f.semana === w).forEach(f => {
-      const d = document.createElement('div');
-      d.className = 'zona';
-      d.textContent = `${DIA[f.dia_semana] || f.dia_semana} · ${f.nombre}` +
-        (f.duracion_min ? ` · ${f.duracion_min} min` : '') + ` — ${f.descripcion || ''}`;
-      vista.appendChild(d);
-    });
-  }
-}
-
-$('btn-plan-ver').onclick = () => verPlan($('plan-nivel').value);
-$('btn-plan-generar').onclick = () => generarPlan($('plan-nivel').value);
-
-$('plan-fecha').value = iso(lunesDe(new Date()));
-
-$('btn-plan-aplicar').onclick = async () => {
-  const atletaId = $('plan-atleta').value;
-  const inicio = $('plan-fecha').value;
-  if (!atletaId) return alert('No hay atletas. Añade uno en la pestaña Atletas.');
-  if (!inicio) return alert('Elige la fecha de inicio');
-  const plan = await planDelNivel($('plan-nivel').value);
-  if (!plan) return alert('No hay plan para ese nivel. Pulsa «Generar plan» primero.');
-
-  const { data: filas, error } = await sb.from('plan_sesiones').select('*').eq('plan_id', plan.id);
-  if (error) return alert(error.message);
-  if (!filas || !filas.length) return alert('El plan no tiene sesiones. Vuelve a generarlo.');
-
-  const base = lunesDe(new Date(inicio + 'T00:00:00'));
-  const fin = iso(sumarDias(base, plan.semanas * 7 - 1));
-  const { data: bloque, error: eb } = await sb.from('bloques').insert({
-    atleta_id: atletaId, nombre: plan.nombre, fecha_inicio: iso(base), fecha_fin: fin
-  }).select().single();
-  if (eb) return alert(eb.message);
-
-  const sesiones = filas.map(f => ({
-    atleta_id: atletaId,
-    bloque_id: bloque.id,
-    fecha: iso(sumarDias(base, (f.semana - 1) * 7 + (f.dia_semana - 1))),
-    tipo: f.tipo,
-    descripcion: f.nombre + (f.descripcion ? ' — ' + f.descripcion : ''),
-    duracion_min: f.duracion_min
-  }));
-  const { error: es } = await sb.from('sesiones_planificadas').insert(sesiones);
-  if (es) return alert(es.message);
-
-  const nombreAtleta = $('plan-atleta').selectedOptions[0].textContent;
-  alert(`«${plan.nombre}» aplicado a ${nombreAtleta}: ${sesiones.length} sesiones desde el ${iso(base)}.`);
-  if (atletaActual && atletaActual.id === atletaId) {
-    semanaInicio = base;
-    cargarSemana();
-    cargarBloques();
-  }
-};
 /* ---------- PLAN PROPUESTO (motor) ---------- */
 const cajaPlanes = document.createElement('div');
 cajaPlanes.id = 'planes-motor';
@@ -3852,7 +3714,7 @@ colocarAcceso();
 (function(){
   var b=document.getElementById('btn-menu'); if(!b) return;
   b.addEventListener('click',function(e){e.stopPropagation();document.body.classList.toggle('menu-abierto');});
-  document.querySelectorAll('.tabs-t').forEach(function(n){n.addEventListener('click',function(e){ if(e.target.closest('.tabt')) document.body.classList.remove('menu-abierto'); });});
+  document.querySelectorAll('.tabs-t').forEach(function(n){n.addEventListener('click',function(e){ if(e.target.closest('.tabt,.subt')) document.body.classList.remove('menu-abierto'); });});
   document.addEventListener('click',function(e){ if(document.body.classList.contains('menu-abierto')&&!e.target.closest('.tabs-t,#btn-menu')) document.body.classList.remove('menu-abierto'); });
 })();
 </script>
