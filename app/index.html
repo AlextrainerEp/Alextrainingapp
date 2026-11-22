@@ -1429,7 +1429,16 @@ function lineaAEj(l){
   const pr=t.match(/\b(?:progresi[oó]n|prog\.?)\s*:\s*(.+?)(?=\s+\bnota\s*:|$)/i); if(pr){o.prog=pr[1].trim();t=t.replace(pr[0]," ")}
   const no=t.match(/\bnota\s*:\s*(.+)$/i); if(no){o.nota=no[1].trim();t=t.replace(no[0]," ")}
   const c=t.match(/^\s*([A-Z]{1,2}\d{1,2}[a-z]?)[\s.):\-]+/); if(c){o.cod=c[1];t=t.slice(c[0].length)}
-  o.ej=t.replace(/\s{2,}/g," ").trim();
+  // Series × reps: "3x10", "4 x 8-10", "3×6"
+  const sr=t.match(/\b(\d+)\s*[x×]\s*(\d+(?:\s*[-–\/]\s*\d+)*)(?:\s*(?:s|seg)\b)?(?![\w])/i); if(sr){o.ser=sr[1];o.rep=sr[2].replace(/\s+/g,"");t=t.replace(sr[0]," ")}
+  // RIR y RPE objetivo: "RIR 2", "RIR 2-3", "RPE 7,5"
+  const ri=t.match(/\bRIR\s*(\d+(?:[.,]\d+)?(?:\s*[-–]\s*\d+(?:[.,]\d+)?)?)/i); if(ri){o.rir=ri[1].replace(/\s+/g,"");t=t.replace(ri[0]," ")}
+  const rp=t.match(/\bRPE\s*(\d+(?:[.,]\d+)?(?:\s*[-–]\s*\d+(?:[.,]\d+)?)?)/i); if(rp){o.rpe=rp[1].replace(/\s+/g,"");t=t.replace(rp[0]," ")}
+  // Carga: "10kg", "10 kg", "80%"
+  const kgm=t.match(/(?<![\w.,])(\d+(?:[.,]\d+)?)\s*(kg|%)(?![\wáéíóúñ])/i); if(kgm){o.int=kgm[1]+" "+kgm[2];t=t.replace(kgm[0]," ")}
+  // Descanso: se guarda como nota
+  const de=t.match(/\bdescanso\s*:?\s*\d+\s*(?:s|seg|min|m)?\b/i); if(de){o.nota=[o.nota,de[0].trim()].filter(Boolean).join(" · ");t=t.replace(de[0]," ")}
+  o.ej=t.replace(/\s{2,}/g," ").replace(/\s+[-–:|]\s*$/,"").trim();
   return normEj(o);
 }
 function textoABloques(txt,bloqueInicial){
@@ -1459,7 +1468,7 @@ async function copiarTexto(t){
 }
 
 function abrirEditor(s,alGuardar,opc={}){
-  let modoTexto=!!opc.texto;
+  let modoTexto=true;                                   // la edición de sesiones es solo por texto
   let st={titulo:s.titulo||"",fecha:s.fecha||"",bloques:(s.bloques||[]).map(b=>({nombre:b.nombre||"",seguimiento:esSeguimiento(b),ejercicios:(b.ejercicios||[]).map(normEj)}))};
   const ov=document.createElement("div");
   ov.className="modal";
@@ -1479,8 +1488,6 @@ function abrirEditor(s,alGuardar,opc={}){
       <label>Título <input id="e-tit" value="${esc(st.titulo)}"></label>
       <label>Fecha <span class="row" style="gap:8px"><input id="e-fe" value="${esc(st.fecha)}" placeholder="dd/mm/aaaa" style="flex:1"><input type="date" id="e-fe-d" value="${parseFecha(st.fecha)?isoLocal(parseFecha(st.fecha)):""}" style="flex:1" title="Elegir en el calendario"></span></label>
       <div class="row e-modos">
-        <button class="${modoTexto?"sec":"gold"}" data-act="modo-tabla">▦ Tabla</button>
-        <button class="${modoTexto?"gold":"sec"}" data-act="modo-texto">✏️ Texto (copiar y pegar)</button>
         <button class="sec" data-act="copiar">📋 Copiar sesión</button>
         <button class="sec" data-act="pegar">📥 Pegar sesión</button>
       </div>
