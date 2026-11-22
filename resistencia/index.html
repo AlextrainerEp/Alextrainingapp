@@ -296,7 +296,12 @@ body:has(#login:not(.oculto)) #login .row{margin-top:2px}
 .texto-claro .tl{margin:3px 0}
 html.embed,html.embed body{min-height:0!important;height:auto!important}
 html.embed body{background:transparent!important;padding:0!important}
-html.embed #login,html.embed .fondo,html.embed #hdr,html.embed #tabs-t,html.embed #tabs-a,html.embed #badge-admin,html.embed #btn-menu{display:none!important}
+/* Dentro de la app general: pestañas horizontales para volver a la lista de atletas */
+html.embed #tabs-t{display:flex!important;position:static!important;transform:none!important;width:auto!important;flex-direction:row!important;flex-wrap:wrap!important;gap:6px!important;margin:0 0 10px!important;padding:8px!important;border-radius:10px!important;box-shadow:none!important;overflow:visible!important;background:#2e3133}
+html.embed #tabs-t .otra-app{display:none!important}
+html.embed #tabs-t .tabt,html.embed #tabs-t .subt{width:auto!important;margin:0!important;padding:8px 12px!important;font-size:14px!important;border-radius:6px;background:#5a5f63;color:#fff;border:0}
+html.embed #tabs-t .tabt.on,html.embed #tabs-t .subt.on{background:#D9DDE0;color:#1d1f21;font-weight:700}
+html.embed #login,html.embed .fondo,html.embed #hdr,html.embed #tabs-a,html.embed #badge-admin,html.embed #btn-menu{display:none!important}
 html.embed main{margin:0!important;padding:0!important;max-width:none!important;left:0!important}
 html.embed #panel,html.embed #vista-atleta{margin:0!important;padding:0!important}
 html.embed body::before,html.embed body::after{display:none!important}
@@ -749,6 +754,20 @@ function textoErrorEnlace(code,desc){
   }
 }
 // Dentro de la página general (iframe): sin cabecera ni menú propios; la altura se avisa a la página general
+function pedirSesionAlPadre() {
+  return new Promise(res => {
+    const t = setTimeout(() => { window.removeEventListener('message', on); res(null); }, 2500);
+    function on(ev) {
+      if (ev.origin !== location.origin || !ev.data || !ev.data.alexSesion) return;
+      clearTimeout(t); window.removeEventListener('message', on);
+      const s = ev.data.alexSesion;
+      sb.auth.setSession({ access_token: s.access, refresh_token: s.refresh })
+        .then(r => res((r && r.data && r.data.session) || null)).catch(() => res(null));
+    }
+    window.addEventListener('message', on);
+    parent.postMessage({ alexPideSesion: true }, location.origin);
+  });
+}
 const EMBED = new URLSearchParams(location.search).has('embed');
 const PARAMS_EMBED = new URLSearchParams(location.search);
 if (EMBED) {
@@ -809,7 +828,9 @@ sb.auth.onAuthStateChange((ev, ses) => {
 });
 // Si se entra desde el apartado funcional, se recoge su sesión
 async function recogerSesionFuncional() {
-  const { data: { session } } = await sb.auth.getSession();
+  let { data: { session } } = await sb.auth.getSession();
+  // Dentro de la app general la sesión llega desde la página padre (sin volver a pedir contraseña)
+  if (!session && EMBED) session = await pedirSesionAlPadre();
   if (session) return;
   try {
     const g = JSON.parse(sessionStorage.getItem('alex_s') || 'null');
@@ -2582,8 +2603,8 @@ async function cargarAtletas() {
     $('lista').appendChild(div);
   });
   if (!data.length) $('lista').innerHTML = '<p class="muted">Todavía no hay atletas.</p>';
-  $('imp-atleta').innerHTML = selPlan.innerHTML;
-  if (atletaActual) { $('imp-atleta').value = atletaActual.id; selPlan.value = atletaActual.id; }
+  $('imp-atleta').innerHTML = data.map(a => `<option value="${a.id}">${escTxt(a.nombre || 'Sin nombre')}</option>`).join('');
+  if (atletaActual) $('imp-atleta').value = atletaActual.id;
   cargarPanelAtletas(data);
 }
 
