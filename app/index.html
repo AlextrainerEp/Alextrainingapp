@@ -2404,9 +2404,11 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
       let nom,det="";
       if(s._res){
         nom=resPartes(s)[0]||"Running";
+        if(!quiere&&s.duracion_min) det=`${s.duracion_min} min previstos`;
         if(quiere){const r=s.rpe!=null&&s.rpe!==""?String(s.rpe).replace(".",","):"–";det=`<span class="rpe-tag">RPE ${r}</span>${s.km_reales?` · ${s.km_reales} km`:""}${s.duracion_real_min?` · ${s.duracion_real_min} min`:""}`}
       }else{
         nom=s.titulo||"Sesión";
+        if(!quiere){const nombres=(s.bloques||[]).flatMap(b=>(b.ejercicios||[]).map(x=>normEj(x).ej)).filter(Boolean);det=nombres.length?`<div class="rpe-ejs">${nombres.map(n=>`<span>${esc(n)}</span>`).join("")}</div>`:`<span class="muted">Sin ejercicios todavía</span>`;}
         if(quiere){
           const ejs=[];
           Object.entries(s.registro||{}).forEach(([key,v])=>{
@@ -2529,8 +2531,8 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
           <div class="msg" id="bMsg"></div></div>`:""}`:""}
       ${admin&&carreraF.length?`<div class="card conv-bar"><span>🏃 Hay <b>${carreraF.length}</b> sesión(es) de carrera/trail guardadas como fuerza${carreraConReg?` (${carreraConReg} ya registradas por el cliente se quedan como están)`:""}.</span><button class="gold" data-convertir>Pasarlas a Resistencia</button></div>`:""}
       ${admin?`<div class="row res-acceso"><button class="sec" data-vercarga>📈 Ver carga de entrenamiento de este atleta</button></div>`:""}
-      <div class="resumen${admin?" resumen-click":""}"><div${admin?` data-lista="pend" class="${listaVer==="pend"?"on":""}"`:""}><b>${pend}</b><small>pendientes</small></div><div${admin?` data-lista="hechas" class="${listaVer==="hechas"?"on":""}"`:""}><b>${hechas}</b><small>completadas</small></div><div><b>${proxTxt}</b><small>próximo entreno</small></div></div>
-      ${admin&&listaVer?panelLista(listaVer):""}
+      <div class="resumen resumen-click"><div data-lista="pend" class="${listaVer==="pend"?"on":""}"><b>${pend}</b><small>pendientes</small></div><div data-lista="hechas" class="${listaVer==="hechas"?"on":""}"><b>${hechas}</b><small>completadas</small></div><div><b>${proxTxt}</b><small>próximo entreno</small></div></div>
+      ${listaVer?panelLista(listaVer):""}
       ${CAL_OCULTO&&!modoSel?`<div class="cal-wrap card cal-mini">
         <button class="sec" data-diaant title="Entreno anterior" aria-label="Entreno anterior">‹</button>
         <button class="cal-mini-ver" data-calver>📅 <b>${+ad} ${MESES_CAL[+am-1]}</b><span>Ver calendario ▼</span></button>
@@ -2542,6 +2544,7 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
         ${modoSel?"":`<button class="sec cal-ocultar" data-calocultar>▲ Ocultar calendario</button>`}
       </div>`}
       <h2 class="dia-tit">${+ad} de ${MESES_CAL[+am-1]}</h2>
+      ${admin?`<div class="row dia-acc"><button class="gold" data-nuevaday>＋ Crear entrenamiento en este día</button><button class="sec" data-pegday>📥 Cargar sesión copiada</button></div>`:""}
       ${delDia.length?delDia.map(s=>s._res?resTarjeta(s,admin,zonasRes):tarjeta(s,delDia.length===1)).join(""):'<p class="muted">Día sin entrenamiento. Toca otro día del calendario.</p>'}
       ${sinFecha.length?`<details class="card"><summary><b>Sin fecha (${sinFecha.length})</b></summary>${sinFecha.map(s=>tarjeta(s,false)).join("")}</details>`:""}`;
     const irTitulo=()=>{const t=cont.querySelector(".dia-tit");if(t)t.scrollIntoView({block:"start",behavior:"smooth"})};
@@ -2755,6 +2758,17 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
       });
     });
     if(admin){
+      const nuevaEnDia=opc=>{
+        const [yy,mm,dd]=diaSel.split("-");
+        const nueva={titulo:"",fecha:`${dd}/${mm}/${yy}`,bloques:[]};
+        abrirEditor(nueva,async st=>{
+          await db("POST","sesiones","",{cliente_id:clienteId,fecha:st.fecha,titulo:st.titulo,bloques:st.bloques,registro:{}},"return=minimal");
+          const di=parseFecha(st.fecha);
+          await tabEntrenosCal(host,clienteId,admin,di?isoLocal(di):diaSel,"Entreno creado en el calendario");
+        },opc);
+      };
+      const bn=cont.querySelector("[data-nuevaday]"); if(bn) bn.onclick=()=>nuevaEnDia({texto:true});
+      const bp=cont.querySelector("[data-pegday]"); if(bp) bp.onclick=async()=>{let t="";try{t=await navigator.clipboard.readText()}catch(e){}nuevaEnDia({texto:true,pegar:t})};
       const editarSes=(id,opc)=>{
         const s=todas.find(x=>x.id===id);
         abrirEditor(s,async st=>{
