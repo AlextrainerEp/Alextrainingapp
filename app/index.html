@@ -5997,6 +5997,14 @@ function iaPlanCompletoHTML() {
     <div class="row"><button class="gold" id="ia-pc-b" type="button">🗓 Generar planificación</button></div>
     <div id="ia-pc-out"></div></div>`;
 }
+/** Avisos de la revisión del método. No bloquean: el entrenador decide. */
+function iaAvisosHTML(avisos) {
+  const lista = Array.isArray(avisos) ? avisos : [];
+  if (!lista.length) return '<div class="ia-avisos ok"><b>✓ Sin avisos según el método.</b></div>';
+  const revisar = lista.filter(a => a.nivel === 'revisar').length;
+  return `<div class="ia-avisos"><b>${revisar ? '⚠️ ' + revisar + ' aviso(s) para revisar' : 'ℹ️ Solo avisos informativos'}</b>
+    <ul>${lista.map(a => `<li>${a.semana ? '<b>S' + esc(a.semana) + '</b> · ' : ''}${a.nivel === 'revisar' ? '⚠️ ' : 'ℹ️ '}${esc(a.texto)}</li>`).join('')}</ul></div>`;
+}
 function iaPlanEditorHTML(plan) {
   return `<div class="ia-plan-ed">${plan.semanas.map((w, i) => `<details class="ia-sem" open><summary><b>Semana ${w.semana || i + 1}</b></summary>
       ${(w.sesiones || []).map(iaSesHTML).join('')}
@@ -6034,7 +6042,7 @@ function iaPlanCompletoActivar(clienteId) {
       });
       const j = await r.json().catch(() => ({ error: 'Respuesta ilegible del servidor' }));
       if (!r.ok || j.error) throw new Error(j.error || ('Error ' + r.status));
-      out.innerHTML = iaPlanEditorHTML(j.plan);
+      out.innerHTML = iaAvisosHTML(j.avisos) + iaPlanEditorHTML(j.plan);
       iaPlanEditorActivar(clienteId);
     } catch (e) {
       out.innerHTML = `<p class="muted">No se pudo generar: ${esc(e.message)}</p>`;
