@@ -2241,11 +2241,12 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
   conF.forEach(({s,d})=>{const k=isoLocal(d);porDia.set(k,[...(porDia.get(k)||[]),s])});
   meterRes();
   const sinFecha=todas.filter(s=>!parseFecha(s.fecha));
-  const tarjeta=(s,abierta)=>`<details class="card sesion${hecho(s)?" hecha":""}"${abierta?" open":""}><summary class="dia-sum" data-arr="${s.id}">${badgeFecha(s)}<h3>${nombreEntreno(s)}</h3></summary>
-      ${admin?`<div class="row e-modos ses-barra"><button class="gold" data-edtxt="${s.id}">✏️ Editar como texto</button><button class="sec" data-ed="${s.id}">▦ Editar en tabla</button><button class="sec" data-copses="${s.id}">📋 Copiar sesión</button><button class="sec" data-pegses="${s.id}">📥 Pegar sesión</button><span class="muted" data-bst="${s.id}"></span></div>`:""}
-      ${sesionHTML(s,true,true,admin)}
-      <div class="row"><button data-save="${s.id}">${admin?"Guardar cambios":"Guardar registro"}</button>${admin?`<button class="sec" data-edtxt="${s.id}">✏️ Editar como texto</button><button class="danger" data-del="${s.id}">Borrar</button>`:""}<span class="muted" data-st="${s.id}"></span></div>
-      <div class="row mover"><label>${admin?"Mover o copiar a otro día":"Mover a otro día"} <input type="date" data-mover-in="${s.id}"></label><button class="sec" data-mover="${s.id}">${admin?"Mover / copiar":"Mover"}</button></div></details>`;
+  const editando=new Set(); let abrirId=null;
+  const tarjeta=(s,abierta)=>{const ed=admin&&editando.has(String(s.id));return `<details class="card sesion${hecho(s)?" hecha":""}${ed?" editando":""}" data-sid="${s.id}"${(abierta||String(s.id)===abrirId)?" open":""}><summary class="dia-sum" data-arr="${s.id}">${badgeFecha(s)}<h3>${nombreEntreno(s)}</h3></summary>
+      ${admin?(ed?`<div class="row e-modos ses-barra"><button class="gold" data-edtxt="${s.id}">✏️ Editar como texto</button><button class="sec" data-ed="${s.id}">▦ Editar en tabla</button><button class="sec" data-copses="${s.id}">📋 Copiar sesión</button><button class="sec" data-pegses="${s.id}">📥 Pegar sesión</button><span class="muted" data-bst="${s.id}"></span></div>`:`<div class="row e-modos ses-barra"><button class="gold" data-editar="${s.id}">✏️ Editar</button><button class="sec" data-copses="${s.id}">📋 Copiar</button><span class="muted" data-bst="${s.id}"></span></div>`):""}
+      ${sesionHTML(s,true,true,ed)}
+      <div class="row"><button data-save="${s.id}">${admin?"Guardar cambios":"Guardar registro"}</button>${admin?`${ed?`<button class="sec" data-cerrar="${s.id}">✔ Cerrar edición</button>`:""}<button class="danger" data-del="${s.id}">Borrar</button>`:""}<span class="muted" data-st="${s.id}"></span></div>
+      <div class="row mover"><label>${admin?"Mover o copiar a otro día":"Mover a otro día"} <input type="date" data-mover-in="${s.id}"></label><button class="sec" data-mover="${s.id}">${admin?"Mover / copiar":"Mover"}</button></div></details>`};
   const moverA=async(id,val)=>{
     const esRes=String(id).startsWith("r:"), rid=esRes?String(id).slice(2):String(id);
     const item=esRes?resis.find(x=>String(x.id)===rid):todas.find(x=>String(x.id)===rid);
@@ -2467,6 +2468,8 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
       }
     }
 
+    cont.querySelectorAll("[data-editar]").forEach(b=>b.onclick=()=>{editando.add(String(b.dataset.editar));abrirId=String(b.dataset.editar);pintar()});
+    cont.querySelectorAll("[data-cerrar]").forEach(b=>b.onclick=()=>{editando.delete(String(b.dataset.cerrar));abrirId=String(b.dataset.cerrar);pintar()});
     cont.querySelectorAll("[data-save]").forEach(b=>b.onclick=async()=>{
       const id=b.dataset.save, st=cont.querySelector(`[data-st="${id}"]`);
       try{
@@ -2475,7 +2478,7 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
         const leido=leerRegistro(card), reg={...((s&&s.registro)||{})};
         Object.keys(leido).forEach(k=>{reg[k]={...(reg[k]||{}),...leido[k]}});
         const cambios={registro:reg};
-        if(admin&&s) cambios.bloques=leerPlan(card,s);
+        if(admin&&s&&card.querySelector(".xp")) cambios.bloques=leerPlan(card,s);
         await db("PATCH","sesiones",`?id=eq.${id}`,cambios,"return=minimal");
         if(s){s.registro=reg; if(cambios.bloques) s.bloques=cambios.bloques}
         if(!admin&&hecho({registro:reg})){st.textContent="Completado ✓ · pasa al historial";setTimeout(()=>tabEntrenosCal(host,clienteId,admin),1000)}
