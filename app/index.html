@@ -114,7 +114,7 @@ html.oscuro .ecard{background:rgba(30,32,34,.92);color:#f2f2f2}
 .ec-chip{background:#2e3133;color:#fff;border-radius:999px;padding:4px 10px;font-size:13px;font-weight:600}
 .ec-nota{margin-top:5px;font-size:14px;line-height:1.4}
 html.oscuro .ecard{background:rgba(30,32,34,.92);color:#f2f2f2}
-.ghead2,html .grow.xr2{display:grid;grid-template-columns:minmax(0,1fr) 58px 48px 48px;gap:4px;align-items:center}
+.ghead2,html .grow.xr2{display:grid;grid-template-columns:minmax(0,1fr) 40px 52px 84px 40px 40px;gap:4px;align-items:center}
 .ghead2{font-size:11px;font-weight:700;color:#555;text-align:center;padding:2px 0;border-bottom:1px solid #ccc}
 .ghead2 span:first-child{text-align:left}
 html .grow.xr2{padding:6px 0 7px;border-bottom:1px solid rgba(0,0,0,.14);font-size:13px}
@@ -122,7 +122,7 @@ html .grow.xr2.sep{margin-top:6px;border-top:0}
 .grow.xr2 .gname{font-size:15px;font-weight:700;line-height:1.2}
 .grow.xr2 .gdet{grid-column:1/-1;font-size:13px;line-height:1.3;color:#333}
 .grow.xr2 .xdos{color:#8a6508;font-size:14px}
-html .grow.xr2 input,html .grow.xr2 .pick{height:34px;padding:2px;font-size:14px;font-weight:700;text-align:center;margin:0;width:100%;box-sizing:border-box}
+html .grow.xr2 input,html .grow.xr2 select,html .grow.xr2 .pick{height:34px;padding:2px;font-size:14px;font-weight:700;text-align:center;margin:0;width:100%;box-sizing:border-box}
 html .grow.xr2 .pick .obj,html .grow.xr2 .pick small.obj{font-size:11px}
 html .grow.xp{display:block;padding:8px 0 9px;border-bottom:1px solid rgba(0,0,0,.14)}
 html .grow.xp.sep{margin-top:6px;border-top:0}
@@ -136,7 +136,7 @@ html .grow.xp input.pl-ej{height:34px;text-align:left;font-size:15px;font-weight
 html .grow.xp input.pl-vid{text-align:left;font-size:12px;padding-left:6px}
 .grow.xp .gsub{font-size:12px;margin-top:3px}
 html.oscuro .ghead2{color:#bbb}html.oscuro .grow.xr2 .gdet{color:#ddd}
-@media(min-width:700px){.ghead2,html .grow.xr2{grid-template-columns:minmax(0,1fr) 70px 60px 60px}.xpg{grid-template-columns:60px 70px minmax(0,1fr) 60px 60px}}
+@media(min-width:700px){.ghead2,html .grow.xr2{grid-template-columns:minmax(0,1fr) 60px 70px 120px 60px 60px}.xpg{grid-template-columns:60px 70px minmax(0,1fr) 60px 60px}}
 #pushbar{position:fixed;left:10px;right:10px;bottom:10px;z-index:9999;background:#2e3133;color:#fff;border-radius:14px;padding:12px 14px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;box-shadow:0 4px 18px rgba(0,0,0,.35);font-size:14px;line-height:1.3}
 #pushbar>div{flex:1 1 200px}#pushbar small{color:#ddd}
 #pushbar button{margin:0;padding:8px 14px;font-size:14px;width:auto}
@@ -1009,7 +1009,7 @@ function normEj(e){
   // Si en la celda de reps hay texto (p. ej. "8/6/6 lastre 10kg 2 primeras"), ese texto va a Intensidad
   const m=String(rep).match(/^(\d[\d\s+\/\-–.,"']*?)\s+([A-Za-zÁÉÍÓÚáéíóúñÑ].*)$/);
   if(m){rep=m[1].trim();int=[m[2].trim(),String(int).trim()].filter(Boolean).join(" · ")}
-  const o={cod:e.cod??e.codigo??"",ej:e.ej??e.ejercicio??"",ser:e.ser??e.series??"",rep,int,rpe:e.rpe??e.rpe_objetivo??"",rir:e.rir??e.rir_objetivo??"",prog:e.prog??e.progresion??"",nota:e.nota??"",video:e.video??""};
+  const o={cod:e.cod??e.codigo??"",ej:e.ej??e.ejercicio??"",ser:e.ser??e.series??"",rep,int,rpe:e.rpe??e.rpe_objetivo??"",rir:e.rir??e.rir_objetivo??"",prog:e.prog??e.progresion??"",nota:e.nota??"",video:e.video??"",sup:e.sup??""};
   return repartirEj(o);
 }
 // "Sentadilla goblet 10kg RIR 2-3" → Ejercicio: Sentadilla goblet · Intensidad: 10 kg · RIR obj.: 2-3
@@ -1188,6 +1188,11 @@ function btnVideoMini(e){
   return u?` <a class="vid vmini" href="${esc(u)}" target="_blank" rel="noopener" title="Video explicativo">▶</a>`:` <span class="vid vid-no vmini" title="Sin vídeo">–</span>`;
 }
 function esSeguimiento(b){return true}
+/** Estado de la última serie: hecha, incompleta o no hecha. */
+function estadoSel(k,val,dis){
+  const op=[["","–"],["completada","Hecha"],["incompleta","Incompleta"],["no_hecha","No hecha"]];
+  return `<select data-k="${k}" data-f="estado" ${dis} aria-label="Estado de la serie">${op.map(([v,t])=>`<option value="${v}"${String(val??"")===v?" selected":""}>${t}</option>`).join("")}</select>`;
+}
 function pick(k,f,val,color,editable,obj){
   const c=color?colorRPE(val):["#fff","#1d1f21"];
   const vacio=(val===""||val==null);
@@ -1248,7 +1253,7 @@ function sesionHTML(s,editable,conLeyenda=editable,plan=false){
     const itemsFza=separar?g.items.filter(it=>!esResis(it.x)):g.items;
     if(itemsRes.length&&!itemsFza.length) return cab+itemsRes.map(tarjeta).join("");
     const gItems=itemsFza;
-    const cab2=(!plan&&gItems.length)?`<div class="ghead2"><span>Ejercicio</span><span>Kg</span><span>RIR</span><span>RPE</span></div>`:"";
+    const cab2=(!plan&&gItems.length)?`<div class="ghead2"><span>Ejercicio</span><span>Reps</span><span>Kg</span><span>Estado</span><span>RIR</span><span>RPE</span></div>`:"";
     return cab+itemsRes.map(tarjeta).join("")+cab2+gItems.map(({x,bi,ei},idx)=>{const e=normEj(x),k=bi+"-"+ei,r=R[k]||{};const sep=idx>0&&letra(x)!==letra(gItems[idx-1].x)?" sep":"";
       const dosis=[e.ser,e.rep].filter(v=>String(v).trim()!=="").map(v=>esc(String(v))).join(" × ");
       if(plan){
@@ -1268,7 +1273,9 @@ function sesionHTML(s,editable,conLeyenda=editable,plan=false){
       const det=[dosis?`<b class="xdos">${dosis}</b>`:"",e.int?esc(e.int):"",e.nota?`📝 ${esc(e.nota)}`:"",e.prog?`📈 ${esc(e.prog)}`:""].filter(Boolean).join(" · ");
       return `<div class="grow xr2${sep}">
       <div class="gname">${e.cod?`<b>${esc(e.cod)}</b> `:""}${nombreVideo(e)}${btnVideoMini(e)}</div>
+      <input data-k="${k}" data-f="reps" inputmode="numeric" placeholder="reps" value="${esc(r.reps)}" ${dis} aria-label="Reps de la última serie">
       <input data-k="${k}" data-f="kg" inputmode="decimal" placeholder="kg" value="${esc(r.kg)}" ${dis}>
+      ${estadoSel(k,r.estado,dis)}
       ${pick(k,"rir",r.rir,false,editable,e.rir)}
       ${pick(k,"rpe",r.rpe,true,editable,e.rpe)}
       ${det?`<div class="gdet">${det}</div>`:""}
@@ -1573,7 +1580,7 @@ function abrirEditor(s,alGuardar,opc={}){
 
 /* ---------- Historial de entrenamientos realizados ---------- */
 function hecho(s){
-  return Object.values(s.registro||{}).some(v=>v&&Object.values(v).some(x=>x!==""&&x!=null));
+  return Object.values(s.registro||{}).some(v=>v&&Object.entries(v).some(([f,x])=>f!=="estado"&&x!==""&&x!=null));
 }
 function tabHistorial(ses,cliente=false){
   const hechos=ses.filter(hecho);
@@ -5830,11 +5837,11 @@ async function iaHistorial(clienteId) {
       const e = normEj(ex);
       if (!e.ej) return;
       const r = (s.registro || {})[`${bi}-${ei}`] || {};
-      const hay = Object.values(r).some(v => v !== '' && v != null);
+      const hay = Object.entries(r).some(([f, v]) => f !== 'estado' && v !== '' && v != null);
       ejercicios.push({
         ejercicio: e.ej,
         plan: { series: e.ser || undefined, reps: e.rep || undefined, intensidad: e.int || undefined, rir: e.rir || undefined, rpe: e.rpe || undefined },
-        realizado: hay ? { kg: r.kg || undefined, reps: r.reps || undefined, rir: r.rir || undefined, rpe: r.rpe || undefined } : null
+        realizado: hay ? { kg: r.kg || undefined, reps: r.reps || undefined, rir: r.rir || undefined, rpe: r.rpe || undefined, estado: r.estado || undefined } : null
       });
     }));
     fuerza.push({ fecha, sesion: s.titulo || 'Fuerza', ejercicios });
@@ -5973,7 +5980,7 @@ function iaLunesProx() { const d = new Date(); d.setDate(d.getDate() + (((8 - d.
 function iaSesHTML(s) {
   const tipo = s.tipo === 'fuerza' || (!s.tipo && s.ejercicios) ? 'fuerza' : (['rodaje', 'series', 'tirada'].includes(s.tipo) ? s.tipo : 'rodaje');
   const txt = tipo === 'fuerza'
-    ? (s.ejercicios || []).map(e => [e.ej, e.ser, e.rep, e.int, e.rir].map(v => v == null ? '' : v).join(' | ')).join('\n')
+    ? (s.ejercicios || []).map(e => [e.ej, e.ser, e.rep, e.int, e.rir, e.sup].map(v => v == null ? '' : v).join(' | ')).join('\n')
     : (s.pasos || []).map(iaPasoATexto).join('\n');
   const selDia = IA_DIAS_ES.map(d => `<option value="${d}"${iaNorm(d) === iaNorm(s.dia) ? ' selected' : ''}>${d}</option>`).join('');
   const selTipo = [['fuerza', 'Fuerza'], ['rodaje', 'Rodaje'], ['series', 'Series'], ['tirada', 'Tirada larga']]
@@ -5994,6 +6001,13 @@ function iaPlanCompletoHTML() {
       <label>Días de running ${sel('ia-pc-r', [0, 1, 2, 3, 4, 5], 3)}</label>
     </div>
     <input id="ia-pc-obj" placeholder="Objetivo (opcional): por ejemplo, media maratón en abril" style="width:100%">
+    <div class="row">
+      <label>Objetivo de carga (opcional) <input id="ia-pc-oej" placeholder="Ejercicio, p. ej. Sentadilla" style="width:100%"></label>
+      <label>Kg <input id="ia-pc-okg" type="number" min="1" step="0.5" style="width:90px"></label>
+      <label>Tipo ${sel('ia-pc-otipo', ['1RM', 'Peso de trabajo'], '1RM')}</label>
+      <label>Reps (si es trabajo) <input id="ia-pc-oreps" type="number" min="1" max="30" value="5" style="width:70px"></label>
+      <label>Plazo ${sel('ia-pc-osem', [4, 6, 8, 12, 16, 24], 12)} semanas</label>
+    </div>
     <div class="row"><button class="gold" id="ia-pc-b" type="button">🗓 Generar planificación</button></div>
     <div id="ia-pc-out"></div></div>`;
 }
@@ -6010,7 +6024,7 @@ function iaPlanEditorHTML(plan) {
       ${(w.sesiones || []).map(iaSesHTML).join('')}
       <button class="sec ia-mas" type="button">+ Sesión</button></details>`).join('')}
     <div class="row"><label>Lunes de inicio <input type="date" id="ia-pc-ini" value="${iaLunesProx()}"></label></div>
-    <p class="muted">Fuerza: una línea por ejercicio, «Ejercicio | series | reps | intensidad | RIR». Running: una línea por paso, por ejemplo «Calentamiento: 10 min Z1» o «Series: 6x800 m Z4 rec 2».</p>
+    <p class="muted">Fuerza: una línea por ejercicio, «Ejercicio | series | reps | intensidad | RIR | superserie» (por ejemplo, «Sentadilla | 3 | 6 | 80 kg | RIR 3 | B1»). Running: una línea por paso, por ejemplo «Calentamiento: 10 min Z1» o «Series: 6x800 m Z4 rec 2».</p>
     <div class="row"><button class="gold" id="ia-pc-add" type="button">Añadir todo al plan del entrenado</button></div>
     <div class="msg" id="ia-pc-msg"></div></div>`;
 }
@@ -6033,12 +6047,20 @@ function iaPlanCompletoActivar(clienteId) {
     try {
       const datos = await iaDatosCliente(clienteId);
       const base = String(typeof SB_URL !== 'undefined' ? SB_URL : '').replace(/\/+$/, '');
+      const ejObj = $('#ia-pc-oej').value.trim();
+      const kgObj = +$('#ia-pc-okg').value;
+      const objetivoEj = ejObj && kgObj > 0 ? {
+        ejercicio: ejObj, kg: kgObj,
+        tipo: $('#ia-pc-otipo').value === 'Peso de trabajo' ? 'trabajo' : 'rm',
+        reps: +$('#ia-pc-oreps').value || 5,
+        semanas: +$('#ia-pc-osem').value
+      } : null;
       const r = await fetch(`${base}/functions/v1/analizar-ia`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + S.access },
         body: JSON.stringify({ datos, modo: 'planificar', opciones: {
           semanas: +$('#ia-pc-sem').value, diasFuerza: +$('#ia-pc-f').value, diasCarrera: +$('#ia-pc-r').value,
-          objetivo: $('#ia-pc-obj').value.trim() } })
+          objetivo: $('#ia-pc-obj').value.trim(), objetivoEj } })
       });
       const j = await r.json().catch(() => ({ error: 'Respuesta ilegible del servidor' }));
       if (!r.ok || j.error) throw new Error(j.error || ('Error ' + r.status));
@@ -6063,7 +6085,7 @@ function iaPlanEditorActivar(clienteId) {
     if (!e.target.classList.contains('ia-tipo')) return;
     const ta = e.target.closest('.ia-edit').querySelector('.ia-txt');
     ta.value = '';
-    ta.placeholder = e.target.value === 'fuerza' ? 'Sentadilla | 4 | 6 | 75 % | 2' : 'Calentamiento: 10 min Z1\nSeries: 6x800 m Z4 rec 2';
+    ta.placeholder = e.target.value === 'fuerza' ? 'Sentadilla | 3 | 6 | 80 kg | RIR 3 | B1' : 'Calentamiento: 10 min Z1\nSeries: 6x800 m Z4 rec 2';
   };
 }
 async function iaPlanAnadir(clienteId) {
@@ -6084,7 +6106,7 @@ async function iaPlanAnadir(clienteId) {
         if (tipo === 'fuerza') {
           const ejs = txt.split(/\r?\n/).map(l => l.trim()).filter(Boolean).map(l => {
             const c = l.split('|').map(x => x.trim());
-            return { ej: c[0] || '', ser: c[1] || '', rep: c[2] || '', int: c[3] || '', rir: c[4] || '' };
+            return { ej: c[0] || '', ser: c[1] || '', rep: c[2] || '', int: c[3] || '', rir: c[4] || '', sup: c[5] || '' };
           }).filter(x => x.ej);
           if (ejs.length) fuerza.push({ cliente_id: clienteId, fecha, titulo, bloques: [{ nombre: 'Principal', ejercicios: ejs.map(normEj) }], registro: {} });
         } else {
