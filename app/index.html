@@ -5872,6 +5872,7 @@ async function iaAnalizar(clienteId, host, pregunta) {
     });
     const j = await r.json().catch(() => ({ error: 'Respuesta ilegible del servidor' }));
     if (!r.ok || j.error) throw new Error(j.error || ('Error ' + r.status));
+    if (!String(j.texto || '').trim()) throw new Error('La IA no devolvió texto. Vuelve a pulsar Analizar.');
     caja.innerHTML = `<div class="ia-caja"><div class="ia-cab"><b>🤖 Análisis</b><span class="muted">${new Date().toLocaleString('es-ES')}</span></div>
       <div class="ia-texto">${iaHTML(j.texto)}</div>
       <p class="muted ia-pie">Lo ha escrito una IA a partir de los números de carga, sin saber quién es el entrenado. Revísalo antes de aplicarlo: la decisión es tuya.</p></div>`;
