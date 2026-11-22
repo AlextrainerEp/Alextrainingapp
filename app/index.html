@@ -5815,6 +5815,44 @@ function iaHTML(t) {
   return out.join('');
 }
 
+/** Historial sesión a sesión (sin nombres ni notas) para que la IA proponga progresiones y regresiones. */
+async function iaHistorial(clienteId) {
+  const desde = ATLCarga.fecha.sumarDias(ATLCarga.fecha.hoyISO(), -84);
+  const fuerza = [];
+  const ses = await db('GET', 'sesiones', `?cliente_id=eq.${clienteId}&select=fecha,titulo,bloques,registro`).catch(() => []);
+  for (const s of ses || []) {
+    const d = parseFecha(s.fecha);
+    if (!d || !hecho(s)) continue;
+    const fecha = isoLocal(d);
+    if (fecha < desde) continue;
+    const ejercicios = [];
+    (s.bloques || []).forEach((b, bi) => (b.ejercicios || []).forEach((ex, ei) => {
+      const e = normEj(ex);
+      if (!e.ej) return;
+      const r = (s.registro || {})[`${bi}-${ei}`] || {};
+      const hay = Object.values(r).some(v => v !== '' && v != null);
+      ejercicios.push({
+        ejercicio: e.ej,
+        plan: { series: e.ser || undefined, reps: e.rep || undefined, intensidad: e.int || undefined, rir: e.rir || undefined, rpe: e.rpe || undefined },
+        realizado: hay ? { kg: r.kg || undefined, reps: r.reps || undefined, rir: r.rir || undefined, rpe: r.rpe || undefined } : null
+      });
+    }));
+    fuerza.push({ fecha, sesion: s.titulo || 'Fuerza', ejercicios });
+  }
+  fuerza.sort((a, b) => a.fecha.localeCompare(b.fecha));
+  const resistencia = [];
+  const at = await db('GET', 'atletas', `?user_id=eq.${clienteId}&select=id`).catch(() => []);
+  if (at && at.length) {
+    const ps = await db('GET', 'sesiones_planificadas', `?atleta_id=in.(${at.map(a => a.id).join(',')})&fecha=gte.${desde}&order=fecha.asc&select=fecha,tipo,descripcion,duracion_min,duracion_real_min,km_reales,rpe,estado`).catch(() => []);
+    (ps || []).forEach(p => resistencia.push({
+      fecha: String(p.fecha).slice(0, 10), tipo: p.tipo, sesion: String(p.descripcion || '').split(' — ')[0],
+      planMin: p.duracion_min ?? undefined, estado: p.estado, realMin: p.duracion_real_min ?? undefined,
+      realKm: p.km_reales ?? undefined, rpe: p.rpe ?? undefined
+    }));
+  }
+  return { fuerza, resistencia };
+}
+
 async function iaAnalizar(clienteId, host, pregunta) {
   const caja = typeof host === 'string' ? $(host) : host;
   caja.innerHTML = '<div class="ia-caja"><p class="muted">Analizando… puede tardar unos segundos.</p></div>';
@@ -5825,6 +5863,7 @@ async function iaAnalizar(clienteId, host, pregunta) {
       bienestarSemanal(clienteId, ATLCarga.fecha.sumarDias(ATLCarga.fecha.hoyISO(), -84)).catch(() => null)
     ]);
     const datos = iaResumen(sesiones, fz, bien, info);
+    datos.historial = await iaHistorial(clienteId).catch(() => null);
     const base = String(typeof SB_URL !== 'undefined' ? SB_URL : '').replace(/\/+$/, '');
     const r = await fetch(`${base}/functions/v1/analizar-ia`, {
       method: 'POST',
