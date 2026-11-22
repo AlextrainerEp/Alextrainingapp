@@ -347,10 +347,11 @@ body.cli .cli-nav button .ico{margin-right:4px}
 .resumen{display:flex;gap:8px;margin:8px 0 12px}
 .resumen div{flex:1;background:rgba(255,255,255,.88);border-radius:10px;padding:8px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.08)}
 .resumen b{display:block;font-size:20px;color:var(--acento)}
-.motiv{position:fixed;left:12px;right:12px;top:76px;z-index:200;display:none;align-items:center;gap:12px;justify-content:space-between;background:#2e3133;color:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 8px 24px rgba(0,0,0,.3);font-size:15px;line-height:1.4}
+.motiv{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:200;display:none;flex-direction:column;align-items:center;gap:12px;width:min(88vw,380px);box-sizing:border-box;text-align:center;background:#2e3133;color:#fff;border-radius:16px;padding:22px 20px;box-shadow:0 12px 40px rgba(0,0,0,.45);font-size:16px;line-height:1.45}
 .motiv.on{display:flex}
-.motiv p{margin:0;flex:1}
-.motiv button{flex:0 0 auto}
+.motiv .motiv-emo{font-size:52px;line-height:1}
+.motiv p{margin:0}
+.motiv button{margin-top:4px}
 .resumen-click div[data-lista]{cursor:pointer}.resumen-click div.on{outline:2px solid var(--acento)}
 .lista-panel{margin:8px 0}.lista-fila{display:flex;gap:8px;align-items:flex-start;justify-content:space-between;padding:8px 0;border-top:1px solid rgba(0,0,0,.08)}
 .lista-info{flex:1;font-size:14px}.rpe-tag{display:inline-block;background:var(--acento);color:#fff;border-radius:8px;padding:1px 8px;font-size:13px;font-weight:700;margin-top:3px}
@@ -1370,7 +1371,7 @@ function motivarCompletado({tipo,rpe,km,ses}){
 function mostrarMotivacion(txt){
   let el=document.getElementById("motiv");
   if(!el){el=document.createElement("div");el.id="motiv";el.className="motiv";document.body.appendChild(el)}
-  el.innerHTML=`<p>${esc(txt)}</p><button class="sec" type="button">Cerrar</button>`;
+  el.innerHTML=`<span class="motiv-emo">${["🔥","💪","🏆","🙌","⭐","🚀","🎯","👏"][Math.floor(Math.random()*8)]}</span><p>${esc(txt)}</p><button class="sec" type="button">Cerrar</button>`;
   el.classList.add("on");
   el.querySelector("button").onclick=()=>el.classList.remove("on");
   clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove("on"),15000);
