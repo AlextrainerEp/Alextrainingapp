@@ -1421,6 +1421,7 @@ function lineaAEj(l){
     const conCod=cols[0]===""||esCodigo(cols[0]);
     const nombres=conCod?COLS_EJ:COLS_EJ.slice(1);
     const o={}; nombres.forEach((k,i)=>{ if(cols[i]!==undefined) o[k]=cols[i]; });
+    if(/^\d+(?:[.,]\d+)?$/.test(String(o.int??"").trim())) o.int=String(o.int).trim()+" kg";   // un número solo en la columna de kg son kilos
     return normEj(o);
   }
   // escrito de corrido
@@ -1455,7 +1456,7 @@ function textoABloques(txt,bloqueInicial){
 }
 function bloquesATexto(bloques){
   const cel=v=>String(v??"").replace(/[|\n\t]+/g," ").trim();
-  return "// Código | Ejercicio | Series | Reps | Intensidad | RIR | RPE | Progresión | Nota | Vídeo\n"+
+  return "// Código | Ejercicio | Series | Reps | Kg | RIR | RPE | Progresión | Nota | Vídeo\n"+
     (bloques||[]).map(b=>`# ${b.nombre||"Bloque"}\n`+(b.ejercicios||[]).map(e0=>{
       const e=normEj(e0); const c=COLS_EJ.map(k=>cel(e[k]));
       while(c.length>2&&c[c.length-1]==="") c.pop();
