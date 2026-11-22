@@ -253,6 +253,9 @@ main.cli{padding-top:calc(min(70vw,460px)*0.37 + 100px)}
 .cli-nav{display:flex;gap:6px;flex-wrap:wrap;flex:1;justify-content:center}
 .cli-nav button{background:#5a5f63;color:#fff;padding:6px 10px;font-size:14px;border:0;border-radius:6px;cursor:pointer}
 .cli-nav button.on{background:#D9DDE0;color:#1d1f21;font-weight:700}
+.side-head{padding:4px 2px 10px;color:#e0b43a;font-weight:700;font-size:15px;line-height:1.25}
+.side-head .perfil-btn{width:100%;text-align:left}
+.side-head .nombre-cli,.side-head .t{display:block;color:#e0b43a;font-size:16px}
 .foto-hdr{background:none;border:0;padding:0;cursor:pointer;flex:0 0 auto}
 .foto-hdr img{width:56px;height:56px;border-radius:50%;object-fit:cover;border:3px solid #D9DDE0;display:block}
 .cal-wrap{padding:10px}
@@ -865,6 +868,13 @@ document.addEventListener("click",e=>{
   if(document.body.classList.contains("menu-abierto")&&!e.target.closest("#cnav,#menu-btn")) document.body.classList.remove("menu-abierto");
 });
 window.addEventListener("resize",()=>{if(document.body.classList.contains("cli"))ajustarCabecera()});
+let NAV_HEAD="";
+// Rellena la barra lateral conservando la cabecera (nombre / perfil)
+function navSet(h){
+  const n=$("#cnav"); if(!n) return;
+  n.innerHTML=NAV_HEAD+h;
+  const ip=$("#ir-perfil"); if(ip) ip.onclick=()=>panelCliente("perfil");
+}
 function shell(inner,ficha){
   const p=(S&&S.perfil)||{};
   const vistaCliente=true;
@@ -875,14 +885,15 @@ function shell(inner,ficha){
   if(ficha) centro=`<span class="nombre-cli">${esc(ficha.nombre||"Sin nombre")}</span>`;
   else if(p.rol==="admin") centro=`<span class="t">Panel del entrenador</span>`;
   else centro=`<button class="sec perfil-btn" id="ir-perfil"><span>${esc(p.nombre||"Mi perfil")}</span><small>Perfil</small></button>`;
+  // Todo el menú va en la barra lateral: el encabezado solo lleva ☰, logo y Salir
+  NAV_HEAD=`<div class="side-head">${centro}</div>`;
   const nav=vistaCliente?'<nav class="cli-nav" id="cnav"></nav>':"";
-  $("#app").innerHTML=`<header><button class="menu-btn" id="menu-btn" aria-label="Abrir menú">☰</button>${cab}${centro}${nav}<button class="sec" id="salir">Salir</button></header><main class="${vistaCliente?"cli":"adm"}">${inner}</main>`;
+  $("#app").innerHTML=`<header><button class="menu-btn" id="menu-btn" aria-label="Abrir menú">☰</button>${cab}${nav}<button class="sec" id="salir">Salir</button></header><main class="${vistaCliente?"cli":"adm"}">${inner}</main>`;
   $("#salir").onclick=salir;
   // Menú lateral: en móvil se abre y cierra con el botón ☰; al elegir una opción se cierra
   $("#menu-btn").onclick=e=>{e.stopPropagation();document.body.classList.toggle("menu-abierto")};
   $("#cnav").addEventListener("click",()=>document.body.classList.remove("menu-abierto"));
   const ifo=$("#ir-foto"); if(ifo&&!ficha) ifo.onclick=()=>panelCliente();
-  const ip=$("#ir-perfil"); if(ip) ip.onclick=()=>panelCliente("perfil");
   ajustarCabecera();
   // La fila de menú se añade después de crear la cabecera: vuelve a medirla cuando cambie de tamaño
   const hdr=document.querySelector("header");
@@ -952,7 +963,7 @@ async function arrancarPush(){
 function entrar(){
   if(S.perfil.rol==="admin"){
     shell(`<div id="tab"></div>`);
-    $("#cnav").innerHTML='<button id="ent">Entrenados</button>';
+    navSet('<button id="ent">Entrenados</button>');
     $("#ent").onclick=listaClientes;
   } else if(!accesoActivo(S.perfil)) pantallaCaducado();
   else {
@@ -1514,6 +1525,30 @@ async function tabHistorialCliente(host="#tab"){
   const sel=cont.querySelector("#prog-ej"), svg=cont.querySelector("#prog-svg");
   if(sel) sel.onchange=()=>svg.innerHTML=graficoEj(mapa.get(sel.value)||[]);
   if(sel) svg.innerHTML=graficoEj(mapa.get(sel.value)||[]);
+  // Running / trail realizados (sesiones de resistencia): se ven aquí y se pueden volver a dejar pendientes
+  try{
+    const fd=k=>{const [y,m,d]=String(k||"").slice(0,10).split("-");return d?`${d}/${m}/${y}`:"Sin fecha"};
+    const at=await db("GET","atletas",`?user_id=eq.${S.user.id}&select=id`);
+    const ids=at.map(a=>a.id).join(",");
+    const rs=ids?await db("GET","sesiones_planificadas",`?atleta_id=in.(${ids})&estado=eq.hecha&order=fecha.desc&select=*`):[];
+    const box=document.createElement("div"); box.id="hist-res";
+    box.innerHTML=`<h3 class="hist-tit">🏃 Running / trail realizados (${rs.length})</h3>`+(rs.length?rs.map(p=>{
+      const nom=resPartes(p)[0]||"Running";
+      const r=p.rpe!=null&&p.rpe!==""?String(p.rpe).replace(".",","):"–";
+      const carga=(p.rpe!=null&&p.rpe!==""&&p.duracion_real_min)?Math.round(Number(p.rpe)*Number(p.duracion_real_min)):null;
+      return `<details class="card"><summary><b>${fd(p.fecha)}</b> · ${esc(nom)} · RPE ${r}</summary>
+        <p class="muted">${p.km_reales?esc(String(p.km_reales))+" km · ":""}${p.duracion_real_min?esc(String(p.duracion_real_min))+" min · ":""}${carga!=null?"sRPE "+carga:""}</p>
+        ${p.comentario_entrenador?`<p><b>Comentario del entrenador:</b> ${esc(p.comentario_entrenador)}</p>`:""}
+        ${p.notas_atleta?`<p><b>Tus notas:</b> ${esc(p.notas_atleta)}</p>`:""}
+        <div class="row"><button class="sec" data-hrev="${p.id}">↩ Dejar pendiente para repetirla</button><span class="muted" data-hrst="${p.id}"></span></div></details>`;
+    }).join(""):`<p class="muted">Todavía no hay running realizado.</p>`);
+    $(host).appendChild(box);
+    box.querySelectorAll("[data-hrev]").forEach(b=>b.onclick=async()=>{
+      const st=box.querySelector(`[data-hrst="${b.dataset.hrev}"]`);
+      try{await db("PATCH","sesiones_planificadas",`?id=eq.${b.dataset.hrev}`,{estado:"pendiente"},"return=minimal");st.textContent="Vuelve a aparecer como pendiente en Mi entrenamiento"}
+      catch(e){st.textContent="Error: "+e.message}
+    });
+  }catch(e){ /* sin running que mostrar */ }
 }
 
 // Semana (lunes) de una sesión; usa la fecha de la sesión o, si no se entiende, la de creación
@@ -1610,7 +1645,7 @@ async function listaClientes(){
     ${cs.length?"":`<p class="muted">Todavía no hay entrenados. Se registran ellos desde la pantalla de inicio.</p>`}
     ${cs.map(c=>`<button class="ent-abrir${pendiente(c)?" pendiente":""}" data-c="${c.id}">${fotoSegura(c.foto)?`<img class="ent-av" src="${esc(fotoSegura(c.foto))}" alt="">`:`<span class="ent-av ent-ini">${esc((c.nombre||"?")[0].toUpperCase())}</span>`}<span>${esc(c.nombre||"Sin nombre")}${pendiente(c)?'<small class="pend-chip">⏳ sin asignar</small>':""}</span><span class="badge-msg" data-bc="${c.id}"></span></button>`).join("")}
   </div></div>`);
-  $("#cnav").innerHTML='<button class="on">Entrenados</button><button id="rescarga">📈 Carga de todos</button>';
+  navSet('<button class="on">Entrenados</button><button id="rescarga">📈 Carga de todos</button>');
   $("#rescarga").onclick=tabResumenCarga;
   document.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>fichaCliente(b.dataset.c));
   refrescarBadges();
@@ -1619,7 +1654,7 @@ async function fichaCliente(id){
   const [c]=await db("GET","perfiles",`?id=eq.${id}&select=*`);
   const ses=await db("GET","sesiones",`?cliente_id=eq.${id}&order=created_at.desc&select=*`);
   shell(`<div id="tab"></div>`,c);
-  $("#cnav").innerHTML=`<button id="volver">← Clientes</button><button id="ta" class="on">Entrenamientos</button><button id="tf">📈 Carga</button><button id="tb">Anamnesis</button><button id="tc">Historial</button><button id="td">Mensajes<span class="badge-msg" data-bc="${id}"></span></button>`;
+  navSet(`<button id="volver">← Clientes</button><button id="ta" class="on">Entrenamientos</button><button id="tf">📈 Carga</button><button id="tb">Anamnesis</button><button id="tc">Historial</button><button id="td">Mensajes<span class="badge-msg" data-bc="${id}"></span></button>`);
   $("#volver").onclick=listaClientes;
 
   const verEntrenos=()=>{
@@ -2065,6 +2100,8 @@ function embebido(host,ruta){
 }
 window.addEventListener("message",ev=>{
   if(ev.origin!==location.origin||!ev.data) return;
+  // La página interna (resistencia) pide la sesión: se la damos
+  if(ev.data.alexPideSesion){ if(S&&S.access&&ev.source) ev.source.postMessage({alexSesion:{access:S.access,refresh:S.refresh}},location.origin); return; }
   // El iframe no encuentra sesión: se vuelve a guardar y se recarga él solo (una sola vez, sin tener que pulsar F5)
   if((ev.data.alexSinSesion||ev.data.alexSinAcceso)&&reintentosEmbed<2){
     reintentosEmbed++;
@@ -2085,7 +2122,7 @@ window.addEventListener("message",ev=>{
 });
 function panelResEntrenador(sec){
   shell(`<div id="tab"></div>`);
-  $("#cnav").innerHTML=`<button id="volver">← Clientes</button><button class="on">🏃 Planes y biblioteca</button>`;
+  navSet(`<button id="volver">← Clientes</button><button class="on">🏃 Planes y biblioteca</button>`);
   $("#volver").onclick=listaClientes;
   embebido("#tab","sec="+(sec||"biblio"));
 }
@@ -2788,7 +2825,7 @@ async function panelCliente(tab,sub){
   let idx=lista.findIndex(n=>n[0]===claves[key]);
   if(idx<0) idx=0;
   const ids=lista.map((_,i)=>"cn"+i);
-  $("#cnav").innerHTML=lista.map((n,i)=>`<button id="${ids[i]}" class="${i===idx?"on":""}"><span class="ico">${iconos[n[0]]||""}</span>${n[0]}${n[0]==="Mensajes"?'<span class="badge-msg"></span>':""}</button>`).join("");
+  navSet(lista.map((n,i)=>`<button id="${ids[i]}" class="${i===idx?"on":""}"><span class="ico">${iconos[n[0]]||""}</span>${n[0]}${n[0]==="Mensajes"?'<span class="badge-msg"></span>':""}</button>`).join(""));
   pestanas(ids,lista.map(n=>n[1]));
   refrescarBadges();
   if(err) $("#tab").insertAdjacentHTML("afterbegin",`<div class="an-panel"><p class="muted">No se pudo cargar tu valoración (${esc(err)}). Avísale a tu entrenador.</p></div>`);
@@ -5357,7 +5394,7 @@ function pintarCargaCliente(el, sesiones, bien) {
 /* ---------- 4. Resumen de carga de todos los clientes ---------- */
 async function tabResumenCarga() {
   shell(`<div id="tab"><div class="an-panel"><h2 class="ent-tit">Carga de todos</h2><div id="res-carga"><p class="muted">Calculando…</p></div></div></div>`);
-  $('#cnav').innerHTML = '<button id="volver">← Clientes</button><button class="on">📈 Carga de todos</button>';
+  navSet('<button id="volver">← Clientes</button><button class="on">📈 Carga de todos</button>');
   $('#volver').onclick = listaClientes;
   const cs = await db('GET', 'perfiles', '?rol=eq.cliente&order=nombre.asc&select=id,nombre');
   const hasta = ATLCarga.fecha.hoyISO();
