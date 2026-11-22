@@ -5853,6 +5853,50 @@ async function iaHistorial(clienteId) {
   return { fuerza, resistencia };
 }
 
+/** Separa el bloque JSON de sesiones propuestas por la IA del texto del análisis. */
+function iaExtraerPlan(texto) {
+  const m = String(texto || '').match(/```json\s*([\s\S]*?)```/);
+  if (!m) return { texto: String(texto || ''), plan: null };
+  let plan = null;
+  try { plan = JSON.parse(m[1]).sesiones || null; } catch (e) { plan = null; }
+  return { texto: String(texto).replace(m[0], '').trim(), plan: Array.isArray(plan) && plan.length ? plan : null };
+}
+const IA_DIAS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+const iaNorm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+function iaPlanHTML(plan) {
+  const d = new Date(); d.setDate(d.getDate() + (((8 - d.getDay()) % 7) || 7));
+  return `<div class="ia-plan card"><h3>📋 Plan propuesto para la semana que viene</h3>
+    ${plan.map(s => `<div class="ia-ses"><b>${esc(s.dia || '')}</b> · ${esc(s.titulo || 'Fuerza')}
+      <div class="muted">${(s.bloques || []).map(b => (b.ejercicios || []).map(e => esc(e.ej || '') + (e.ser ? ' ' + esc(e.ser) + '×' + esc(e.rep || '') : '')).join(' · ')).join(' · ')}</div></div>`).join('')}
+    <div class="row"><label>Lunes de inicio <input type="date" id="ia-plan-fecha" value="${isoLocal(d)}"></label>
+      <button class="gold" id="ia-plan-add" type="button">Añadir al plan del entrenado</button></div>
+    <div class="msg" id="ia-plan-msg"></div></div>`;
+}
+function iaPlanActivar(clienteId, plan) {
+  const b = $('#ia-plan-add'); if (!b) return;
+  b.onclick = async () => {
+    const msg = $('#ia-plan-msg');
+    try {
+      const base = parseFecha($('#ia-plan-fecha').value);
+      if (!base) { msg.textContent = 'Elige una fecha.'; return; }
+      const lun = new Date(base); lun.setDate(lun.getDate() - ((lun.getDay() + 6) % 7));
+      const lote = plan.map(s => {
+        const idx = IA_DIAS.indexOf(iaNorm(s.dia));
+        const f = new Date(lun); f.setDate(f.getDate() + (idx < 0 ? 0 : idx));
+        return { cliente_id: clienteId, fecha: isoLocal(f), titulo: s.titulo || 'Fuerza',
+          bloques: (s.bloques || []).map(bl => ({ nombre: bl.nombre || 'General', ejercicios: (bl.ejercicios || []).map(normEj) })), registro: {} };
+      });
+      const fechas = lote.map(x => x.fecha);
+      const previas = await db('GET', 'sesiones', `?cliente_id=eq.${clienteId}&fecha=in.(${fechas.join(',')})&select=id`).catch(() => []);
+      if (previas && previas.length && !confirm(`Ya hay ${previas.length} sesión(es) en esos días. ¿Añadir las nuevas igualmente?`)) return;
+      msg.textContent = 'Añadiendo…';
+      await db('POST', 'sesiones', '', lote, 'return=minimal');
+      b.disabled = true; b.textContent = 'Añadido ✓';
+      msg.className = 'msg ok';
+      msg.textContent = `Añadidas ${lote.length} sesión(es) al plan. Ya aparecen en Entrenamientos del entrenado.`;
+    } catch (e) { msg.textContent = 'No se pudo añadir: ' + e.message; msg.className = 'msg err'; }
+  };
+}
 async function iaAnalizar(clienteId, host, pregunta) {
   const caja = typeof host === 'string' ? $(host) : host;
   caja.innerHTML = '<div class="ia-caja"><p class="muted">Analizando… puede tardar unos segundos.</p></div>';
@@ -5873,9 +5917,12 @@ async function iaAnalizar(clienteId, host, pregunta) {
     const j = await r.json().catch(() => ({ error: 'Respuesta ilegible del servidor' }));
     if (!r.ok || j.error) throw new Error(j.error || ('Error ' + r.status));
     if (!String(j.texto || '').trim()) throw new Error('La IA no devolvió texto. Vuelve a pulsar Analizar.');
+    const { texto, plan } = iaExtraerPlan(j.texto);
     caja.innerHTML = `<div class="ia-caja"><div class="ia-cab"><b>🤖 Análisis</b><span class="muted">${new Date().toLocaleString('es-ES')}</span></div>
-      <div class="ia-texto">${iaHTML(j.texto)}</div>
-      <p class="muted ia-pie">Lo ha escrito una IA a partir de los números de carga, sin saber quién es el entrenado. Revísalo antes de aplicarlo: la decisión es tuya.</p></div>`;
+      <div class="ia-texto">${iaHTML(texto)}</div>
+      <p class="muted ia-pie">Lo ha escrito una IA a partir de los números de carga, sin saber quién es el entrenado. Revísalo antes de aplicarlo: la decisión es tuya.</p></div>
+      ${plan ? iaPlanHTML(plan) : ''}`;
+    if (plan) iaPlanActivar(clienteId, plan);
   } catch (e) {
     const falta = /ANTHROPIC_API_KEY|Falta la clave/.test(e.message);
     caja.innerHTML = `<div class="ia-caja"><p class="muted">No se pudo analizar: ${esc(e.message)}</p>${
