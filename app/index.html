@@ -347,6 +347,10 @@ body.cli .cli-nav button .ico{margin-right:4px}
 .resumen{display:flex;gap:8px;margin:8px 0 12px}
 .resumen div{flex:1;background:rgba(255,255,255,.88);border-radius:10px;padding:8px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.08)}
 .resumen b{display:block;font-size:20px;color:var(--acento)}
+.motiv{position:fixed;left:12px;right:12px;top:76px;z-index:200;display:none;align-items:center;gap:12px;justify-content:space-between;background:#2e3133;color:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 8px 24px rgba(0,0,0,.3);font-size:15px;line-height:1.4}
+.motiv.on{display:flex}
+.motiv p{margin:0;flex:1}
+.motiv button{flex:0 0 auto}
 .resumen-click div[data-lista]{cursor:pointer}.resumen-click div.on{outline:2px solid var(--acento)}
 .lista-panel{margin:8px 0}.lista-fila{display:flex;gap:8px;align-items:flex-start;justify-content:space-between;padding:8px 0;border-top:1px solid rgba(0,0,0,.08)}
 .lista-info{flex:1;font-size:14px}.rpe-tag{display:inline-block;background:var(--acento);color:#fff;border-radius:8px;padding:1px 8px;font-size:13px;font-weight:700;margin-top:3px}
@@ -1301,6 +1305,75 @@ function estadisticas(sesiones){
   }));
   const media=a=>a.length?(a.reduce((x,y)=>x+y,0)/a.length).toFixed(1):"–";
   return {sesiones:sesiones.length,rpe:media(rpe),rir:media(rir),reps};
+}
+/* ---------- Mensaje de motivación al completar un entreno ---------- */
+const MOTIV={
+  general:[
+    "Buen trabajo, {nombre}. Cada sesión que cierras suma.",
+    "Hecho. Lo que cuenta es la constancia, y hoy la has tenido.",
+    "{nombre}, otra sesión completada. Así se construye el progreso.",
+    "Sesión terminada. Descansa bien, que toca seguir.",
+    "Eso es disciplina: has venido y lo has hecho.",
+    "Bien hecho, {nombre}. Lo difícil ya está y lo has cumplido.",
+    "Cada entreno completado te acerca al objetivo. Sigue así.",
+    "Registrado. Tu cuerpo ya está asimilando el trabajo.",
+    "{nombre}, hoy has hecho lo que tocaba. Eso vale mucho.",
+    "Un paso más en el plan. Ahora cuida la recuperación.",
+    "«{ses}» completado. Lo que hoy pones, mañana se nota.",
+    "Otra pieza del plan encajada. Buen trabajo, {nombre}."
+  ],
+  fuerza:[
+    "Fuerza completada, {nombre}. Cada serie cuenta.",
+    "Entreno de fuerza hecho. Tus músculos ya lo están notando.",
+    "Buen trabajo en el gimnasio. Recupera y vuelve con ganas.",
+    "«{ses}» terminado. La fuerza se construye sesión a sesión."
+  ],
+  running:[
+    "Running hecho{kmTxt}. Cada kilómetro cuenta, {nombre}.",
+    "Buen rodaje{kmTxt}. La resistencia se construye así.",
+    "Sesión de running completada{kmTxt}. Hidrátate y estira un poco.",
+    "{nombre}, {ses} registrado{kmTxt}. Sigue la planificación y el progreso llegará."
+  ],
+  dura:[
+    "{nombre}, RPE {rpe}: sesión exigente y la has sacado. Eso es carácter.",
+    "Sesión dura completada con RPE {rpe}. Ahora recupera bien, lo has ganado.",
+    "Esfuerzo alto y lo has cumplido. Ese es el trabajo que más cuenta.",
+    "Con un RPE {rpe} has empujado de verdad. Duerme y come bien esta noche."
+  ],
+  suave:[
+    "Sesión de base hecha. Estos días sostienen todo lo demás.",
+    "RPE {rpe}, controlado y bien hecho. Lo fácil también se entrena.",
+    "Trabajo tranquilo completado. Guardas energía para la próxima.",
+    "Hoy tocaba suave y lo has cumplido, {nombre}."
+  ]
+};
+function motivarCompletado({tipo,rpe,km,ses}){
+  const nombre=((S&&S.perfil&&S.perfil.nombre)||"").trim().split(/\s+/)[0]||"";
+  const r=Number(String(rpe??"").replace(",","."));
+  const tieneRpe=Number.isFinite(r);
+  const grupos=[MOTIV.general, tipo==="resis"?MOTIV.running:MOTIV.fuerza];
+  if(tieneRpe&&r>=8) grupos.push(MOTIV.dura); else if(tieneRpe&&r<=4) grupos.push(MOTIV.suave);
+  let pool=grupos.flat().filter(f=>tieneRpe||!f.includes("{rpe}"));
+  // No repetir las últimas frases que ha visto
+  let recientes=[]; try{recientes=JSON.parse(localStorage.getItem("motiv_recientes")||"[]")}catch(e){}
+  const libres=pool.filter(f=>!recientes.includes(f));
+  const elegida=(libres.length?libres:pool)[Math.floor(Math.random()*(libres.length||pool.length))];
+  try{localStorage.setItem("motiv_recientes",JSON.stringify([elegida,...recientes].slice(0,6)))}catch(e){}
+  const kmN=Number(String(km??"").replace(",","."));
+  const txt=elegida
+    .replace(/, \{nombre\}/g,nombre?`, ${nombre}`:"").replace(/\{nombre\}, /g,nombre?`${nombre}, `:"").replace(/\{nombre\}/g,nombre)
+    .replace(/\{rpe\}/g,tieneRpe?String(r).replace(".",","):"")
+    .replace(/\{ses\}/g,ses||"la sesión")
+    .replace(/\{kmTxt\}/g,Number.isFinite(kmN)&&kmN>0?` (${String(kmN).replace(".",",")} km)`:"");
+  return txt.replace(/\s+([.,])/g,"$1").replace(/\s{2,}/g," ").trim();
+}
+function mostrarMotivacion(txt){
+  let el=document.getElementById("motiv");
+  if(!el){el=document.createElement("div");el.id="motiv";el.className="motiv";document.body.appendChild(el)}
+  el.innerHTML=`<p>${esc(txt)}</p><button class="sec" type="button">Cerrar</button>`;
+  el.classList.add("on");
+  el.querySelector("button").onclick=()=>el.classList.remove("on");
+  clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove("on"),15000);
 }
 function tituloSesion(s){
   return `${esc(s.titulo||"Sesión")}${s.fecha&&s.fecha!==s.titulo?` <span class="muted">· ${esc(s.fecha)}</span>`:""}`;
@@ -2578,6 +2651,11 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
         if(admin&&s&&card.querySelector(".xp")) cambios.bloques=leerPlan(card,s);
         await db("PATCH","sesiones",`?id=eq.${id}`,cambios,"return=minimal");
         if(s){s.registro=reg; if(cambios.bloques) s.bloques=cambios.bloques}
+        if(!admin&&hecho({registro:reg})){
+          const rs=Object.values(reg).map(v=>parseFloat(String(v&&v.rpe).replace(",","."))).filter(x=>Number.isFinite(x));
+          const rpeM=rs.length?rs.reduce((a,b)=>a+b,0)/rs.length:null;
+          mostrarMotivacion(motivarCompletado({tipo:"fuerza",rpe:rpeM,ses:s&&s.titulo}));
+        }
         if(!admin&&hecho({registro:reg})){st.textContent="Completado ✓ · pasa al historial";setTimeout(()=>tabEntrenosCal(host,clienteId,admin),1000)}
         else st.textContent="Guardado ✓";
       }catch(e){st.textContent="Error: "+e.message}
@@ -2592,8 +2670,10 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
       if(admin) cambios.comentario_entrenador=v("comentario_entrenador")||null;
       if([cambios.km_reales,cambios.duracion_real_min].some(Number.isNaN)){st.textContent="Km y minutos tienen que ser números";return}
       try{
+        const pr=resis.find(x=>x.id===id)||{};
         await db("PATCH","sesiones_planificadas",`?id=eq.${id}`,cambios,"return=minimal");
-        Object.assign(resis.find(x=>x.id===id)||{},cambios);
+        Object.assign(pr,cambios);
+        if(!admin&&cambios.estado==="hecha") mostrarMotivacion(motivarCompletado({tipo:"resis",rpe:cambios.rpe,km:cambios.km_reales,ses:resPartes(pr)[0]}));
         aviso=admin?"Sesión guardada":(cambios.estado==="hecha"?"¡Bien hecho! Sesión registrada ✓":"Guardado ✓"); pintar();
       }catch(e){st.textContent="Error: "+e.message}
     });
