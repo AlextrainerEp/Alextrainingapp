@@ -344,6 +344,10 @@ body.cli .cli-nav button .ico{margin-right:4px}
 .resumen{display:flex;gap:8px;margin:8px 0 12px}
 .resumen div{flex:1;background:rgba(255,255,255,.88);border-radius:10px;padding:8px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.08)}
 .resumen b{display:block;font-size:20px;color:var(--acento)}
+.resumen-click div[data-lista]{cursor:pointer}.resumen-click div.on{outline:2px solid var(--acento)}
+.lista-panel{margin:8px 0}.lista-fila{display:flex;gap:8px;align-items:flex-start;justify-content:space-between;padding:8px 0;border-top:1px solid rgba(0,0,0,.08)}
+.lista-info{flex:1;font-size:14px}.rpe-tag{display:inline-block;background:var(--acento);color:#fff;border-radius:8px;padding:1px 8px;font-size:13px;font-weight:700;margin-top:3px}
+.rpe-ejs{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:4px;font-size:12px;color:#555}.rpe-ejs b{color:var(--acento)}
 .resumen small{font-size:12px;color:#444}
 
 /* ---- Progreso, récords y modo oscuro ---- */
@@ -2044,11 +2048,21 @@ const resLeyenda=lista=>{
 };
 
 /* ---------- Resistencia integrada en la página general ---------- */
-function embebido(host,ruta){
-  sesionCompartida(); // la sesión debe estar guardada antes de que el iframe la lea
-  $(host).innerHTML=`<div class="emb-wrap"><iframe class="emb" src="../resistencia/?embed=1&${ruta}" title="Resistencia" loading="eager"></iframe></div>`;
-}
 let reintentosEmbed=0;
+function embebido(host,ruta){
+  reintentosEmbed=0;
+  sesionCompartida(); // la sesión debe estar guardada antes de que el iframe la lea
+  const h=$(host);
+  h.innerHTML=`<div class="emb-wrap"><p class="muted" style="text-align:center;padding:24px">Cargando…</p></div>`;
+  (async()=>{
+    // Si la sesión caduca pronto se renueva antes de abrir la otra página (si no, la página interna se queda sin sesión)
+    try{if(S&&S.refresh&&expDe(S.access)<Date.now()/1000+600) await refrescar()}catch(e){}
+    sesionCompartida();
+    const w=h.querySelector(".emb-wrap"); if(!w) return;
+    w.innerHTML=`<iframe class="emb" src="../resistencia/?embed=1&${ruta}" title="Resistencia" loading="eager"></iframe>`;
+    w.dataset.ruta=ruta;
+  })();
+}
 window.addEventListener("message",ev=>{
   if(ev.origin!==location.origin||!ev.data) return;
   // El iframe no encuentra sesión: se vuelve a guardar y se recarga él solo (una sola vez, sin tener que pulsar F5)
@@ -2056,6 +2070,14 @@ window.addEventListener("message",ev=>{
     reintentosEmbed++;
     if(S&&S.access) sesionCompartida();
     document.querySelectorAll("iframe.emb").forEach(f=>{if(f.contentWindow===ev.source) f.src=f.src});
+    return;
+  }
+  if(ev.data.alexSinSesion||ev.data.alexSinAcceso){
+    document.querySelectorAll("iframe.emb").forEach(f=>{if(f.contentWindow===ev.source){
+      const w=f.closest(".emb-wrap");
+      w.innerHTML=`<div class="card"><p>No se ha podido abrir esta sección${ev.data.alexSinAcceso?" (sin acceso)":""}.</p><button data-embre>Reintentar</button></div>`;
+      w.querySelector("[data-embre]").onclick=async()=>{try{await refrescar()}catch(e){}reintentosEmbed=0;sesionCompartida();w.innerHTML=`<iframe class="emb" src="../resistencia/?embed=1&${w.dataset.ruta||"sec=biblio"}" title="Resistencia"></iframe>`};
+    }});
     return;
   }
   if(!ev.data.alexAltura) return;
@@ -2241,7 +2263,39 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
   conF.forEach(({s,d})=>{const k=isoLocal(d);porDia.set(k,[...(porDia.get(k)||[]),s])});
   meterRes();
   const sinFecha=todas.filter(s=>!parseFecha(s.fecha));
-  const editando=new Set(); let abrirId=null;
+  const editando=new Set(); let abrirId=null; let listaVer=null;
+  const fmtD=k=>k?k.split("-").reverse().join("/"):"Sin fecha";
+  const panelLista=(modo)=>{
+    const quiere=modo==="hechas";
+    const items=[
+      ...conF.map(({s,d})=>({k:isoLocal(d),s})),
+      ...todas.filter(s=>!parseFecha(s.fecha)).map(s=>({k:"",s})),
+      ...resis.map(p=>({k:String(p.fecha).slice(0,10),s:p}))
+    ].filter(x=>esHecha(x.s)===quiere).sort((a,b)=>quiere?(b.k||"").localeCompare(a.k||""):(a.k||"9").localeCompare(b.k||"9"));
+    const filas=items.map(({k,s})=>{
+      let nom,det="";
+      if(s._res){
+        nom=resPartes(s)[0]||"Running";
+        if(quiere){const r=s.rpe!=null&&s.rpe!==""?String(s.rpe).replace(".",","):"–";det=`<span class="rpe-tag">RPE ${r}</span>${s.km_reales?` · ${s.km_reales} km`:""}${s.duracion_real_min?` · ${s.duracion_real_min} min`:""}`}
+      }else{
+        nom=s.titulo||"Sesión";
+        if(quiere){
+          const ejs=[];
+          Object.entries(s.registro||{}).forEach(([key,v])=>{
+            if(!/^\d+-\d+$/.test(key)||!v) return;
+            const [bi,ei]=key.split("-").map(Number), ex=(s.bloques||[])[bi]&&s.bloques[bi].ejercicios&&s.bloques[bi].ejercicios[ei];
+            const r=parseFloat(String(v.rpe).replace(",","."));
+            if(!isNaN(r)) ejs.push({n:ex?normEj(ex).ej:"Ejercicio",r});
+          });
+          const med=ejs.length?(ejs.reduce((q,x)=>q+x.r,0)/ejs.length):null;
+          det=med==null?`<span class="muted">Sin RPE registrado</span>`:`<span class="rpe-tag">RPE medio ${String(Math.round(med*10)/10).replace(".",",")}</span><div class="rpe-ejs">${ejs.map(x=>`<span>${esc(x.n)} <b>${String(x.r).replace(".",",")}</b></span>`).join("")}</div>`;
+        }
+      }
+      return `<div class="lista-fila"><div class="lista-info"><b>${fmtD(k)}</b> · ${esc(nom)}<div>${det}</div></div>${k?`<button class="sec" data-iradia="${k}">Ver día</button>`:""}</div>`;
+    }).join("");
+    return `<div class="card lista-panel"><div class="row" style="justify-content:space-between"><h3>${quiere?"✅ Entrenos realizados":"⏳ Entrenos pendientes"} (${items.length})</h3><button class="sec" data-cerrarlista>✕</button></div>${filas||`<p class="muted">${quiere?"Todavía no hay entrenos realizados.":"No quedan entrenos pendientes."}</p>`}</div>`;
+  };
+
   const tarjeta=(s,abierta)=>{const ed=admin&&editando.has(String(s.id));return `<details class="card sesion${hecho(s)?" hecha":""}${ed?" editando":""}" data-sid="${s.id}"${(abierta||String(s.id)===abrirId)?" open":""}><summary class="dia-sum" data-arr="${s.id}">${badgeFecha(s)}<h3>${nombreEntreno(s)}</h3></summary>
       ${admin?(ed?`<div class="row e-modos ses-barra"><button class="gold" data-edtxt="${s.id}">✏️ Editar como texto</button><button class="sec" data-ed="${s.id}">▦ Editar en tabla</button><button class="sec" data-copses="${s.id}">📋 Copiar sesión</button><button class="sec" data-pegses="${s.id}">📥 Pegar sesión</button><span class="muted" data-bst="${s.id}"></span></div>`:`<div class="row e-modos ses-barra"><button class="gold" data-editar="${s.id}">✏️ Editar</button><button class="sec" data-copses="${s.id}">📋 Copiar</button><span class="muted" data-bst="${s.id}"></span></div>`):""}
       ${sesionHTML(s,true,true,ed)}
@@ -2346,7 +2400,9 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
           <div class="row"><button class="danger" data-borrarvarias>Borrar</button><button class="sec" data-cerrarborrado>Cancelar</button></div>
           <div class="msg" id="bMsg"></div></div>`:""}`:""}
       ${admin&&carreraF.length?`<div class="card conv-bar"><span>🏃 Hay <b>${carreraF.length}</b> sesión(es) de carrera/trail guardadas como fuerza${carreraConReg?` (${carreraConReg} ya registradas por el cliente se quedan como están)`:""}.</span><button class="gold" data-convertir>Pasarlas a Resistencia</button></div>`:""}
-      <div class="resumen"><div><b>${pend}</b><small>pendientes</small></div><div><b>${hechas}</b><small>completadas</small></div><div><b>${proxTxt}</b><small>próximo entreno</small></div></div>
+      ${admin?`<div class="row res-acceso"><button class="sec" data-vercarga>📈 Ver carga de entrenamiento de este atleta</button></div>`:""}
+      <div class="resumen${admin?" resumen-click":""}"><div${admin?` data-lista="pend" class="${listaVer==="pend"?"on":""}"`:""}><b>${pend}</b><small>pendientes</small></div><div${admin?` data-lista="hechas" class="${listaVer==="hechas"?"on":""}"`:""}><b>${hechas}</b><small>completadas</small></div><div><b>${proxTxt}</b><small>próximo entreno</small></div></div>
+      ${admin&&listaVer?panelLista(listaVer):""}
       ${CAL_OCULTO&&!modoSel?`<div class="cal-wrap card cal-mini">
         <button class="sec" data-diaant title="Entreno anterior" aria-label="Entreno anterior">‹</button>
         <button class="cal-mini-ver" data-calver>📅 <b>${+ad} ${MESES_CAL[+am-1]}</b><span>Ver calendario ▼</span></button>
@@ -2468,6 +2524,10 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
       }
     }
 
+    cont.querySelectorAll("[data-lista]").forEach(d=>d.onclick=()=>{listaVer=listaVer===d.dataset.lista?null:d.dataset.lista;pintar()});
+    cont.querySelectorAll("[data-cerrarlista]").forEach(b=>b.onclick=()=>{listaVer=null;pintar()});
+    cont.querySelectorAll("[data-iradia]").forEach(b=>b.onclick=()=>{const k=b.dataset.iradia;diaSel=k;const [yy,mm]=k.split("-");mes=new Date(+yy,+mm-1,1);listaVer=null;pintar();setTimeout(()=>{const c=cont.querySelector(".card.sesion");if(c)c.scrollIntoView({behavior:"smooth",block:"start"})},50)});
+    cont.querySelectorAll("[data-vercarga]").forEach(b=>b.onclick=()=>{const tf=document.getElementById("tf");if(tf)tf.click()});
     cont.querySelectorAll("[data-editar]").forEach(b=>b.onclick=()=>{editando.add(String(b.dataset.editar));abrirId=String(b.dataset.editar);pintar()});
     cont.querySelectorAll("[data-cerrar]").forEach(b=>b.onclick=()=>{editando.delete(String(b.dataset.cerrar));abrirId=String(b.dataset.cerrar);pintar()});
     cont.querySelectorAll("[data-save]").forEach(b=>b.onclick=async()=>{
