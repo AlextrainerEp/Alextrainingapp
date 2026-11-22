@@ -324,10 +324,11 @@ html.embed .banner-mover{position:absolute!important;top:var(--modal-top,0px)!im
 .tarjeta-fuerza{cursor:pointer}
 .texto-claro .tl b{font-weight:700}
 
-.motiv{position:fixed;left:12px;right:12px;top:76px;z-index:200;display:none;align-items:center;gap:12px;justify-content:space-between;background:#2e3133;color:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 8px 24px rgba(0,0,0,.3);font-size:15px;line-height:1.4}
+.motiv{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:200;display:none;flex-direction:column;align-items:center;gap:12px;width:min(88vw,380px);box-sizing:border-box;text-align:center;background:#2e3133;color:#fff;border-radius:16px;padding:22px 20px;box-shadow:0 12px 40px rgba(0,0,0,.45);font-size:16px;line-height:1.45}
 .motiv.on{display:flex}
-.motiv p{margin:0;flex:1}
-.motiv button{flex:0 0 auto}
+.motiv .motiv-emo{font-size:52px;line-height:1}
+.motiv p{margin:0}
+.motiv button{margin-top:4px}
 </style>
 </head>
 <body>
@@ -1994,7 +1995,7 @@ function motivarCompletado({tipo,rpe,km,ses}){
 function mostrarMotivacion(txt){
   let el=document.getElementById("motiv");
   if(!el){el=document.createElement("div");el.id="motiv";el.className="motiv";document.body.appendChild(el)}
-  el.innerHTML=`<p>${escTxt(txt)}</p><button class="sec" type="button">Cerrar</button>`;
+  el.innerHTML=`<span class="motiv-emo">${["🔥","💪","🏆","🙌","⭐","🚀","🎯","👏"][Math.floor(Math.random()*8)]}</span><p>${escTxt(txt)}</p><button class="sec" type="button">Cerrar</button>`;
   el.classList.add("on");
   el.querySelector("button").onclick=()=>el.classList.remove("on");
   clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove("on"),15000);
