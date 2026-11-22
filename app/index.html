@@ -1270,12 +1270,13 @@ function sesionHTML(s,editable,conLeyenda=editable,plan=false){
       <div class="xf xvid"><i>Vídeo</i><input class="pl pl-vid" type="url" inputmode="url" data-pk="${k}" data-pf="video" value="${esc(e.video)}" placeholder="Enlace del vídeo (vacío = sin vídeo)"></div>
       ${e.nota?`<div class="gsub">📝 ${esc(e.nota)}</div>`:""}${hecho?`<div class="gsub">✅ Lo que hizo: ${hecho}</div>`:""}
     </div>`}
-      const det=[e.int?esc(e.int):"",e.nota?`📝 ${esc(e.nota)}`:"",e.prog?`📈 ${esc(e.prog)}`:""].filter(Boolean).join(" · ");
+      const kgPlan=/^\s*(\d+(?:[.,]\d+)?)\s*kg\s*$/i.exec(String(e.int??""));   // kg planificados: van en la casilla Kg, no bajo el nombre
+      const det=[kgPlan?"":(e.int?esc(e.int):""),e.nota?`📝 ${esc(e.nota)}`:"",e.prog?`📈 ${esc(e.prog)}`:""].filter(Boolean).join(" · ");
       return `<div class="grow xr2${sep}">
       <div class="gname">${e.cod?`<b>${esc(e.cod)}</b> `:""}${nombreVideo(e)}${btnVideoMini(e)}</div>
       <input data-k="${k}" data-f="ser" inputmode="numeric" placeholder="${esc(e.ser)}" value="${esc(r.ser)}" ${dis} aria-label="Series hechas">
       <input data-k="${k}" data-f="reps" inputmode="numeric" placeholder="${esc(e.rep)}" value="${esc(r.reps)}" ${dis} aria-label="Reps de la última serie">
-      <input data-k="${k}" data-f="kg" inputmode="decimal" placeholder="kg" value="${esc(r.kg)}" ${dis}>
+      <input data-k="${k}" data-f="kg" inputmode="decimal" placeholder="${kgPlan?esc(kgPlan[1]):"kg"}" value="${esc(r.kg)}" ${dis}>
       ${estadoSel(k,r.estado,dis)}
       ${pick(k,"rir",r.rir,false,editable,e.rir)}
       ${pick(k,"rpe",r.rpe,true,editable,e.rpe)}
