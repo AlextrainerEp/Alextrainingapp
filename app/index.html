@@ -332,6 +332,7 @@ body.cli .card{background:rgba(255,255,255,.85);backdrop-filter:none;-webkit-bac
 .res-pasos{margin:4px 0 8px 18px;padding:0;line-height:1.5}
 .emb-wrap{width:100%}
 iframe.emb{width:100%;min-height:500px;border:0;background:transparent;display:block}
+.emb-atras{margin:6px 0 10px;width:auto;padding:8px 14px}
 .cli-nav button.otra-app{width:100%;text-align:left;cursor:pointer;background:transparent}
 .res-reg{margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,0,0,.12)}
 .res-reg-t{font-weight:700;margin-bottom:6px}
@@ -2345,10 +2346,11 @@ window.addEventListener("message",ev=>{
   document.querySelectorAll("iframe.emb").forEach(f=>{if(f.contentWindow===ev.source) f.style.height=Math.max(500,ev.data.alexAltura+20)+"px"});
 });
 function panelResEntrenador(sec){
-  shell(`<div id="tab"></div>`);
+  shell(`<div id="tab"><button class="sec emb-atras" id="volver2">← Volver a Entrenados</button><div id="emb-host"></div></div>`);
   navSet(`<button id="volver">← Clientes</button><button class="on">🏃 Planes y biblioteca</button>`);
   $("#volver").onclick=listaClientes;
-  embebido("#tab","sec="+(sec||"biblio"));
+  $("#volver2").onclick=listaClientes;
+  embebido("#emb-host","sec="+(sec||"biblio"));
 }
 
 /* ---------- Calendario de entrenamientos ---------- */
