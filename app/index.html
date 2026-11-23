@@ -3949,6 +3949,8 @@ html.oscuro body .atl-carga .tip{background:#262b30}
 .hoy-btn{width:100%;padding:14px;font-size:16px;margin-top:4px}
 .hoy-vacio{border-left-color:#4a535c}
 .bien-card{padding:12px 14px}
+.bien-card.bien-pend{border-left:4px solid #eda100}
+.bien-aviso{color:#eda100;font-weight:700;font-size:13px}
 .bien-card>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:15px}
 .bien-card>summary::-webkit-details-marker{display:none}
 .bien-card>summary::after{content:"▾";color:var(--acento,#b8860b);margin-left:6px;transition:transform .15s}
@@ -5696,8 +5698,9 @@ async function tarjetaBienestar(host) {
   let abierta = false;   // cerrada por defecto; recuerda si el usuario la abrió
   const pintar = () => {
     const puesto = BIEN_CAMPOS.filter(c => val[c.k] != null).length;
-    el.innerHTML = `<details class="card bien-card"${abierta ? ' open' : ''}>
-      <summary class="bien-cab"><b>¿Cómo estás hoy?</b><span class="muted">${puesto === 4 ? 'Guardado ✓' : 'Tarda 10 segundos'}</span></summary>
+    const estado = puesto === 4 ? 'Guardado ✓' : puesto === 0 ? '⏳ Pendiente · tarda 10 segundos' : `Faltan ${4 - puesto} de 4`;
+    el.innerHTML = `<details class="card bien-card${puesto < 4 ? ' bien-pend' : ''}"${abierta ? ' open' : ''}>
+      <summary class="bien-cab"><b>¿Cómo estás hoy?</b><span class="${puesto < 4 ? 'bien-aviso' : 'muted'}">${estado}</span></summary>
       ${BIEN_CAMPOS.map(c => `<div class="bien-fila"><span class="bien-et">${c.et}</span>
         <span class="bien-ops">${[1, 2, 3, 4, 5].map(n => `<button type="button" class="bien-op${val[c.k] === n ? ' on' : ''}" data-b="${c.k}" data-v="${n}" title="${esc(c.escala[n - 1])}" aria-label="${esc(c.et)}: ${esc(c.escala[n - 1])}, ${n} de 5"><span class="bien-em">${BIEN_CARAS[n]}</span><small>${esc(c.escala[n - 1])}</small></button>`).join('')}</span></div>`).join('')}
       <div class="bien-msg muted" id="bien-msg"></div></details>`;
