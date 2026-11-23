@@ -808,6 +808,8 @@ function pedirSesionAlPadre() {
   });
 }
 const EMBED = new URLSearchParams(location.search).has('embed');
+// Registro del service worker (solo fuera del marco de la app general): permite instalar la app
+if (!EMBED && 'serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 const PARAMS_EMBED = new URLSearchParams(location.search);
 if (EMBED) {
   document.documentElement.classList.add('embed');

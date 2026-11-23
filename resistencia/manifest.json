@@ -1,21 +1,27 @@
 {
+  "id": "./",
   "name": "Alex Training Lab · Resistencia",
   "short_name": "Resistencia",
-  "start_url": "./index.html",
+  "description": "Planificación de running y resistencia de Alex Training Lab",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#2e3133",
   "theme_color": "#2e3133",
+  "lang": "es",
   "icons": [
     {
       "src": "icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }
