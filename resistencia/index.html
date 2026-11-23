@@ -281,11 +281,11 @@ header img.logo{height:40px;width:auto}
 .fondo{background-position:center 124px}
 .frase{top:calc(124px + min(80vw,600px)*0.4322 + 12px)}
 /* La frase va debajo del logo de fondo y el contenido empieza debajo de la frase */
-main:has(#panel:not(.oculto)),main:has(#vista-atleta:not(.oculto)){padding-top:calc(124px + min(80vw,600px)*0.4322 + 12px + var(--frase-h,70px) + 22px)}
+main:has(#panel:not(.oculto)),main:has(#vista-atleta:not(.oculto)){padding-top:calc(min(80vw,600px)*0.4322 + var(--frase-h,70px) + 85px)}
 @media (max-width:899px){
   .fondo{background-position:center 130px;background-size:min(86vw,600px) auto}
   .frase{top:calc(130px + min(86vw,600px)*0.4322 + 10px);font-size:16px}
-  main:has(#panel:not(.oculto)),main:has(#vista-atleta:not(.oculto)){padding-top:calc(130px + min(86vw,600px)*0.4322 + 10px + var(--frase-h,80px) + 18px)}
+  main:has(#panel:not(.oculto)),main:has(#vista-atleta:not(.oculto)){padding-top:calc(min(86vw,600px)*0.4322 + var(--frase-h,80px) + 85px)}
 }
 /* --- Apariencia «Niebla»: gris claro con la montaña difuminada arriba --- */
 html.tema-niebla body{background:#e6e9eb}
