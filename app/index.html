@@ -273,7 +273,24 @@ main.cli{padding-top:calc(min(70vw,460px)*0.37 + 100px)}
 .cal-sin{margin-top:8px;font-size:13px}
 .cal-sin summary{cursor:pointer}
 .cal-sin .cal-fila{margin-top:4px}
-.ent-lista{max-width:420px;margin:0 auto;padding:12px}
+.ent-lista{max-width:1100px;margin:0 auto;padding:12px}
+.ent-grp{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:#333;margin:14px 0 6px}
+.ent-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}
+.ent-grid .ent-abrir span:not(.ent-av):not(.badge-msg){overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+.cal-grid .cal-d{overflow:visible}
+.cal-cw{display:block;position:relative}
+.cal-pop{display:none;position:absolute;left:0;top:100%;z-index:50;flex-direction:column;gap:2px;min-width:150px;background:#fff;border:1px solid #c5c9cc;border-radius:8px;padding:4px;box-shadow:0 6px 16px rgba(0,0,0,.22)}
+.cal-pop button{display:block;width:100%;text-align:left;border:0;background:transparent;color:#1d1f21;font-size:13px;padding:6px 8px;border-radius:6px;cursor:pointer;white-space:nowrap}
+.cal-pop button:hover{background:#eef0f2}
+@media (hover:hover){.cal-cw:hover .cal-pop,.cal-cw:focus-within .cal-pop{display:flex}}
+html.oscuro .cal-pop{background:#262b30;border-color:#4a5158}
+html.oscuro .cal-pop button{color:#e4e7ea}
+html.oscuro .cal-pop button:hover{background:#333a41}
+.res-sum{display:block;position:relative;padding-right:22px;cursor:pointer;list-style:none}
+.res-sum::-webkit-details-marker{display:none}
+.res-sum::after{content:"▸";position:absolute;right:0;top:0;opacity:.6}
+details[open]>.res-sum::after{content:"▾"}
+.resaltada{outline:3px solid #e0b43a;outline-offset:3px;transition:outline-color .3s}
 .ent-tit{font-size:16px;margin:2px 0 8px;color:#111}
 .ent-abrir{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:rgba(255,255,255,.7);color:#111;border:1px solid #c5c9cc;border-radius:8px;padding:5px 10px;margin-bottom:4px;font-size:14px;cursor:pointer}
 .ent-av{width:28px;height:28px;border-radius:50%;object-fit:cover;flex:0 0 auto}
@@ -1733,11 +1750,12 @@ async function listaClientes(){
   const pendiente=c=>!modulosDe(c).length;
   cs.sort((a,b)=>(pendiente(b)-pendiente(a))||String(a.nombre||"").localeCompare(String(b.nombre||"")));
   const nPend=cs.filter(pendiente).length;
+  const botonEnt=c=>`<button class="ent-abrir${pendiente(c)?" pendiente":""}" data-c="${c.id}">${fotoSegura(c.foto)?`<img class="ent-av" src="${esc(fotoSegura(c.foto))}" alt="">`:`<span class="ent-av ent-ini">${esc((c.nombre||"?")[0].toUpperCase())}</span>`}<span>${esc(c.nombre||"Sin nombre")}${pendiente(c)?'<small class="pend-chip">⏳ sin asignar</small>':""}</span><span class="badge-msg" data-bc="${c.id}"></span></button>`;
   shell(`<div id="tab"><div class="an-panel ent-lista">
     <h2 class="ent-tit">Entrenados (${cs.length})</h2>
     ${nPend?`<p class="card pend-aviso">⏳ ${nPend===1?"Hay 1 entrenado nuevo":"Hay "+nPend+" entrenados nuevos"} esperando a que le${nPend===1?"":"s"} digas qué entrena${nPend===1?"":"n"}. Ábrelo${nPend===1?"":"s"} y marca Fuerza, Running / trail o las dos.</p>`:""}
     ${cs.length?"":`<p class="muted">Todavía no hay entrenados. Se registran ellos desde la pantalla de inicio.</p>`}
-    ${cs.map(c=>`<button class="ent-abrir${pendiente(c)?" pendiente":""}" data-c="${c.id}">${fotoSegura(c.foto)?`<img class="ent-av" src="${esc(fotoSegura(c.foto))}" alt="">`:`<span class="ent-av ent-ini">${esc((c.nombre||"?")[0].toUpperCase())}</span>`}<span>${esc(c.nombre||"Sin nombre")}${pendiente(c)?'<small class="pend-chip">⏳ sin asignar</small>':""}</span><span class="badge-msg" data-bc="${c.id}"></span></button>`).join("")}
+    ${[[cs.filter(pendiente),"⏳ Sin asignar"],[cs.filter(c=>!pendiente(c)),"Activos"]].filter(([l])=>l.length).map(([l,g])=>`<h3 class="ent-grp">${g} (${l.length})</h3><div class="ent-grid">${l.map(c=>botonEnt(c)).join("")}</div>`).join("")}
   </div></div>`);
   navSet('<button class="on">Entrenados</button><button id="rescarga">📈 Carga de todos</button>');
   $("#rescarga").onclick=tabResumenCarga;
@@ -2138,13 +2156,12 @@ function rangoZonaF(n,zonas){
 }
 const textoPasoF=(ps,zonas)=>{const r=ps.rep||1;let t=(ps.nombre?ps.nombre+": ":"")+(r>1?`${r} × `:"")+`${ps.cantidad} ${ps.unidad||"min"}`;if(ps.zona)t+=` en Z${ps.zona}`+rangoZonaF(ps.zona,zonas||[]);if(ps.rec&&r>1)t+=` · recuperación ${ps.rec} min`;return t};
 const ESTADOS_RES={pendiente:"Pendiente",hecha:"Hecha ✓",omitida:"No la he hecho"};
-const resTarjeta=(p,admin,zonas)=>{
+const resTarjeta=(p,admin,zonas,abierta=false)=>{
   const c=RES_COLOR[p.tipo]||RES_COLOR.otro, [tit,desc]=resPartes(p);
   const sel=(v,o)=>Object.entries(o).map(([k,t])=>`<option value="${k}"${String(v??"")===k?" selected":""}>${t}</option>`).join("");
   const pasos=Array.isArray(p.pasos)&&p.pasos.length?`<ol class="res-pasos">${p.pasos.map(ps=>`<li>${esc(textoPasoF(ps,zonas))}</li>`).join("")}</ol>`:"";
-  return `<div class="card sesion-res" data-res="${p.id}" style="border-left:6px solid ${c};background:${c}14">
-    <div class="res-tipo" style="color:${c}">🏃 ${esc(RES_NOMBRE[p.tipo]||"Resistencia")}${p.duracion_min?` · ${p.duracion_min} min`:""}${resHecha(p)?' <span class="res-ok">✓ Hecha</span>':""}</div>
-    <h3>${esc(tit)}</h3>
+  return `<details class="card sesion-res" data-res="${p.id}" style="border-left:6px solid ${c};background:${c}14"${abierta?" open":""}><summary class="res-sum"><div class="res-tipo" style="color:${c}">🏃 ${esc(RES_NOMBRE[p.tipo]||"Resistencia")}${p.duracion_min?` · ${p.duracion_min} min`:""}${resHecha(p)?' <span class="res-ok">✓ Hecha</span>':""}</div>
+    <h3>${esc(tit)}</h3></summary>
     ${desc?`<div class="res-desc">${textoClaro(desc)}</div>`:""}
     ${pasos}
     ${p.comentario_entrenador&&!admin?`<p class="res-com"><b>Tu entrenador:</b> ${esc(p.comentario_entrenador)}</p>`:""}
@@ -2168,7 +2185,7 @@ const resTarjeta=(p,admin,zonas)=>{
       <label class="res-notas">Explicación (una idea por línea; «Ritmos: 4:30» sale en negrita) <textarea data-re="desc" rows="5">${esc(desc)}</textarea></label>
       <div class="row"><button class="gold" data-resguardaredit="${p.id}">Guardar sesión</button></div></div>`:""}
     <div class="row mover"><label>${admin?"Mover o copiar a otro día":"Mover a otro día"} <input type="date" data-mover-in="r:${p.id}"></label><button class="sec" data-mover="r:${p.id}">${admin?"Mover / copiar":"Mover"}</button></div>
-  </div>`;
+  </details>`;
 };
 const resLeyenda=lista=>{
   const tipos=[...new Set(lista.map(p=>p.tipo||"otro"))];
@@ -2432,7 +2449,7 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
 
   const tarjeta=(s,abierta)=>{const ed=admin&&editando.has(String(s.id));return `<details class="card sesion${hecho(s)?" hecha":""}${ed?" editando":""}" data-sid="${s.id}"${(abierta||String(s.id)===abrirId)?" open":""}><summary class="dia-sum" data-arr="${s.id}">${badgeFecha(s)}<h3>${nombreEntreno(s)}</h3></summary>
       ${admin?(ed?`<div class="row e-modos ses-barra"><button class="gold" data-edtxt="${s.id}">✏️ Editar como texto</button><button class="sec" data-ed="${s.id}">▦ Editar en tabla</button><button class="sec" data-copses="${s.id}">📋 Copiar sesión</button><button class="sec" data-pegses="${s.id}">📥 Pegar sesión</button><span class="muted" data-bst="${s.id}"></span></div>`:`<div class="row e-modos ses-barra"><button class="gold" data-editar="${s.id}">✏️ Editar</button><button class="sec" data-copses="${s.id}">📋 Copiar</button><span class="muted" data-bst="${s.id}"></span></div>`):""}
-      ${sesionHTML(s,true,true,ed)}
+      ${sesionHTML(s,!admin,true,ed)}
       <div class="row"><button data-save="${s.id}">${admin?"Guardar cambios":"Guardar registro"}</button>${admin?`${ed?`<button class="sec" data-cerrar="${s.id}">✔ Cerrar edición</button>`:""}<button class="danger" data-del="${s.id}">Borrar</button>`:""}<span class="muted" data-st="${s.id}"></span></div>
       <div class="row mover"><label>${admin?"Mover o copiar a otro día":"Mover a otro día"} <input type="date" data-mover-in="${s.id}"></label><button class="sec" data-mover="${s.id}">${admin?"Mover / copiar":"Mover"}</button></div></details>`};
   const moverA=async(id,val)=>{
@@ -2479,6 +2496,10 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
         catch(e){bd.disabled=false;bd.textContent="↶ Deshacer";alert("No se pudo restaurar: "+e.message)}};
     }catch(e){aviso="No se pudo borrar: "+e.message;pintar()}
   };
+  // Acciones al pasar el cursor por una sesión del calendario (Ver / Abrir / Editar)
+  const popCal=t=>{const pid=t._res?"r:"+t.id:String(t.id);
+    return `<span class="cal-pop"><button type="button" data-pv="ver" data-pid="${pid}">👁 Ver</button><button type="button" data-pv="abrir" data-pid="${pid}">↗ Abrir</button>${admin?`<button type="button" data-pv="editar" data-pid="${pid}">✏️ Editar</button>`:""}</span>`};
+  const cw=(t,html)=>`<span class="cal-cw">${html}${popCal(t)}</span>`;
   const pintar=()=>{
     const y=mes.getFullYear(), mo=mes.getMonth();
     const primer=(new Date(y,mo,1).getDay()+6)%7;
@@ -2490,9 +2511,9 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
       const lista=porDia.get(k)||[];
       const todasHechas=lista.length&&lista.every(esHecha);
       const chips=lista.slice(0,2).map(t=>{
-        if(t._res) return resChip(t);
+        if(t._res) return cw(t,resChip(t));
         const tp=esCarrera(t)?aResistencia(t).tipo:"fuerza", col=RES_COLOR[tp]||RES_COLOR.otro;
-        return `<button type="button" class="cal-chip res${hecho(t)?" ok":""}" style="background:${col};border-color:${col}" data-chip="${t.id}" title="${esc(t.titulo||"Sesión")}">${hecho(t)?"✓ ":""}${esc(RES_NOMBRE[tp]||"Fuerza")}</button>`;
+        return cw(t,`<button type="button" class="cal-chip res${hecho(t)?" ok":""}" style="background:${col};border-color:${col}" data-chip="${t.id}" title="${esc(t.titulo||"Sesión")}">${hecho(t)?"✓ ":""}${esc(RES_NOMBRE[tp]||"Fuerza")}</button>`);
       }).join("");
       celdas.push(`<div class="cal-d cal-dia${k===hoyIso?" hoy":""}${lista.length?" tiene":""}${k===diaSel&&!modoSel?" sel":""}${selDias.has(k)?" selb":""}" data-dia="${k}"><span class="cal-num">${d}</span>${cicloMarca(k,clienteId)}${chips}${lista.length>2?`<span class="cal-mas">+${lista.length-2}</span>`:""}</div>`);
     }
@@ -2550,7 +2571,7 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
       </div>`}
       <h2 class="dia-tit">${+ad} de ${MESES_CAL[+am-1]}</h2>
       ${admin?`<div class="row dia-acc"><button class="gold" data-nuevaday>＋ Crear entrenamiento en este día</button><button class="sec" data-pegday>📥 Cargar sesión copiada</button></div>`:""}
-      ${delDia.length?delDia.map(s=>s._res?resTarjeta(s,admin,zonasRes):tarjeta(s,delDia.length===1)).join(""):'<p class="muted">Día sin entrenamiento. Toca otro día del calendario.</p>'}
+      ${delDia.length?delDia.map(s=>s._res?resTarjeta(s,admin,zonasRes,abrirId==="r:"+String(s.id)):tarjeta(s,false)).join(""):'<p class="muted">Día sin entrenamiento. Toca otro día del calendario.</p>'}
       ${sinFecha.length?`<details class="card"><summary><b>Sin fecha (${sinFecha.length})</b></summary>${sinFecha.map(s=>tarjeta(s,false)).join("")}</details>`:""}`;
     const irTitulo=()=>{const t=cont.querySelector(".dia-tit");if(t)t.scrollIntoView({block:"start",behavior:"smooth"})};
     if(cont.querySelector("[data-prev]")){
@@ -2663,6 +2684,26 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
 
     cont.querySelectorAll("[data-lista]").forEach(d=>d.onclick=()=>{listaVer=listaVer===d.dataset.lista?null:d.dataset.lista;pintar()});
     cont.querySelectorAll("[data-cerrarlista]").forEach(b=>b.onclick=()=>{listaVer=null;pintar()});
+    cont.querySelectorAll("[data-pv]").forEach(b=>b.onclick=ev=>{
+      ev.stopPropagation();
+      const accion=b.dataset.pv, pid=b.dataset.pid;
+      const esRes=pid.startsWith("r:"), rid=esRes?pid.slice(2):pid;
+      const item=esRes?resis.find(x=>String(x.id)===rid):todas.find(x=>String(x.id)===rid);
+      if(!item) return;
+      const k=esRes?String(item.fecha).slice(0,10):isoLocal(parseFecha(item.fecha));
+      if(!k) return;
+      const [yy,mm]=k.split("-");
+      diaSel=k; mes=new Date(+yy,+mm-1,1); listaVer=null;
+      if(accion==="editar"&&!esRes) editando.add(rid);
+      abrirId=accion==="ver"?null:pid;   // «Abrir» y «Editar» despliegan la tarjeta; «Ver» solo la señala
+      pintar();
+      setTimeout(()=>{
+        const el=cont.querySelector(esRes?`[data-res="${rid}"]`:`[data-sid="${rid}"]`); if(!el) return;
+        el.scrollIntoView({block:"center",behavior:"smooth"});
+        if(accion==="ver"){el.classList.add("resaltada");setTimeout(()=>el.classList.remove("resaltada"),1600)}
+        if(accion==="editar"&&esRes) cont.querySelector(`[data-reseditar="${rid}"]`)?.click();
+      },60);
+    });
     cont.querySelectorAll("[data-iradia]").forEach(b=>b.onclick=()=>{const k=b.dataset.iradia;diaSel=k;const [yy,mm]=k.split("-");mes=new Date(+yy,+mm-1,1);listaVer=null;pintar();setTimeout(()=>{const c=cont.querySelector(".card.sesion");if(c)c.scrollIntoView({behavior:"smooth",block:"start"})},50)});
     cont.querySelectorAll("[data-vercarga]").forEach(b=>b.onclick=()=>{const tf=document.getElementById("tf");if(tf)tf.click()});
     cont.querySelectorAll("[data-editar]").forEach(b=>b.onclick=()=>{editando.add(String(b.dataset.editar));abrirId=String(b.dataset.editar);pintar()});
@@ -2674,10 +2715,11 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
         const s=todas.find(x=>String(x.id)===String(id));
         const leido=leerRegistro(card), reg={...((s&&s.registro)||{})};
         Object.keys(leido).forEach(k=>{reg[k]={...(reg[k]||{}),...leido[k]}});
-        const cambios={registro:reg};
+        // El registro del atleta solo lo cambia el atleta: el entrenador guarda únicamente el plan
+        const cambios=admin?{}:{registro:reg};
         if(admin&&s&&card.querySelector(".xp")) cambios.bloques=leerPlan(card,s);
-        await db("PATCH","sesiones",`?id=eq.${id}`,cambios,"return=minimal");
-        if(s){s.registro=reg; if(cambios.bloques) s.bloques=cambios.bloques}
+        if(Object.keys(cambios).length) await db("PATCH","sesiones",`?id=eq.${id}`,cambios,"return=minimal");
+        if(s){if(!admin) s.registro=reg; if(cambios.bloques) s.bloques=cambios.bloques}
         if(!admin&&hecho({registro:reg})){
           const rs=Object.values(reg).map(v=>parseFloat(String(v&&v.rpe).replace(",","."))).filter(x=>Number.isFinite(x));
           const rpeM=rs.length?rs.reduce((a,b)=>a+b,0)/rs.length:null;
@@ -3016,16 +3058,26 @@ function panelCicloHTML(){
   const ini=cicloInicios();
   const proxRegla=ini.find(x=>x>hoyIso);
   const ovProx=f&&f.ovIso>=hoyIso?f.ovIso:(proxRegla?(faseEn(proxRegla)||{}).ovIso:null);
-  const registros=CICLO.regs.slice(-4).reverse().map(r=>`${fmtIso(r.inicio)} <button class="sec" data-cdel="${r.id}" title="Borrar este registro">✕</button>`).join(" · ");
-  return `<details class="card ciclo-card" open>
-    <summary><b>Ciclo menstrual</b>${f?` <span class="fase-tag fase-${f.fase}">Hoy: ${FASES_CICLO[f.fase]} · día ${f.dia}</span>`:""}</summary>
-    <p class="muted">Estimación según tus fechas. No confirma la ovulación ni mide hormonas.</p>
-    ${f?`<p>${ovProx?`Ovulación estimada: <b>${fmtIso(ovProx)}</b> · `:""}Próxima regla prevista: <b>${proxRegla?fmtIso(proxRegla):"—"}</b></p>`:`<p class="muted">Registra la fecha de inicio de tu última regla para ver tus fases.</p>`}
-    <div class="row"><label>Inicio de la regla <input type="date" id="cicloFe" value="${hoyIso}"></label>
-      <label>Días de regla <input type="number" id="cicloDur" min="1" max="10" value="5" style="width:80px"></label>
-      <button class="gold" id="cicloReg">Registrar</button></div>
-    <div class="msg" id="cicloMsg"></div>
-    ${registros?`<p class="muted">Últimos registros: ${registros}</p>`:""}
+  const registros=CICLO.regs.slice(-4).reverse().map(r=>`<span class="ciclo-chip">${fmtIso(r.inicio)}<button class="ciclo-x" data-cdel="${r.id}" title="Borrar este registro">✕</button></span>`).join("");
+  const cabeza=f?`<span class="ciclo-pill">${FASES_CICLO[f.fase]} · día ${f.dia}</span>`:"";
+  const kpis=f?`<div class="ciclo-kpis">
+      <div class="ciclo-kpi"><small>Ovulación estimada</small><b>${ovProx?fmtIso(ovProx):"—"}</b></div>
+      <div class="ciclo-kpi"><small>Próxima regla prevista</small><b>${proxRegla?fmtIso(proxRegla):"—"}</b></div>
+    </div>`:`<p class="ciclo-aviso">Registra la fecha de inicio de tu última regla para ver tus fases.</p>`;
+  return `<details class="card ciclo-card${f?" fase-"+f.fase:""}" open>
+    <summary class="ciclo-head"><b>Ciclo menstrual</b>${cabeza}</summary>
+    ${kpis}
+    <p class="ciclo-nota">Estimación según tus fechas. No confirma la ovulación ni mide hormonas.</p>
+    <div class="ciclo-form">
+      <div class="ciclo-form-t">Registrar inicio de regla</div>
+      <div class="ciclo-form-r">
+        <label>Fecha <input type="date" id="cicloFe" value="${hoyIso}"></label>
+        <label>Días <input type="number" id="cicloDur" min="1" max="10" value="5"></label>
+        <button class="gold" id="cicloReg">Registrar</button>
+      </div>
+      <div class="msg" id="cicloMsg"></div>
+    </div>
+    ${registros?`<div class="ciclo-regs"><small>Últimos registros</small><div>${registros}</div></div>`:""}
   </details>`;
 }
 function enlazarCiclo(){
@@ -3848,19 +3900,41 @@ html.oscuro .cli-kpis>div{background:rgba(255,255,255,.06);border-color:rgba(255
 .cli-barra span{width:100%;min-height:2px;background:var(--acento,#b8860b);border-radius:4px 4px 0 0;opacity:.85}
 .cli-barra.curso span{opacity:.4}
 .cli-barra.curso small{font-weight:700}
-.fase-tag{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;margin-left:6px;vertical-align:middle;background:rgba(127,127,127,.18)}
-.fase-tag.fase-menstrual{background:rgba(233,30,99,.2)}
-.fase-tag.fase-folicular{background:rgba(253,216,53,.4)}
-.fase-tag.fase-ovulatoria{background:rgba(93,64,55,.22)}
-.fase-tag.fase-lutea{background:rgba(158,158,158,.3)}
-.ciclo-card{margin-bottom:12px}
-.ciclo-card summary{cursor:pointer}
 .ciclo-dot{display:block;width:7px;height:7px;border-radius:50%;margin:3px auto 0;background:#999}
 .ciclo-dot.fase-menstrual{background:#e91e63}
-.ciclo-dot.fase-folicular{background:#fdd835}
-.ciclo-dot.fase-ovulatoria{background:#5d4037}
-.ciclo-dot.fase-lutea{background:#9e9e9e}
+.ciclo-dot.fase-folicular{background:#f9a825}
+.ciclo-dot.fase-ovulatoria{background:#00897b}
+.ciclo-dot.fase-lutea{background:#7e57c2}
 .ciclo-dot.ov{box-shadow:0 0 0 2px #fff,0 0 0 3.5px #333}
+html body .card.ciclo-card{background:#fff;color:#1d1f21;backdrop-filter:none;-webkit-backdrop-filter:none;border-top:5px solid var(--fc,#9e9e9e);padding:16px 16px 14px;margin-bottom:14px;--fc:#9e9e9e;--fcs:rgba(158,158,158,.12)}
+html body .card.ciclo-card.fase-menstrual{--fc:#e91e63;--fcs:rgba(233,30,99,.10)}
+html body .card.ciclo-card.fase-folicular{--fc:#f9a825;--fcs:rgba(249,168,37,.14)}
+html body .card.ciclo-card.fase-ovulatoria{--fc:#00897b;--fcs:rgba(0,137,123,.11)}
+html body .card.ciclo-card.fase-lutea{--fc:#7e57c2;--fcs:rgba(126,87,194,.11)}
+.ciclo-head{cursor:pointer;list-style:none;display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:16px}
+.ciclo-head::-webkit-details-marker{display:none}
+.ciclo-pill{display:inline-block;background:var(--fc,#9e9e9e);color:#fff;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px}
+.ciclo-kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 6px}
+.ciclo-kpi{background:var(--fcs);border-radius:10px;padding:10px 12px}
+.ciclo-kpi small{display:block;color:#50565d;font-size:12px;margin-bottom:2px}
+.ciclo-kpi b{font-size:17px;color:#1d1f21}
+.ciclo-nota{font-size:12px;color:#50565d;margin:6px 0 10px}
+.ciclo-aviso{color:#50565d;margin:10px 0}
+.ciclo-form{background:#f4f5f7;border-radius:10px;padding:12px}
+.ciclo-form-t{font-weight:700;font-size:13px;margin-bottom:8px;color:var(--fc,#1d1f21)}
+.ciclo-form-r{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
+.ciclo-form-r label{display:flex;flex-direction:column;font-size:12px;color:#50565d;gap:3px}
+.ciclo-form-r input{width:auto;min-width:0}
+.ciclo-form-r input[type=number]{width:72px}
+.ciclo-regs{margin-top:12px;font-size:12px;color:#50565d}
+.ciclo-regs div{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.ciclo-chip{display:inline-flex;align-items:center;gap:4px;background:#eceef1;color:#1d1f21;border-radius:999px;padding:3px 4px 3px 10px;font-size:12px}
+.ciclo-x{border:0;background:transparent;cursor:pointer;color:#7a8089;font-size:12px;padding:2px 6px}
+html.oscuro body .card.ciclo-card,html.oscuro .card.ciclo-card{background:#262b30;color:#e4e7ea}
+html.oscuro .ciclo-form{background:#1d2226}
+html.oscuro .ciclo-kpi b,html.oscuro .ciclo-form-r input{color:#e4e7ea}
+html.oscuro .ciclo-chip{background:#333a41;color:#e4e7ea}
+html.oscuro .ciclo-kpi small,html.oscuro .ciclo-nota,html.oscuro .ciclo-form-r label,html.oscuro .ciclo-regs,html.oscuro .ciclo-aviso{color:#aab1b8}
 .cli-barra small{font-size:9.5px;opacity:.6;white-space:nowrap;display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;text-align:center}
 @media(max-width:600px){.cli-barras.densa .cli-barra:nth-child(even) small{visibility:hidden}}
 /* Selector de periodo del entrenado */
