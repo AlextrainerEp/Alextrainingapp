@@ -43,14 +43,16 @@ main{max-width:980px;margin:0 auto;padding:calc(150px + min(80vw,600px)*0.37 + 1
 .card.ficha{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none;padding:0}
 /* Ficha del entrenado y su panel: sin fondo, solo se ven las pestañas y el contenido */
 .card.ficha,#tab > .card,#tab details.card,#tab .card.sesion{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}
-.chat{display:flex;flex-direction:column;gap:8px;max-height:55vh;overflow:auto;padding:6px 2px}
-.burbuja{max-width:85%;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.7)}
+.chat{display:flex;flex-direction:column;gap:12px;max-height:min(70vh,700px);min-height:300px;overflow:auto;padding:8px 4px}
+.burbuja{max-width:88%;padding:10px 13px;border-radius:14px;background:rgba(255,255,255,.7);font-size:16px;line-height:1.45}
+.burbuja .txt{font-size:16px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
 .burbuja.mia{align-self:flex-end;background:rgba(217,221,224,.95)}
 .burbuja.suya{align-self:flex-start}
-.burbuja small{display:block;color:#555;margin-bottom:4px}
+.burbuja small{display:block;color:#555;margin-bottom:5px;font-size:13px}
+.burbuja .acc button{font-size:14px}
 .burbuja audio{width:100%;max-width:260px}
 .chat-caja{margin-top:10px}
-.chat-caja textarea{width:100%}
+.chat-caja textarea{width:100%;font-size:16px;line-height:1.4}
 .acc{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .acc button{padding:4px 8px;font-size:13px}
 .edit-txt{width:100%}
