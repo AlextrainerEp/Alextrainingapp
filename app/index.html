@@ -1276,13 +1276,14 @@ function sesionHTML(s,editable,conLeyenda=editable,plan=false){
     return cab+itemsRes.map(tarjeta).join("")+cab2+gItems.map(({x,bi,ei},idx)=>{const e=normEj(x),k=bi+"-"+ei,r=R[k]||{};const sep=idx>0&&letra(x)!==letra(gItems[idx-1].x)?" sep":"";
       const dosis=[e.ser,e.rep].filter(v=>String(v).trim()!=="").map(v=>esc(String(v))).join(" × ");
       if(plan){
-        const hecho=[r.kg?`${esc(r.kg)} kg`:"",r.rir!==undefined&&r.rir!==""?`RIR ${esc(String(r.rir).replace(".",","))}`:"",r.rpe!==undefined&&r.rpe!==""?`RPE ${esc(String(r.rpe).replace(".",","))}`:""].filter(Boolean).join(" · ");
+        const hecho=[r.rir!==undefined&&r.rir!==""?`RIR ${esc(String(r.rir).replace(".",","))}`:"",r.rpe!==undefined&&r.rpe!==""?`RPE ${esc(String(r.rpe).replace(".",","))}`:""].filter(Boolean).join(" · ");
         return `<div class="grow xp${sep}">
       <div class="gname">${e.cod?`<b>${esc(e.cod)}</b> `:""}<input class="pl pl-ej" data-pk="${k}" data-pf="ej" value="${esc(e.ej)}" placeholder="Ejercicio">${btnVideoMini(e)}</div>
       <div class="xpg">
         <div class="xf"><i>Series</i><input class="pl" data-pk="${k}" data-pf="ser" value="${esc(e.ser)}"></div>
         <div class="xf"><i>Reps</i><input class="pl" data-pk="${k}" data-pf="rep" value="${esc(e.rep)}"></div>
         <div class="xf"><i>Intensidad</i><input class="pl pl-int" data-pk="${k}" data-pf="int" value="${esc(e.int)}" placeholder="kg, %, ritmo…"></div>
+        <div class="xf"><i>Kg hechos</i><input data-k="${k}" data-f="kg" inputmode="decimal" value="${esc(r.kg??"")}"></div>
         <div class="xf"><i>RIR</i><input class="pl" data-pk="${k}" data-pf="rir" inputmode="decimal" value="${esc(e.rir)}"></div>
         <div class="xf"><i>RPE</i><input class="pl" data-pk="${k}" data-pf="rpe" inputmode="decimal" value="${esc(e.rpe)}"></div>
       </div>
@@ -2715,9 +2716,9 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
         const s=todas.find(x=>String(x.id)===String(id));
         const leido=leerRegistro(card), reg={...((s&&s.registro)||{})};
         Object.keys(leido).forEach(k=>{reg[k]={...(reg[k]||{}),...leido[k]}});
-        // En la edición de plan (tabla) solo se cambia el plan; el registro lo tocan el atleta o el entrenador desde la vista normal
+        // El registro (kg, RIR, RPE…) se guarda también desde la tabla de edición; los campos no tocados conservan su valor
         const cambios={registro:reg};
-        if(admin&&s&&card.querySelector(".xp")){cambios.bloques=leerPlan(card,s); delete cambios.registro}
+        if(admin&&s&&card.querySelector(".xp")) cambios.bloques=leerPlan(card,s);
         await db("PATCH","sesiones",`?id=eq.${id}`,cambios,"return=minimal");
         if(s){if(cambios.registro) s.registro=reg; if(cambios.bloques) s.bloques=cambios.bloques}
         if(!admin&&hecho({registro:reg})){
