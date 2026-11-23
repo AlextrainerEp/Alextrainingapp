@@ -1677,24 +1677,37 @@ function abrirEditor(s,alGuardar,opc={}){
 function hecho(s){
   return Object.values(s.registro||{}).some(v=>v&&Object.entries(v).some(([f,x])=>f!=="estado"&&x!==""&&x!=null));
 }
-function tabHistorial(ses,cliente=false){
+function tabHistorial(ses,cliente=false,res=[]){
   const hechos=ses.filter(hecho);
   const e=estadisticas(hechos);
+  const resHechas=res.filter(resHecha).length;
   // Página del entrenado: sesiones planificadas, completadas y RPE medio
   const stats=cliente
-    ? `<div class="stat">Sesiones planificadas<b>${ses.length}</b></div><div class="stat">Sesiones completadas<b>${hechos.length}</b></div><div class="stat">RPE medio<b>${e.rpe}</b></div><div class="stat">Racha<b>${rachaSemanas(hechos)} sem.</b></div>`
+    ? `<div class="stat">Sesiones planificadas<b>${ses.length+res.length}</b></div><div class="stat">Sesiones completadas<b>${hechos.length+resHechas}</b></div><div class="stat">RPE medio<b>${e.rpe}</b></div><div class="stat">Racha<b>${rachaSemanas(hechos)} sem.</b></div>`
     : `<div class="stat">Realizados<b>${e.sesiones}</b></div><div class="stat">RPE medio<b>${e.rpe}</b></div><div class="stat">RIR medio<b>${e.rir}</b></div><div class="stat">Reps totales<b>${e.reps}</b></div>`;
   return `<div class="stats${cliente?" cli-stats":""}">${stats}</div>
     ${cliente?'<div id="hist-prog"></div>':""}
-    ${hechos.length
-      ? hechos.map(s=>`<details class="card"><summary><b>${tituloSesion(s)}</b></summary>
+    ${cliente
+      ? (ses.length+res.length
+          ? [...ses.map(s=>({s,f:s.fecha,res:false})),...res.map(p=>({s:p,f:p.fecha,res:true}))]
+              .sort((a,b)=>((parseFecha(b.f)||0)-(parseFecha(a.f)||0))).map(({s,res:esRes})=>{
+            if(esRes){const h=resHecha(s);return `<details class="card sesion res${h?" hecha":""}"><summary class="dia-sum">${badgeFecha(s)}<h3>${esc(resPartes(s)[0])}</h3><small class="muted">${h?"Hecha ✓":"Pendiente"}</small></summary>
+          <div style="margin-top:10px">${s.descripcion?textoClaro(s.descripcion):'<p class="muted">Sin detalles</p>'}</div></details>`}
+            const h=hecho(s);return `<details class="card sesion${h?" hecha":""}"><summary class="dia-sum">${badgeFecha(s)}<h3>${nombreEntreno(s)}</h3><small class="muted">${h?"Hecha ✓":"Pendiente"}</small></summary>
+          <div style="margin-top:10px">${sesionHTML(s,false)}</div></details>`}).join("")
+          : '<p class="muted">Todavía no tienes entrenamientos. Aparecerán aquí en cuanto tu entrenador los programe.</p>')
+      : (hechos.length
+          ? hechos.map(s=>`<details class="card"><summary><b>${tituloSesion(s)}</b></summary>
           <div style="margin-top:10px">${sesionHTML(s,false)}</div></details>`).join("")
-      : '<p class="muted">Todavía no hay entrenamientos realizados. Aparecerán aquí cuando se guarde el registro.</p>'}`;
+          : '<p class="muted">Todavía no hay entrenamientos realizados. Aparecerán aquí cuando se guarde el registro.</p>')}`;
 }
 async function tabHistorialCliente(host="#tab"){
-  const ses=await db("GET","sesiones",`?cliente_id=eq.${S.user.id}&order=created_at.desc&select=*`);
+  const [ses,res]=await Promise.all([
+    db("GET","sesiones",`?cliente_id=eq.${S.user.id}&order=created_at.desc&select=*`),
+    sesionesResistencia(S.user.id)
+  ]);
   const hechos=ses.filter(hecho);
-  $(host).innerHTML=tabHistorial(ses,true);
+  $(host).innerHTML=tabHistorial(ses,true,res);
   const cont=$(host).querySelector("#hist-prog");
   const { mapa, orden } = progresoDatos(hechos);
   cont.innerHTML=progresoHTML(mapa,orden);
