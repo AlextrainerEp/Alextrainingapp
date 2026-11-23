@@ -3238,7 +3238,7 @@ async function panelCliente(tab,sub){
 /* ---------- Seguimiento del ciclo menstrual · fase 1 (solo fechas y fase, sin síntomas) ----------
    Solo lo ve la propia atleta (RLS en ciclos y ciclo_config). Son estimaciones a partir de las fechas
    registradas: no confirman la ovulación ni miden hormonas. No modifica las cargas de entrenamiento. */
-const CICLO={activo:false,duracion:28,regs:[],reglas:{}};
+const CICLO={activo:false,consentido:false,duracion:28,regs:[],reglas:{}};
 const FASES_CICLO={menstrual:"Menstrual",folicular:"Folicular",ovulatoria:"Ovulatoria",lutea:"Lútea"};
 const diaN=iso=>{const [y,m,d]=iso.split("-").map(Number);return Math.round(Date.UTC(y,m-1,d)/86400000)};
 const sumaDiasIso=(iso,n)=>new Date((diaN(iso)+n)*86400000).toISOString().slice(0,10);
@@ -3278,16 +3278,17 @@ function faseEn(iso){
 async function cargarCiclo(){
   const id=S.user.id;
   const [cfg,regs]=await Promise.all([
-    db("GET","ciclo_config",`?cliente_id=eq.${id}&select=activo,duracion_media`),
+    db("GET","ciclo_config",`?cliente_id=eq.${id}&select=activo,duracion_media,consentimiento`),
     db("GET","ciclos",`?cliente_id=eq.${id}&select=id,inicio,duracion_regla&order=inicio.asc`)]);
   CICLO.activo=!!(cfg&&cfg[0]&&cfg[0].activo);
+  CICLO.consentido=!!(cfg&&cfg[0]&&cfg[0].consentimiento);
   CICLO.duracion=(cfg&&cfg[0]&&cfg[0].duracion_media)||28;
   CICLO.regs=regs||[];
   CICLO.reglas={};
   CICLO.regs.forEach(r=>CICLO.reglas[r.inicio]=r.duracion_regla||5);
 }
 // Si las tablas aún no existen, la función se desactiva sin romper la pestaña
-async function cicloSeguro(){try{await cargarCiclo()}catch(e){CICLO.activo=false;CICLO.reglas={};CICLO.regs=[]}}
+async function cicloSeguro(){try{await cargarCiclo()}catch(e){CICLO.activo=false;CICLO.consentido=false;CICLO.reglas={};CICLO.regs=[]}}
 // Marca de la casilla del calendario: solo en el calendario de la propia atleta
 function cicloMarca(iso,clienteId){
   if(!CICLO.activo||clienteId!==S.user.id) return "";
@@ -3346,21 +3347,37 @@ function enlazarCiclo(){
 // Activación voluntaria en el perfil de la atleta
 function cicloConfigHTML(){
   return `<h3>Seguimiento del ciclo</h3>
+    <label class="row ciclo-cons"><input type="checkbox" id="cicloCons" ${CICLO.consentido?"checked":""}> <span>Acepto que la app guarde las fechas de mi regla y muestre mi fase. Son <b>datos de salud</b>: solo los veo yo, y puedo retirar este consentimiento o borrar todos mis datos cuando quiera.</span></label>
     <label class="row"><input type="checkbox" id="cicloOn" ${CICLO.activo?"checked":""}> Mostrar mi fase del ciclo en entrenos y calendario</label>
-    <p class="muted">Solo tú lo ves. Puedes desactivarlo cuando quieras. No cambia tus cargas de entrenamiento.</p>
+    <p class="muted">No cambia tus cargas de entrenamiento. Tu entrenador no ve estos datos.</p>
+    <button type="button" class="sec danger" id="cicloBorrar">Borrar todos mis datos del ciclo</button>
     <div class="msg" id="cicloCfgMsg"></div>`;
 }
 async function enlazarCicloCfg(){
   await cicloSeguro();
   const box=$("#cicloCfg"); if(!box) return;
   box.innerHTML=cicloConfigHTML();
-  const cb=$("#cicloOn");
+  const cb=$("#cicloOn"), con=$("#cicloCons"), bor=$("#cicloBorrar");
   cb.onchange=async()=>{
+    const quiere=cb.checked;
+    if(quiere&&!con.checked){ cb.checked=false; return msg("#cicloCfgMsg","Antes marca la casilla de consentimiento para activar el seguimiento.",false); }
+    if(!quiere&&!confirm("¿Dejar de mostrar tu fase? Tus fechas se conservan hasta que las borres.")){ cb.checked=true; return; }
     try{
-      await db("POST","ciclo_config","?on_conflict=cliente_id",{cliente_id:S.user.id,activo:cb.checked,duracion_media:CICLO.duracion||28},"resolution=merge-duplicates,return=minimal");
+      await db("POST","ciclo_config","?on_conflict=cliente_id",{cliente_id:S.user.id,activo:quiere,duracion_media:CICLO.duracion||28,consentimiento:quiere?new Date().toISOString():null},"resolution=merge-duplicates,return=minimal");
       await cicloSeguro();
-      msg("#cicloCfgMsg",cb.checked?"Seguimiento activado":"Seguimiento desactivado",true);
-    }catch(e){cb.checked=!cb.checked;msg("#cicloCfgMsg",e.message,false)}
+      msg("#cicloCfgMsg",quiere?"Seguimiento activado":"Seguimiento desactivado",true);
+    }catch(e){cb.checked=!quiere;msg("#cicloCfgMsg",e.message,false)}
+  };
+  con.onchange=()=>{ if(!con.checked&&cb.checked){ con.checked=true; msg("#cicloCfgMsg","Para retirar el consentimiento, desactiva primero el seguimiento.",false); } };
+  bor.onclick=async()=>{
+    if(!confirm("Vas a borrar TODOS tus datos del ciclo (fechas y configuración). No se puede deshacer. ¿Continuar?")) return;
+    try{
+      await db("DELETE","ciclos",`?cliente_id=eq.${S.user.id}`,undefined,"return=minimal");
+      await db("DELETE","ciclo_config",`?cliente_id=eq.${S.user.id}`,undefined,"return=minimal");
+      await cicloSeguro();
+      await enlazarCicloCfg();
+      msg("#cicloCfgMsg","Datos del ciclo borrados",true);
+    }catch(e){msg("#cicloCfgMsg",e.message,false)}
   };
 }
 async function tabEntrenos(host="#tab"){
