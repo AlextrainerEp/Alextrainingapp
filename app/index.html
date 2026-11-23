@@ -3036,7 +3036,8 @@ async function panelCliente(tab,sub){
   // hay que restaurar #tab, si no el contenido se pinta dentro de la barra de valoración.
   const limpiarTab=()=>{$("#tab").innerHTML=`<div id="sub"></div>`};
   const verEntrenosCli=()=>{limpiarTab();
-    $("#sub").insertAdjacentHTML("beforebegin",'<div id="cli-bien"></div><div id="cli-rpe"></div>');
+    $("#sub").insertAdjacentHTML("beforebegin",'<div id="cli-hoy"></div><div id="cli-bien"></div><div id="cli-rpe"></div>');
+    hoyCliente("#cli-hoy");
     tarjetaBienestar("#cli-bien");
     avisoRPE("#cli-rpe",(f)=>tabEntrenosCal("#sub",S.user.id,false,f));
     return tabEntrenosCal("#sub")};
@@ -3940,6 +3941,13 @@ html:not(.oscuro) body .atl-carga .tip{background:rgba(255,255,255,.95)}
 html.oscuro body .atl-carga .tip{background:#262b30}
 .atl-carga .nota-datos{font-size:12px}
 /* ===== Bienestar diario, aviso de RPE, carga del cliente y resumen de todos ===== */
+.hoy-card{padding:14px 16px;border-left:5px solid var(--acento,#b8860b)}
+.hoy-tit{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--acento,#b8860b);font-weight:700;margin-bottom:6px}
+.hoy-item{display:flex;flex-direction:column;gap:2px;margin:6px 0 10px}
+.hoy-item b{font-size:18px;line-height:1.2}
+.hoy-ok{align-self:flex-start;font-size:12px;font-weight:700;color:#7fd28f;margin-top:2px}
+.hoy-btn{width:100%;padding:14px;font-size:16px;margin-top:4px}
+.hoy-vacio{border-left-color:#4a535c}
 .bien-card{padding:12px 14px}
 .bien-card>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:15px}
 .bien-card>summary::-webkit-details-marker{display:none}
@@ -5640,6 +5648,44 @@ async function bienestarHoy(clienteId, fecha) {
 }
 
 /** Tarjeta de bienestar para el entrenado. Se guarda al tocar, sin botón. */
+/** Tarjeta «Hoy» del atleta: sus sesiones de hoy (fuerza y resistencia) y un botón que lleva a ellas. */
+async function hoyCliente(host) {
+  const el = typeof host === 'string' ? $(host) : host;
+  if (!el) return;
+  const hoy = isoLocal(new Date());
+  let filas = [];
+  try {
+    const [ses, ats] = await Promise.all([
+      db('GET', 'sesiones', `?cliente_id=eq.${S.user.id}&fecha=eq.${hoy}&select=id,fecha,titulo,bloques,registro`).catch(() => []),
+      db('GET', 'atletas', `?user_id=eq.${S.user.id}&select=id`).catch(() => [])
+    ]);
+    (ses || []).forEach(s => {
+      const n = (s.bloques || []).reduce((a, b) => a + ((b.ejercicios || []).length), 0);
+      const hecha = Object.values(s.registro || {}).some(v => v && Object.entries(v).some(([k, x]) => k !== 'estado' && x !== '' && x != null));
+      filas.push({ titulo: 'Entreno de fuerza', sub: `${n} ejercicio${n === 1 ? '' : 's'}`, hecha, tipo: 'fuerza' });
+    });
+    if (ats && ats.length) {
+      const ps = await db('GET', 'sesiones_planificadas', `?atleta_id=in.(${ats.map(a => a.id).join(',')})&fecha=eq.${hoy}&select=id,tipo,descripcion,duracion_min,estado`).catch(() => []);
+      (ps || []).forEach(p => filas.push({ titulo: String(p.descripcion || '').split(' — ')[0] || 'Sesión de resistencia',
+        sub: p.duracion_min ? `${p.duracion_min} min` : '', hecha: p.estado === 'hecha', tipo: 'res' }));
+    }
+  } catch (e) { return; }
+  if (!filas.length) {
+    el.innerHTML = `<div class="card hoy-card hoy-vacio"><div class="hoy-tit">Hoy</div><p class="muted">Hoy no tienes entrenos programados. Descansa.</p></div>`;
+    return;
+  }
+  const pendiente = filas.some(f => !f.hecha);
+  el.innerHTML = `<div class="card hoy-card"><div class="hoy-tit">Hoy · ${esc(new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }))}</div>
+    ${filas.map(f => `<div class="hoy-item"><b>${esc(f.titulo)}</b><span class="muted">${esc(f.sub)}</span>${f.hecha ? '<span class="hoy-ok">✓ Hecha</span>' : ''}</div>`).join('')}
+    <button type="button" class="gold hoy-btn" id="hoy-ir">${pendiente ? '▶ Empezar entrenamiento' : '✓ Ver lo registrado'}</button></div>`;
+  $('#hoy-ir').onclick = () => {
+    const obj = document.querySelector('#sub details.sesion, #sub details.sesion-res');
+    if (!obj) return;
+    obj.open = true;
+    obj.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+}
+
 async function tarjetaBienestar(host) {
   const hoy = isoLocal(new Date());
   const el = typeof host === 'string' ? $(host) : host;
