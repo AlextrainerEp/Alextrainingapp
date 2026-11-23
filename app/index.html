@@ -114,7 +114,9 @@ html.oscuro .ecard{background:rgba(30,32,34,.92);color:#f2f2f2}
 .ec-chip{background:#2e3133;color:#fff;border-radius:999px;padding:4px 10px;font-size:13px;font-weight:600}
 .ec-nota{margin-top:5px;font-size:14px;line-height:1.4}
 html.oscuro .ecard{background:rgba(30,32,34,.92);color:#f2f2f2}
-.ghead2,html .grow.xr2{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;align-items:center}
+.ghead2,html .grow.xr2{display:grid;grid-template-columns:.8fr .8fr .8fr .9fr 1.6fr .7fr .7fr;gap:4px;align-items:center}
+.grow.xr2 .gint{font-size:12px;line-height:1.1;text-align:center;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+html.oscuro .grow.xr2 .gint{color:#ddd}
 .ghead2{font-size:11px;font-weight:700;color:#555;text-align:center;padding:2px 0;border-bottom:1px solid #ccc}
 .ghead2 span:first-child{text-align:left;grid-column:1/-1}
 html .grow.xr2{padding:6px 0 7px;border-bottom:1px solid rgba(0,0,0,.14);font-size:13px}
@@ -136,7 +138,7 @@ html .grow.xp input.pl-ej{height:34px;text-align:left;font-size:15px;font-weight
 html .grow.xp input.pl-vid{text-align:left;font-size:12px;padding-left:6px}
 .grow.xp .gsub{font-size:12px;margin-top:3px}
 html.oscuro .ghead2{color:#bbb}html.oscuro .grow.xr2 .gdet{color:#ddd}
-@media(min-width:700px){.ghead2 span:first-child,.grow.xr2 .gname{grid-column:auto}.ghead2,html .grow.xr2{grid-template-columns:minmax(0,1fr) 56px 56px 70px 120px 56px 56px}.xpg{grid-template-columns:60px 70px minmax(0,1fr) 60px 60px}}
+@media(min-width:700px){.ghead2 span:first-child,.grow.xr2 .gname{grid-column:auto}.ghead2,html .grow.xr2{grid-template-columns:minmax(0,1fr) 56px 56px 70px 90px 120px 56px 56px}.xpg{grid-template-columns:60px 70px minmax(0,1fr) 60px 60px}}
 #pushbar{position:fixed;left:10px;right:10px;bottom:10px;z-index:9999;background:#2e3133;color:#fff;border-radius:14px;padding:12px 14px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;box-shadow:0 4px 18px rgba(0,0,0,.35);font-size:14px;line-height:1.3}
 #pushbar>div{flex:1 1 200px}#pushbar small{color:#ddd}
 #pushbar button{margin:0;padding:8px 14px;font-size:14px;width:auto}
@@ -1253,7 +1255,7 @@ function sesionHTML(s,editable,conLeyenda=editable,plan=false){
     const itemsFza=separar?g.items.filter(it=>!esResis(it.x)):g.items;
     if(itemsRes.length&&!itemsFza.length) return cab+itemsRes.map(tarjeta).join("");
     const gItems=itemsFza;
-    const cab2=(!plan&&gItems.length)?`<div class="ghead2"><span>Ejercicio</span><span>Series</span><span>Reps</span><span>Kg</span><span>Estado</span><span>RIR</span><span>RPE</span></div>`:"";
+    const cab2=(!plan&&gItems.length)?`<div class="ghead2"><span>Ejercicio</span><span>Series</span><span>Reps</span><span>Kg</span><span>Intensidad</span><span>Estado</span><span>RIR</span><span>RPE</span></div>`:"";
     return cab+itemsRes.map(tarjeta).join("")+cab2+gItems.map(({x,bi,ei},idx)=>{const e=normEj(x),k=bi+"-"+ei,r=R[k]||{};const sep=idx>0&&letra(x)!==letra(gItems[idx-1].x)?" sep":"";
       const dosis=[e.ser,e.rep].filter(v=>String(v).trim()!=="").map(v=>esc(String(v))).join(" × ");
       if(plan){
@@ -1271,12 +1273,13 @@ function sesionHTML(s,editable,conLeyenda=editable,plan=false){
       ${e.nota?`<div class="gsub">📝 ${esc(e.nota)}</div>`:""}${hecho?`<div class="gsub">✅ Lo que hizo: ${hecho}</div>`:""}
     </div>`}
       const kgPlan=/^\s*(\d+(?:[.,]\d+)?)\s*kg\s*$/i.exec(String(e.int??""));   // kg planificados: van en la casilla Kg, no bajo el nombre
-      const det=[kgPlan?"":(e.int?esc(e.int):""),e.nota?`📝 ${esc(e.nota)}`:"",e.prog?`📈 ${esc(e.prog)}`:""].filter(Boolean).join(" · ");
+      const det=[e.nota?`📝 ${esc(e.nota)}`:"",e.prog?`📈 ${esc(e.prog)}`:""].filter(Boolean).join(" · ");
       return `<div class="grow xr2${sep}">
       <div class="gname">${e.cod?`<b>${esc(e.cod)}</b> `:""}${nombreVideo(e)}${btnVideoMini(e)}</div>
       <input data-k="${k}" data-f="ser" inputmode="numeric" placeholder="${esc(e.ser)}" value="${esc(r.ser)}" ${dis} aria-label="Series hechas">
       <input data-k="${k}" data-f="reps" inputmode="numeric" placeholder="${esc(e.rep)}" value="${esc(r.reps)}" ${dis} aria-label="Reps de la última serie">
       <input data-k="${k}" data-f="kg" inputmode="decimal" placeholder="${kgPlan?esc(kgPlan[1]):"kg"}" value="${esc(r.kg)}" ${dis}>
+      <div class="gint" title="Material o intensidad indicada por el entrenador">${e.int?esc(e.int):"–"}</div>
       ${estadoSel(k,r.estado,dis)}
       ${pick(k,"rir",r.rir,false,editable,e.rir)}
       ${pick(k,"rpe",r.rpe,true,editable,e.rpe)}
@@ -2366,6 +2369,7 @@ let CAL_OCULTO=false;
 const pantallaPequena=()=>window.innerWidth<760||window.innerHeight<720;
 let RES_ACTIVA=false;
 async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=null,avisoIni=""){
+  if(clienteId===S.user.id) await cicloSeguro();
   const [todas,resis]=await Promise.all([db("GET","sesiones",`?cliente_id=eq.${clienteId}&order=created_at.desc&select=*`),sesionesResistencia(clienteId)]);
   let zonasRes=[];
   if(admin){try{const [pf]=await db("GET","perfiles",`?id=eq.${clienteId}&select=modulos`);RES_ACTIVA=modulosDe(pf).includes("resistencia")}catch(e){RES_ACTIVA=false}}
@@ -2490,7 +2494,7 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
         const tp=esCarrera(t)?aResistencia(t).tipo:"fuerza", col=RES_COLOR[tp]||RES_COLOR.otro;
         return `<button type="button" class="cal-chip res${hecho(t)?" ok":""}" style="background:${col};border-color:${col}" data-chip="${t.id}" title="${esc(t.titulo||"Sesión")}">${hecho(t)?"✓ ":""}${esc(RES_NOMBRE[tp]||"Fuerza")}</button>`;
       }).join("");
-      celdas.push(`<div class="cal-d cal-dia${k===hoyIso?" hoy":""}${lista.length?" tiene":""}${k===diaSel&&!modoSel?" sel":""}${selDias.has(k)?" selb":""}" data-dia="${k}"><span class="cal-num">${d}</span>${chips}${lista.length>2?`<span class="cal-mas">+${lista.length-2}</span>`:""}</div>`);
+      celdas.push(`<div class="cal-d cal-dia${k===hoyIso?" hoy":""}${lista.length?" tiene":""}${k===diaSel&&!modoSel?" sel":""}${selDias.has(k)?" selb":""}" data-dia="${k}"><span class="cal-num">${d}</span>${cicloMarca(k,clienteId)}${chips}${lista.length>2?`<span class="cal-mas">+${lista.length-2}</span>`:""}</div>`);
     }
     const delDia=porDia.get(diaSel)||[];
     const [ay,am,ad]=diaSel.split("-");
@@ -2503,6 +2507,7 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
     const nF=selSes.filter(x=>!x._res).length, nR=selSes.filter(x=>x._res).length;
     cont.innerHTML=`
       ${msgAviso?`<p class="cal-aviso card">${esc(msgAviso)}</p>`:""}
+      ${clienteId===S.user.id?panelCicloHTML():""}
       ${admin?`<div class="row res-acceso"><button class="sec" data-plantillas>📋 Crear plan con una plantilla (iniciación fuerza, asfalto o trail)</button></div>`:""}
       ${admin&&RES_ACTIVA?`<div class="row res-acceso"><button class="sec" data-irres>🏃 Planificar running / trail (pasos por zona, Strava, tests)</button></div>`:""}
       ${admin?`<div class="borrado-bar row">
@@ -2552,6 +2557,7 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
       cont.querySelector("[data-prev]").onclick=()=>{mes=new Date(y,mo-1,1);pintar()};
       cont.querySelector("[data-next]").onclick=()=>{mes=new Date(y,mo+1,1);pintar()};
     }
+    if(clienteId===S.user.id) enlazarCiclo();
     const oc=cont.querySelector("[data-calocultar]"); if(oc) oc.onclick=()=>{CAL_OCULTO=true;pintar();irTitulo()};
     const cv=cont.querySelector("[data-calver]"); if(cv) cv.onclick=()=>{CAL_OCULTO=false;pintar()};
     // ‹ › en la barra pequeña: salta al entreno anterior o siguiente
@@ -2942,6 +2948,124 @@ async function panelCliente(tab,sub){
   refrescarBadges();
   if(err) $("#tab").insertAdjacentHTML("afterbegin",`<div class="an-panel"><p class="muted">No se pudo cargar tu valoración (${esc(err)}). Avísale a tu entrenador.</p></div>`);
   lista[idx][1]();
+}
+/* ---------- Seguimiento del ciclo menstrual · fase 1 (solo fechas y fase, sin síntomas) ----------
+   Solo lo ve la propia atleta (RLS en ciclos y ciclo_config). Son estimaciones a partir de las fechas
+   registradas: no confirman la ovulación ni miden hormonas. No modifica las cargas de entrenamiento. */
+const CICLO={activo:false,duracion:28,regs:[],reglas:{}};
+const FASES_CICLO={menstrual:"Menstrual",folicular:"Folicular",ovulatoria:"Ovulatoria",lutea:"Lútea"};
+const diaN=iso=>{const [y,m,d]=iso.split("-").map(Number);return Math.round(Date.UTC(y,m-1,d)/86400000)};
+const sumaDiasIso=(iso,n)=>new Date((diaN(iso)+n)*86400000).toISOString().slice(0,10);
+const difDiasIso=(a,b)=>diaN(b)-diaN(a);
+const fmtIso=iso=>`${iso.slice(8,10)}/${iso.slice(5,7)}/${iso.slice(0,4)}`;
+// Duración media de los últimos 6 ciclos registrados (descarta valores fuera de 21-45 días)
+function cicloMedia(){
+  const ini=Object.keys(CICLO.reglas).sort(), l=[];
+  for(let i=1;i<ini.length;i++){const d=difDiasIso(ini[i-1],ini[i]); if(d>=21&&d<=45) l.push(d)}
+  const u=l.slice(-6);
+  return u.length?Math.round(u.reduce((a,b)=>a+b,0)/u.length):CICLO.duracion;
+}
+// Inicios de regla: los registrados y los 6 siguientes previstos
+function cicloInicios(){
+  const ini=Object.keys(CICLO.reglas).sort(); if(!ini.length) return [];
+  const L=cicloMedia(), out=[...ini]; let ult=ini[ini.length-1];
+  for(let k=0;k<6;k++){ult=sumaDiasIso(ult,L);out.push(ult)}
+  return out;
+}
+// Fase de una fecha ISO: {fase, dia, ovIso} o null si no hay datos para esa fecha
+function faseEn(iso){
+  const ini=cicloInicios(); if(!ini.length||iso<ini[0]) return null;
+  let i=0; while(i+1<ini.length&&ini[i+1]<=iso) i++;
+  const inicio=ini[i];
+  const largo=i+1<ini.length?difDiasIso(inicio,ini[i+1]):cicloMedia();
+  const dia=difDiasIso(inicio,iso)+1;
+  if(dia>largo) return null;
+  const regla=CICLO.reglas[inicio]||5;
+  const ov=Math.max(largo-14,regla+2); // ovulación estimada: unos 14 días antes del inicio de la siguiente regla
+  let fase;
+  if(dia<=regla) fase="menstrual";
+  else if(Math.abs(dia-ov)<=1) fase="ovulatoria";
+  else if(dia<ov) fase="folicular";
+  else fase="lutea";
+  return {fase,dia,ovIso:sumaDiasIso(inicio,ov-1)};
+}
+async function cargarCiclo(){
+  const id=S.user.id;
+  const [cfg,regs]=await Promise.all([
+    db("GET","ciclo_config",`?cliente_id=eq.${id}&select=activo,duracion_media`),
+    db("GET","ciclos",`?cliente_id=eq.${id}&select=id,inicio,duracion_regla&order=inicio.asc`)]);
+  CICLO.activo=!!(cfg&&cfg[0]&&cfg[0].activo);
+  CICLO.duracion=(cfg&&cfg[0]&&cfg[0].duracion_media)||28;
+  CICLO.regs=regs||[];
+  CICLO.reglas={};
+  CICLO.regs.forEach(r=>CICLO.reglas[r.inicio]=r.duracion_regla||5);
+}
+// Si las tablas aún no existen, la función se desactiva sin romper la pestaña
+async function cicloSeguro(){try{await cargarCiclo()}catch(e){CICLO.activo=false;CICLO.reglas={};CICLO.regs=[]}}
+// Marca de la casilla del calendario: solo en el calendario de la propia atleta
+function cicloMarca(iso,clienteId){
+  if(!CICLO.activo||clienteId!==S.user.id) return "";
+  const f=faseEn(iso); if(!f) return "";
+  const ov=f.ovIso===iso;
+  return `<span class="ciclo-dot fase-${f.fase}${ov?" ov":""}" title="Fase ${FASES_CICLO[f.fase]}${ov?" · ovulación estimada":""}"></span>`;
+}
+function panelCicloHTML(){
+  if(!CICLO.activo) return "";
+  const hoyIso=isoLocal(new Date());
+  const f=faseEn(hoyIso);
+  const ini=cicloInicios();
+  const proxRegla=ini.find(x=>x>hoyIso);
+  const ovProx=f&&f.ovIso>=hoyIso?f.ovIso:(proxRegla?(faseEn(proxRegla)||{}).ovIso:null);
+  const registros=CICLO.regs.slice(-4).reverse().map(r=>`${fmtIso(r.inicio)} <button class="sec" data-cdel="${r.id}" title="Borrar este registro">✕</button>`).join(" · ");
+  return `<details class="card ciclo-card" open>
+    <summary><b>Ciclo menstrual</b>${f?` <span class="fase-tag fase-${f.fase}">Hoy: ${FASES_CICLO[f.fase]} · día ${f.dia}</span>`:""}</summary>
+    <p class="muted">Estimación según tus fechas. No confirma la ovulación ni mide hormonas.</p>
+    ${f?`<p>${ovProx?`Ovulación estimada: <b>${fmtIso(ovProx)}</b> · `:""}Próxima regla prevista: <b>${proxRegla?fmtIso(proxRegla):"—"}</b></p>`:`<p class="muted">Registra la fecha de inicio de tu última regla para ver tus fases.</p>`}
+    <div class="row"><label>Inicio de la regla <input type="date" id="cicloFe" value="${hoyIso}"></label>
+      <label>Días de regla <input type="number" id="cicloDur" min="1" max="10" value="5" style="width:80px"></label>
+      <button class="gold" id="cicloReg">Registrar</button></div>
+    <div class="msg" id="cicloMsg"></div>
+    ${registros?`<p class="muted">Últimos registros: ${registros}</p>`:""}
+  </details>`;
+}
+function enlazarCiclo(){
+  const r=document.getElementById("cicloReg"); if(!r) return;
+  r.onclick=async()=>{
+    const fe=document.getElementById("cicloFe").value;
+    const dur=Number(document.getElementById("cicloDur").value)||5;
+    if(!fe) return msg("#cicloMsg","Elige la fecha de inicio",false);
+    if(dur<1||dur>10) return msg("#cicloMsg","Los días de regla deben estar entre 1 y 10",false);
+    try{
+      await db("POST","ciclos","?on_conflict=cliente_id,inicio",{cliente_id:S.user.id,inicio:fe,duracion_regla:dur},"resolution=merge-duplicates,return=minimal");
+      await cargarCiclo(); tabEntrenosCal("#sub");
+    }catch(e){msg("#cicloMsg",e.message,false)}
+  };
+  document.querySelectorAll("[data-cdel]").forEach(b=>b.onclick=async()=>{
+    try{
+      await db("DELETE","ciclos",`?id=eq.${b.dataset.cdel}`,undefined,"return=minimal");
+      await cargarCiclo(); tabEntrenosCal("#sub");
+    }catch(e){msg("#cicloMsg",e.message,false)}
+  });
+}
+// Activación voluntaria en el perfil de la atleta
+function cicloConfigHTML(){
+  return `<h3>Seguimiento del ciclo</h3>
+    <label class="row"><input type="checkbox" id="cicloOn" ${CICLO.activo?"checked":""}> Mostrar mi fase del ciclo en entrenos y calendario</label>
+    <p class="muted">Solo tú lo ves. Puedes desactivarlo cuando quieras. No cambia tus cargas de entrenamiento.</p>
+    <div class="msg" id="cicloCfgMsg"></div>`;
+}
+async function enlazarCicloCfg(){
+  await cicloSeguro();
+  const box=$("#cicloCfg"); if(!box) return;
+  box.innerHTML=cicloConfigHTML();
+  const cb=$("#cicloOn");
+  cb.onchange=async()=>{
+    try{
+      await db("POST","ciclo_config","?on_conflict=cliente_id",{cliente_id:S.user.id,activo:cb.checked,duracion_media:CICLO.duracion||28},"resolution=merge-duplicates,return=minimal");
+      await cicloSeguro();
+      msg("#cicloCfgMsg",cb.checked?"Seguimiento activado":"Seguimiento desactivado",true);
+    }catch(e){cb.checked=!cb.checked;msg("#cicloCfgMsg",e.message,false)}
+  };
 }
 async function tabEntrenos(host="#tab"){
   // Solo las sesiones pendientes: las completadas pasan al historial
@@ -3531,10 +3655,12 @@ function tabPerfil(){
     <label>Foto de perfil <input type="file" id="foto" accept="image/*"></label></div>
     <h3>Apariencia</h3>
     <label class="row"><input type="checkbox" id="oscuro" ${temaOscuro()?"checked":""}> Modo oscuro</label>
+    <div id="cicloCfg"></div>
     <h3>Cambiar contraseña</h3>
     <input id="np" type="password" placeholder="Nueva contraseña (mín. 6 caracteres)">
     <button id="cp">Cambiar contraseña</button>
     <div class="msg" id="m"></div>`;
+  enlazarCicloCfg();
   $("#foto").onchange=async ev=>{
     const f=ev.target.files[0];if(!f)return;
     try{
@@ -3722,6 +3848,19 @@ html.oscuro .cli-kpis>div{background:rgba(255,255,255,.06);border-color:rgba(255
 .cli-barra span{width:100%;min-height:2px;background:var(--acento,#b8860b);border-radius:4px 4px 0 0;opacity:.85}
 .cli-barra.curso span{opacity:.4}
 .cli-barra.curso small{font-weight:700}
+.fase-tag{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;margin-left:6px;vertical-align:middle;background:rgba(127,127,127,.18)}
+.fase-tag.fase-menstrual{background:rgba(233,30,99,.2)}
+.fase-tag.fase-folicular{background:rgba(253,216,53,.4)}
+.fase-tag.fase-ovulatoria{background:rgba(93,64,55,.22)}
+.fase-tag.fase-lutea{background:rgba(158,158,158,.3)}
+.ciclo-card{margin-bottom:12px}
+.ciclo-card summary{cursor:pointer}
+.ciclo-dot{display:block;width:7px;height:7px;border-radius:50%;margin:3px auto 0;background:#999}
+.ciclo-dot.fase-menstrual{background:#e91e63}
+.ciclo-dot.fase-folicular{background:#fdd835}
+.ciclo-dot.fase-ovulatoria{background:#5d4037}
+.ciclo-dot.fase-lutea{background:#9e9e9e}
+.ciclo-dot.ov{box-shadow:0 0 0 2px #fff,0 0 0 3.5px #333}
 .cli-barra small{font-size:9.5px;opacity:.6;white-space:nowrap;display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;text-align:center}
 @media(max-width:600px){.cli-barras.densa .cli-barra:nth-child(even) small{visibility:hidden}}
 /* Selector de periodo del entrenado */
