@@ -63,6 +63,13 @@ main{max-width:980px;margin:0 auto;padding:calc(150px + min(80vw,600px)*0.37 + 1
 .tagline{text-align:center;font-weight:600;color:#1d1f21;margin:0 0 14px;font-size:15px}
 .login .tagline{display:none}
 .login label,.login .lbl,.login h2,.login h3{color:#fff}
+.pasos{display:flex;gap:8px;justify-content:center;margin:2px 0 4px}
+.pasos span{width:26px;height:26px;border-radius:50%;background:#2c343b;color:#9aa3ab;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+.pasos span.on{background:var(--acento);color:#15110a}
+.login .paso-txt{text-align:center;margin:0 0 4px}
+.guia{list-style:none;margin:12px 0;padding:0;counter-reset:g}
+.guia li{position:relative;margin:10px 0;padding-left:36px;color:#fff;line-height:1.4}
+.guia li::before{counter-increment:g;content:counter(g);position:absolute;left:0;top:0;width:24px;height:24px;border-radius:50%;background:var(--acento);color:#15110a;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:12px}
 .login .big{width:100%;max-width:440px;height:auto;display:block;margin:0 auto 12px}
 input,select,textarea{width:100%;padding:10px;border:1px solid #bbb;border-radius:8px;font:inherit;margin:4px 0 10px}
 input[type=checkbox],input[type=file]{width:auto}
@@ -856,8 +863,12 @@ async function login(email,pw){
   const j=await auth("token?grant_type=password",{email,password:pw});
   S={access:j.access_token,refresh:j.refresh_token};
   await cargarPerfil();guardarSesion();
+  if(ALTA_PENDIENTE()){ return pantallaBienvenida(); }
   entrar();
 }
+// Guía de alta: se muestra una sola vez, al primer acceso tras crear la cuenta
+const ALTA_PENDIENTE=()=>{try{return localStorage.getItem("alta_guia")==="1"}catch(e){return false}};
+const ALTA_MARCAR=(v)=>{try{v?localStorage.setItem("alta_guia","1"):localStorage.removeItem("alta_guia")}catch(e){}};
 async function salir(){await quitarPush();S=null;guardarSesion();try{["strava_code","strava_error","strava_state","ir"].forEach(k=>sessionStorage.removeItem(k))}catch(e){}pantallaLogin()}
 
 /* ---------- Pantallas de acceso ---------- */
@@ -875,27 +886,69 @@ function pantallaLogin(){
   $("#ir-reg").onclick=e=>{e.preventDefault();pantallaRegistro()};
   $("#ir-rec").onclick=e=>{e.preventDefault();pantallaRecuperar()};
 }
-function pantallaRegistro(){
+function pantallaRegistro(paso=1,datos={}){
   document.body.classList.remove("cli");
+  const nombres=["Tu cuenta","Confirma tu correo","Qué te espera"];
+  const barra=`<div class="pasos">${[1,2,3].map(i=>`<span class="${i<=paso?"on":""}">${i}</span>`).join("")}</div><p class="muted paso-txt">Paso ${paso} de 3 · ${nombres[paso-1]}</p>`;
+  const cab=`<img class="big" src="logo-acceso.png" alt="Alex Training Lab">`;
+  const redirigir=location.origin+location.pathname;
+  if(paso===1){
+    $("#app").innerHTML=`<div class="login card">${cab}${barra}
+      <input id="rn" placeholder="Nombre" value="${esc(datos.nombre||"")}" autocomplete="given-name">
+      <input id="re" type="email" placeholder="Email" value="${esc(datos.email||"")}" autocomplete="email">
+      <input id="rp" type="password" placeholder="Contraseña (mín. 6 caracteres)" autocomplete="new-password">
+      <input id="rp2" type="password" placeholder="Repite la contraseña" autocomplete="new-password">
+      <button class="gold" id="rg" style="width:100%">Continuar</button>
+      <p style="text-align:center"><a href="#" id="volver">Volver</a></p>
+      <div class="msg" id="m"></div></div>`;
+    $("#volver").onclick=e=>{e.preventDefault();pantallaLogin()};
+    $("#rg").onclick=async()=>{
+      const nombre=$("#rn").value.trim(), email=$("#re").value.trim(), pw=$("#rp").value, pw2=$("#rp2").value;
+      if(!nombre) return msg("#m","Escribe tu nombre.",false);
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return msg("#m","Revisa el email: tiene que tener la forma nombre@dominio.",false);
+      if(pw.length<6) return msg("#m","La contraseña tiene que tener al menos 6 caracteres.",false);
+      if(pw!==pw2) return msg("#m","Las contraseñas no coinciden.",false);
+      $("#rg").disabled=true;
+      try{
+        ALTA_MARCAR(true);
+        const j=await auth("signup?redirect_to="+encodeURIComponent(redirigir),{email,password:pw,data:{nombre}});
+        if(j.access_token){ S={access:j.access_token,refresh:j.refresh_token}; await cargarPerfil(); guardarSesion(); return pantallaBienvenida(); }
+        return pantallaRegistro(2,{email,nombre});
+      }catch(e){ ALTA_MARCAR(false); $("#rg").disabled=false; msg("#m",e.message,false); }
+    };
+    return;
+  }
+  if(paso===2){
+    $("#app").innerHTML=`<div class="login card">${cab}${barra}
+      <p class="paso-txt">Te hemos enviado un correo a <b>${esc(datos.email||"tu email")}</b>.</p>
+      <p class="muted" style="text-align:center">Pulsa el enlace de ese correo para confirmar tu cuenta. Si no lo ves, mira en spam.</p>
+      <button class="gold" id="ya" style="width:100%">Ya lo he confirmado: entrar</button>
+      <p style="text-align:center"><a href="#" id="volver">Volver al inicio</a></p>
+      <div class="msg" id="m"></div></div>`;
+    $("#ya").onclick=()=>{ pantallaLogin(); const em=$("#em"); if(em) em.value=datos.email||""; };
+    $("#volver").onclick=e=>{e.preventDefault();pantallaLogin()};
+  }
+}
+// Último paso del alta: qué pasa ahora y dónde empezar
+function pantallaBienvenida(){
+  ALTA_MARCAR(false);
+  document.body.classList.remove("cli");
+  const nombre=(S&&S.perfil&&S.perfil.nombre)||"";
   $("#app").innerHTML=`<div class="login card">
     <img class="big" src="logo-acceso.png" alt="Alex Training Lab">
-    <p class="tagline">Entrenamientos personalizados para conseguir tus objetivos</p>
-    <h3>Crear cuenta</h3>
-    <input id="rn" placeholder="Nombre">
-    <input id="re" type="email" placeholder="Email">
-    <input id="rp" type="password" placeholder="Contraseña (mín. 6 caracteres)">
-    <button class="gold" id="rg" style="width:100%">Registrarme</button>
-    <p style="text-align:center"><a href="#" id="volver">Volver</a></p>
-    <div class="msg" id="m"></div></div>`;
-  $("#volver").onclick=e=>{e.preventDefault();pantallaLogin()};
-  $("#rg").onclick=async()=>{
-    try{
-      const nombre=$("#rn").value.trim();
-      const j=await auth("signup?redirect_to="+encodeURIComponent(location.origin+location.pathname),{email:$("#re").value.trim(),password:$("#rp").value,data:{nombre}}); /* el enlace del email vuelve a esta misma página */
-      if(j.access_token){S={access:j.access_token,refresh:j.refresh_token};await cargarPerfil();guardarSesion();panelCliente("perfil","anamnesis");}
-      else msg("#m","Cuenta creada. Revisa tu correo para confirmarla y luego entra.",true);
-    }catch(e){msg("#m",e.message,false)}
-  };
+    <div class="pasos"><span class="on">1</span><span class="on">2</span><span class="on">3</span></div>
+    <p class="muted paso-txt">Paso 3 de 3 · Qué te espera</p>
+    <h3 style="text-align:center">¡Bienvenido${nombre?`, ${esc(nombre)}`:""}!</h3>
+    <ol class="guia">
+      <li><b>Tu entrenador te asigna tu plan.</b> Verás aquí tus entrenos en cuanto los programe.</li>
+      <li><b>Rellena tu anamnesis.</b> Son tus datos y tu historial. Son privados: solo tu entrenador puede verlos.</li>
+      <li><b>Registra cada entreno.</b> Tras la sesión, apunta cargas y cómo te has sentido (RPE).</li>
+    </ol>
+    <button class="gold" id="bv-ana" style="width:100%">Rellenar mi anamnesis</button>
+    <p style="text-align:center"><a href="#" id="bv-mas">Más tarde</a></p>
+  </div>`;
+  $("#bv-ana").onclick=()=>panelCliente("perfil","anamnesis");
+  $("#bv-mas").onclick=e=>{e.preventDefault();entrar()};
 }
 function pantallaRecuperar(){
   document.body.classList.remove("cli");
