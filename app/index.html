@@ -698,6 +698,14 @@ html body main.cli{padding-top:calc(min(80vw,600px)*0.37 + 56px) !important}
 .an-panel.ent-lista .pend-chip{color:#eda100}
 .an-panel.ent-lista .ent-ini{background:#2c343b;color:var(--acento);font-weight:700;display:inline-flex;align-items:center;justify-content:center}
 .an-panel.ent-lista .pend-aviso{background:#2a2412;color:#f5d68a;border:1px solid #5a4a1c;border-radius:10px}
+.an-panel.ent-lista .sem-resumen{margin:6px 0 12px;padding:14px 14px 12px}
+.an-panel.ent-lista .sem-tit{font-weight:700;margin-bottom:10px}
+.an-panel.ent-lista .sem-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.an-panel.ent-lista .sem-stats b{display:block;font-size:22px;color:var(--acento)}
+.an-panel.ent-lista .sem-stats span{font-size:12px;opacity:.75}
+.an-panel.ent-lista .sem-lista{margin:12px 0 0;font-size:14px}
+.an-panel.ent-lista .sem-n{background:none;border:1px solid var(--acento);color:inherit;border-radius:20px;padding:4px 10px;margin:3px;cursor:pointer;font:inherit;font-size:13px}
+.an-panel.ent-lista .sem-pie{margin:8px 0 0;font-size:13px}
 .an-panel.ent-lista .ent-buscar{background:#12161a;color:#eef0f2;border:1px solid #2c343b;border-radius:10px;padding:10px 12px;margin:8px 0 2px}
 .an-panel.ent-lista .ent-buscar::placeholder{color:#7d868e}
 .an-panel.ent-lista .ent-buscar:focus{outline:none;border-color:var(--acento);box-shadow:0 0 0 3px rgba(201,161,59,.22)}
@@ -1802,11 +1810,50 @@ function temaOscuro(){
 aplicarTema(temaOscuro());
 
 /* ---------- Panel del entrenador ---------- */
+/* Resumen de la semana (lunes a domingo) para el panel del entrenador */
+async function resumenSemanaEntrenador(cs){
+  try{
+    const activos=cs.filter(c=>modulosDe(c).length);
+    if(!activos.length) return "";
+    const lunes=new Date(); lunes.setHours(0,0,0,0); lunes.setDate(lunes.getDate()-((lunes.getDay()+6)%7));
+    const domingo=new Date(lunes); domingo.setDate(lunes.getDate()+6);
+    const ini=isoLocal(lunes), fin=isoLocal(domingo);
+    const ids=activos.map(c=>c.id);
+    const [ses,ats]=await Promise.all([
+      db("GET","sesiones",`?fecha=gte.${ini}&fecha=lte.${fin}&select=cliente_id,fecha,registro`).catch(()=>[]),
+      db("GET","atletas",`?user_id=in.(${ids.join(",")})&select=id,user_id`).catch(()=>[])
+    ]);
+    const atletaDe={}; (ats||[]).forEach(a=>atletaDe[a.id]=a.user_id);
+    const aIds=Object.keys(atletaDe);
+    const pls=aIds.length ? await db("GET","sesiones_planificadas",`?atleta_id=in.(${aIds.join(",")})&fecha=gte.${ini}&fecha=lte.${fin}&select=atleta_id,estado`).catch(()=>[]) : [];
+    const est={};
+    const add=(cid,hecha)=>{ if(!cid) return; const e=est[cid]||(est[cid]={prog:0,hech:0}); e.prog++; if(hecha) e.hech++; };
+    (ses||[]).forEach(s=>{
+      const hecha=Object.values(s.registro||{}).some(v=>v&&Object.entries(v).some(([k,x])=>k!=="estado"&&x!==""&&x!=null));
+      add(s.cliente_id,hecha);
+    });
+    (pls||[]).forEach(p=>add(atletaDe[p.atleta_id],p.estado==="hecha"));
+    const conProg=activos.filter(c=>est[c.id]&&est[c.id].prog);
+    const hechos=conProg.filter(c=>est[c.id].hech>0);
+    const sinReg=conProg.filter(c=>est[c.id].hech===0);
+    const sinProg=activos.length-conProg.length;
+    const tp=conProg.reduce((a,c)=>a+est[c.id].prog,0), th=conProg.reduce((a,c)=>a+est[c.id].hech,0);
+    const corto=d=>d.slice(5).replace("-","/");
+    const nom=c=>`<button class="sem-n" data-c="${c.id}">${esc(c.nombre||"Sin nombre")} <small>${est[c.id].hech}/${est[c.id].prog}</small></button>`;
+    return `<div class="card sem-resumen">
+      <div class="sem-tit">Esta semana <span class="muted">${corto(ini)} – ${corto(fin)}</span></div>
+      <div class="sem-stats"><div><b>${th}/${tp}</b><span>entrenos hechos</span></div><div><b>${hechos.length}</b><span>han entrenado</span></div><div><b>${sinReg.length}</b><span>sin registro</span></div></div>
+      ${sinReg.length?`<p class="sem-lista"><span>Sin registro todavía:</span> ${sinReg.map(nom).join(" ")}</p>`:""}
+      ${sinProg?`<p class="muted sem-pie">${sinProg} ${sinProg===1?"sin entreno":"sin entrenos"} programado${sinProg===1?"":"s"} esta semana.</p>`:""}
+    </div>`;
+  }catch(e){ return ""; }
+}
 async function listaClientes(){
   const cs=await db("GET","perfiles","?rol=eq.cliente&order=nombre.asc&select=id,nombre,foto,modulos");
   const pendiente=c=>!modulosDe(c).length;
   cs.sort((a,b)=>(pendiente(b)-pendiente(a))||String(a.nombre||"").localeCompare(String(b.nombre||"")));
   const nPend=cs.filter(pendiente).length;
+  const semanaHTML=await resumenSemanaEntrenador(cs);
   const botonEnt=c=>`<button class="ent-abrir${pendiente(c)?" pendiente":""}" data-c="${c.id}">${fotoSegura(c.foto)?`<img class="ent-av" src="${esc(fotoSegura(c.foto))}" alt="">`:`<span class="ent-av ent-ini">${esc((c.nombre||"?")[0].toUpperCase())}</span>`}<span>${esc(c.nombre||"Sin nombre")}${pendiente(c)?'<small class="pend-chip">⏳ sin asignar</small>':""}</span><span class="badge-msg" data-bc="${c.id}"></span></button>`;
   const norm=t=>String(t||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
   const gruposHTML=q=>{const n=norm(q.trim());const f=cs.filter(c=>!n||norm(c.nombre).includes(n));
@@ -1814,6 +1861,7 @@ async function listaClientes(){
     return [[f.filter(pendiente),"⏳ Sin asignar"],[f.filter(c=>!pendiente(c)),"Activos"]].filter(([l])=>l.length).map(([l,g])=>`<h3 class="ent-grp">${g} (${l.length})</h3><div class="ent-grid">${l.map(c=>botonEnt(c)).join("")}</div>`).join("");};
   shell(`<div id="tab"><div class="an-panel ent-lista">
     <h2 class="ent-tit">Entrenados (${cs.length})</h2>
+    ${semanaHTML}
     ${nPend?`<p class="card pend-aviso">⏳ ${nPend===1?"Hay 1 entrenado nuevo":"Hay "+nPend+" entrenados nuevos"} esperando a que le${nPend===1?"":"s"} digas qué entrena${nPend===1?"":"n"}. Ábrelo${nPend===1?"":"s"} y marca Fuerza, Running / trail o las dos.</p>`:""}
     ${cs.length?"":`<p class="muted">Todavía no hay entrenados. Se registran ellos desde la pantalla de inicio.</p>`}
     <input id="ent-buscar" type="search" class="ent-buscar" placeholder="Buscar entrenado…" aria-label="Buscar entrenado">
@@ -1823,6 +1871,7 @@ async function listaClientes(){
   $("#rescarga").onclick=tabResumenCarga;
   const enlazar=()=>document.querySelectorAll("#ent-grupos [data-c]").forEach(b=>b.onclick=()=>fichaCliente(b.dataset.c));
   enlazar();
+  document.querySelectorAll(".sem-resumen [data-c]").forEach(b=>b.onclick=()=>fichaCliente(b.dataset.c));
   $("#ent-buscar").oninput=e=>{$("#ent-grupos").innerHTML=gruposHTML(e.target.value);enlazar()};
   refrescarBadges();
 }
