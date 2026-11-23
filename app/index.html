@@ -2449,7 +2449,7 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
 
   const tarjeta=(s,abierta)=>{const ed=admin&&editando.has(String(s.id));return `<details class="card sesion${hecho(s)?" hecha":""}${ed?" editando":""}" data-sid="${s.id}"${(abierta||String(s.id)===abrirId)?" open":""}><summary class="dia-sum" data-arr="${s.id}">${badgeFecha(s)}<h3>${nombreEntreno(s)}</h3></summary>
       ${admin?(ed?`<div class="row e-modos ses-barra"><button class="gold" data-edtxt="${s.id}">✏️ Editar como texto</button><button class="sec" data-ed="${s.id}">▦ Editar en tabla</button><button class="sec" data-copses="${s.id}">📋 Copiar sesión</button><button class="sec" data-pegses="${s.id}">📥 Pegar sesión</button><span class="muted" data-bst="${s.id}"></span></div>`:`<div class="row e-modos ses-barra"><button class="gold" data-editar="${s.id}">✏️ Editar</button><button class="sec" data-copses="${s.id}">📋 Copiar</button><span class="muted" data-bst="${s.id}"></span></div>`):""}
-      ${sesionHTML(s,!admin,true,ed)}
+      ${sesionHTML(s,true,true,ed)}
       <div class="row"><button data-save="${s.id}">${admin?"Guardar cambios":"Guardar registro"}</button>${admin?`${ed?`<button class="sec" data-cerrar="${s.id}">✔ Cerrar edición</button>`:""}<button class="danger" data-del="${s.id}">Borrar</button>`:""}<span class="muted" data-st="${s.id}"></span></div>
       <div class="row mover"><label>${admin?"Mover o copiar a otro día":"Mover a otro día"} <input type="date" data-mover-in="${s.id}"></label><button class="sec" data-mover="${s.id}">${admin?"Mover / copiar":"Mover"}</button></div></details>`};
   const moverA=async(id,val)=>{
@@ -2715,18 +2715,18 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
         const s=todas.find(x=>String(x.id)===String(id));
         const leido=leerRegistro(card), reg={...((s&&s.registro)||{})};
         Object.keys(leido).forEach(k=>{reg[k]={...(reg[k]||{}),...leido[k]}});
-        // El registro del atleta solo lo cambia el atleta: el entrenador guarda únicamente el plan
-        const cambios=admin?{}:{registro:reg};
-        if(admin&&s&&card.querySelector(".xp")) cambios.bloques=leerPlan(card,s);
-        if(Object.keys(cambios).length) await db("PATCH","sesiones",`?id=eq.${id}`,cambios,"return=minimal");
-        if(s){if(!admin) s.registro=reg; if(cambios.bloques) s.bloques=cambios.bloques}
+        // En la edición de plan (tabla) solo se cambia el plan; el registro lo tocan el atleta o el entrenador desde la vista normal
+        const cambios={registro:reg};
+        if(admin&&s&&card.querySelector(".xp")){cambios.bloques=leerPlan(card,s); delete cambios.registro}
+        await db("PATCH","sesiones",`?id=eq.${id}`,cambios,"return=minimal");
+        if(s){if(cambios.registro) s.registro=reg; if(cambios.bloques) s.bloques=cambios.bloques}
         if(!admin&&hecho({registro:reg})){
           const rs=Object.values(reg).map(v=>parseFloat(String(v&&v.rpe).replace(",","."))).filter(x=>Number.isFinite(x));
           const rpeM=rs.length?rs.reduce((a,b)=>a+b,0)/rs.length:null;
           mostrarMotivacion(motivarCompletado({tipo:"fuerza",rpe:rpeM,ses:s&&s.titulo}));
         }
         if(!admin&&hecho({registro:reg})){st.textContent="Completado ✓ · pasa al historial";setTimeout(()=>tabEntrenosCal(host,clienteId,admin),1000)}
-        else st.textContent="Guardado ✓";
+        else{st.textContent="Guardado ✓"; if(admin&&cambios.registro&&hecho({registro:reg})) setTimeout(()=>tabEntrenosCal(host,clienteId,admin),800)}
       }catch(e){st.textContent="Error: "+e.message}
     });
     // Mover con la fecha elegida (ambas pestañas)
@@ -3049,7 +3049,7 @@ function cicloMarca(iso,clienteId){
   if(!CICLO.activo||clienteId!==S.user.id) return "";
   const f=faseEn(iso); if(!f) return "";
   const ov=f.ovIso===iso;
-  return `<span class="ciclo-dot fase-${f.fase}${ov?" ov":""}" title="Fase ${FASES_CICLO[f.fase]}${ov?" · ovulación estimada":""}"></span>`;
+  return `<span class="ciclo-strip fase-${f.fase}${ov?" ov":""}" title="Fase ${FASES_CICLO[f.fase]}${ov?" · ovulación estimada":""}"></span>`;
 }
 function panelCicloHTML(){
   if(!CICLO.activo) return "";
@@ -3900,12 +3900,13 @@ html.oscuro .cli-kpis>div{background:rgba(255,255,255,.06);border-color:rgba(255
 .cli-barra span{width:100%;min-height:2px;background:var(--acento,#b8860b);border-radius:4px 4px 0 0;opacity:.85}
 .cli-barra.curso span{opacity:.4}
 .cli-barra.curso small{font-weight:700}
-.ciclo-dot{display:block;width:7px;height:7px;border-radius:50%;margin:3px auto 0;background:#999}
-.ciclo-dot.fase-menstrual{background:#e91e63}
-.ciclo-dot.fase-folicular{background:#f9a825}
-.ciclo-dot.fase-ovulatoria{background:#00897b}
-.ciclo-dot.fase-lutea{background:#7e57c2}
-.ciclo-dot.ov{box-shadow:0 0 0 2px #fff,0 0 0 3.5px #333}
+.cal-grid .cal-d{position:relative}
+.ciclo-strip{position:absolute;left:0;right:0;top:0;height:4px;border-radius:8px 8px 0 0;background:#9e9e9e;pointer-events:none}
+.ciclo-strip.fase-menstrual{background:#e91e63}
+.ciclo-strip.fase-folicular{background:#f9a825}
+.ciclo-strip.fase-ovulatoria{background:#00897b}
+.ciclo-strip.fase-lutea{background:#7e57c2}
+.ciclo-strip.ov{background:repeating-linear-gradient(45deg,#00897b 0 4px,#fff 4px 6px)}
 html body .card.ciclo-card{background:#fff;color:#1d1f21;backdrop-filter:none;-webkit-backdrop-filter:none;border-top:5px solid var(--fc,#9e9e9e);padding:16px 16px 14px;margin-bottom:14px;--fc:#9e9e9e;--fcs:rgba(158,158,158,.12)}
 html body .card.ciclo-card.fase-menstrual{--fc:#e91e63;--fcs:rgba(233,30,99,.10)}
 html body .card.ciclo-card.fase-folicular{--fc:#f9a825;--fcs:rgba(249,168,37,.14)}
