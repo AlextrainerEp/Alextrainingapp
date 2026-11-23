@@ -989,6 +989,10 @@ function shell(inner,ficha){
 const VAPID_PUB="BLfZ3z5iE2g4aBER5D8BkfOe8HMuFxxIsuiIdsGTPJ-xAYBpM_nOgqGFWf6MvN9yJvuL2VtcNlC1mJsD3mUelqQ";
 function pushDisponible(){return "serviceWorker" in navigator&&"PushManager" in window&&"Notification" in window}
 function esIOS(){return /iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1)}
+// Instalar en Android/escritorio: el navegador entrega el aviso y lo guardamos para el botón de Perfil
+let avisoInstalar=null;
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();avisoInstalar=e});
+window.addEventListener("appinstalled",()=>{avisoInstalar=null});
 function esInstalada(){return window.matchMedia&&matchMedia("(display-mode: standalone)").matches||navigator.standalone===true}
 function claveB64(s){const p="=".repeat((4-s.length%4)%4),b=(s+p).replace(/-/g,"+").replace(/_/g,"/"),r=atob(b);return Uint8Array.from([...r].map(c=>c.charCodeAt(0)))}
 async function swPush(){
@@ -3888,7 +3892,8 @@ async function anValoracionVer(c){
 
 function tabPerfil(){
   const p=S.perfil;
-  $("#sub").innerHTML=`<div class="row">${fotoSegura(p.foto)?`<img class="avatar" style="width:90px;height:90px" src="${esc(fotoSegura(p.foto))}" alt="">`:`<span class="muted">Sin foto</span>`}
+  const instalar=!esInstalada()&&avisoInstalar?`<div class="card"><b>📲 Instalar la app</b><p class="muted" style="margin:6px 0 10px">Ábrela desde el icono de tu pantalla de inicio, como una app más.</p><button type="button" id="instalar-app">Instalar</button></div>`:"";
+  $("#sub").innerHTML=`${instalar}<div class="row">${fotoSegura(p.foto)?`<img class="avatar" style="width:90px;height:90px" src="${esc(fotoSegura(p.foto))}" alt="">`:`<span class="muted">Sin foto</span>`}
     <label>Foto de perfil <input type="file" id="foto" accept="image/*"></label></div>
     <h3>Apariencia</h3>
     <label class="row"><input type="checkbox" id="oscuro" ${temaOscuro()?"checked":""}> Modo oscuro</label>
@@ -3907,6 +3912,8 @@ function tabPerfil(){
     }catch(e){msg("#m",e.message,false)}
   };
   $("#oscuro").onchange=ev=>aplicarTema(ev.target.checked);
+  const ib=$("#instalar-app");
+  if(ib) ib.onclick=async()=>{ if(!avisoInstalar) return; avisoInstalar.prompt(); try{await avisoInstalar.userChoice}catch(e){} avisoInstalar=null; ib.closest(".card")?.remove(); };
   $("#cp").onclick=async()=>{
     try{
       await auth("user",{password:$("#np").value},"PUT",S.access);
