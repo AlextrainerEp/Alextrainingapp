@@ -1710,7 +1710,8 @@ async function tabHistorialCliente(host="#tab"){
   $(host).innerHTML=tabHistorial(ses,true,res);
   const cont=$(host).querySelector("#hist-prog");
   const { mapa, orden } = progresoDatos(hechos);
-  cont.innerHTML=progresoHTML(mapa,orden);
+  cont.innerHTML=progresoCargaHTML(mapa,orden,hechos);
+  cont.insertAdjacentHTML("beforeend",await recordsRunning(S.user.id));
   const sel=cont.querySelector("#prog-ej"), svg=cont.querySelector("#prog-svg");
   if(sel) sel.onchange=()=>svg.innerHTML=graficoEj(mapa.get(sel.value)||[]);
   if(sel) svg.innerHTML=graficoEj(mapa.get(sel.value)||[]);
@@ -1783,12 +1784,56 @@ function progresoDatos(hechos){
   const orden=[...mapa.keys()].sort((a,b)=>mapa.get(b).length-mapa.get(a).length);
   return {mapa,orden};
 }
-function progresoHTML(mapa,orden){
+/* ---------- Récords (fuerza y running) ---------- */
+const fmtKg=x=>String(Math.round(x*10)/10).replace(".",",");
+const fmtRitmo=seg=>{const t=Math.round(seg),m=Math.floor(t/60),x=t%60;return `${m}:${String(x).padStart(2,"0")}`};
+// Mejor carga por ejercicio y su 1RM estimado (Epley, solo con 1-10 repeticiones)
+function recordsFuerza(hechos){
+  const m=new Map();
+  [...hechos].reverse().forEach(s=>Object.entries(s.registro||{}).forEach(([k,v])=>{
+    if(!/^\d+-\d+$/.test(k)) return;
+    const [bi,ei]=k.split("-").map(Number);
+    const e=normEj(((s.bloques||[])[bi]||{}).ejercicios?.[ei]);
+    const nombre=(e.ej||"").trim(), kg=kgDe(v);
+    if(!nombre||kg==null) return;
+    const fecha=s.fecha||"", reps=parseInt(v.reps,10);
+    const e1=(reps>=1&&reps<=10)?kg*(1+reps/30):null;
+    const r=m.get(nombre)||{n:nombre,kg:null,e1:null};
+    if(r.kg==null||kg>r.kg.v) r.kg={v:kg,fecha};
+    if(e1!=null&&(r.e1==null||e1>r.e1.v)) r.e1={v:Math.round(e1*10)/10,fecha,kg,reps};
+    m.set(nombre,r);
+  }));
+  return [...m.values()].sort((a,b)=>b.kg.v-a.kg.v);
+}
+function recordsFuerzaHTML(recs){
+  if(!recs.length) return `<p class="muted">Todavía no hay cargas registradas en kg.</p>`;
+  return `<div class="recs">${recs.map(r=>`<div class="rec"><span>${esc(r.n)}</span><b>${fmtKg(r.kg.v)} kg</b><small class="muted">${esc(r.kg.fecha)}${r.e1?` · 1RM est. ${fmtKg(r.e1.v)} kg`:""}</small></div>`).join("")}</div>`;
+}
+// Running: distancia máxima, mejor ritmo medio por distancia y mayor desnivel (de las actividades de Strava)
+async function recordsRunning(userId){
+  let acts=[];
+  try{
+    const at=await db("GET","atletas",`?user_id=eq.${userId}&select=id`);
+    if(at.length) acts=await db("GET","actividades",`?atleta_id=in.(${at.map(a=>a.id).join(",")})&select=fecha,tipo,nombre,distancia_m,duracion_s,desnivel_m`)||[];
+  }catch(e){return ""}
+  const car=acts.filter(a=>/run|trail/i.test(a.tipo||"")&&a.distancia_m>0);
+  if(!car.length) return "";
+  const filas=[];
+  const mayor=car.reduce((a,b)=>b.distancia_m>a.distancia_m?b:a);
+  filas.push(["Distancia más larga",`${(mayor.distancia_m/1000).toFixed(2).replace(".",",")} km`,mayor.fecha]);
+  [[5,"Mejor ritmo medio · 5 km o más"],[10,"Mejor ritmo medio · 10 km o más"],[21,"Mejor ritmo medio · 21 km o más"]].forEach(([km,lab])=>{
+    const c=car.filter(a=>a.distancia_m>=km*1000&&a.duracion_s).map(a=>({fecha:a.fecha,seg:a.duracion_s/(a.distancia_m/1000)})).sort((a,b)=>a.seg-b.seg)[0];
+    if(c) filas.push([lab,`${fmtRitmo(c.seg)} /km`,c.fecha]);
+  });
+  const desn=car.filter(a=>a.desnivel_m>0);
+  if(desn.length){const d=desn.reduce((a,b)=>b.desnivel_m>a.desnivel_m?b:a); filas.push(["Mayor desnivel",`+${Math.round(d.desnivel_m)} m`,d.fecha]);}
+  return `<div class="card"><h3>Récords de running</h3><div class="recs">${filas.map(([n,v,f])=>`<div class="rec"><span>${esc(n)}</span><b>${v}</b><small class="muted">${esc(String(f||"").slice(0,10))}</small></div>`).join("")}</div></div>`;
+}
+function progresoCargaHTML(mapa,orden,hechos=[]){
   if(!orden.length) return `<div class="card"><h3>Progreso</h3><p class="muted">Cuando registres cargas en kg (por ejemplo "40 kg") verás aquí tu evolución y tus récords.</p></div>`;
-  const recs=orden.map(n=>{const l=mapa.get(n);const m=l.reduce((a,b)=>b.kg>a.kg?b:a);return {n,kg:m.kg,fecha:m.fecha}}).sort((a,b)=>b.kg-a.kg);
   return `<div class="card">
-    <h3>Récords personales</h3>
-    <div class="recs">${recs.map(r=>`<div class="rec"><span>${esc(r.n)}</span><b>${String(r.kg).replace(".",",")} kg</b><small class="muted">${esc(r.fecha)}</small></div>`).join("")}</div>
+    <h3>Récords de fuerza</h3>
+    ${recordsFuerzaHTML(recordsFuerza(hechos))}
   </div>
   <div class="card">
     <h3>Progreso de carga</h3>
@@ -1945,7 +1990,14 @@ async function fichaCliente(id){
     };
   };
   const verAnam=()=>subTabs([["Valoración inicial",()=>anValoracionEntrenador(c,"ini")],["Anamnesis",()=>anamnesisEntrenador(c)],["Valoración funcional",()=>anValoracionEntrenador(c,"fun")],["Test FMS",()=>anValoracionEntrenador(c,"fms")]]);
-  const verHist=()=>{$("#tab").innerHTML=tabHistorial(ses)};
+  const verHist=async()=>{
+    $("#tab").innerHTML=tabHistorial(ses)+'<div id="hist-rec"></div>';
+    const box=$("#hist-rec"); if(!box) return;
+    const fz=recordsFuerza(ses.filter(hecho));
+    const run=await recordsRunning(id).catch(()=>"");
+    if(!$("#hist-rec")) return;
+    box.innerHTML=`<div class="card"><h3>Récords de fuerza</h3>${recordsFuerzaHTML(fz)}</div>${run}`;
+  };
   const verMsgs=()=>tabMensajes(id,true);
   // La planificación por zonas y Strava se abren dentro de «Entrenamientos», no en una pestaña aparte
   const verRes=()=>{
