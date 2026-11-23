@@ -685,7 +685,9 @@ html body:not(.cli) .login .msg.ok{color:#bfe8b0!important}
 .pend-aviso{padding:10px 13px;font-size:13.5px;border-left:4px solid #eda100;margin-bottom:10px}
 .ent-abrir.pendiente{border-left:4px solid #eda100}
 /* Lista de entrenados: panel oscuro premium (versión comercial) */
-.an-panel.ent-lista{background:linear-gradient(180deg,#1c2126 0%,#121518 100%);color:#e8eaed;border:1px solid #2a3137;border-radius:16px;padding:20px;box-shadow:0 12px 32px rgba(0,0,0,.28)}
+html body main:has(.ent-lista){padding-top:calc(min(80vw,600px)*0.37 + 56px) !important}
+html body main.cli{padding-top:calc(min(80vw,600px)*0.37 + 56px) !important}
+.an-panel.ent-lista{margin-top:0;background:linear-gradient(180deg,#1c2126 0%,#121518 100%);color:#e8eaed;border:1px solid #2a3137;border-radius:16px;padding:20px;box-shadow:0 12px 32px rgba(0,0,0,.28)}
 .an-panel.ent-lista .ent-tit{color:#fff;font-weight:700;letter-spacing:.01em;margin:0 0 6px}
 .an-panel.ent-lista .ent-grp{color:var(--acento);font-weight:700;letter-spacing:.08em;margin:18px 0 10px}
 .an-panel.ent-lista .muted{color:#9aa3ab}
@@ -3928,11 +3930,18 @@ html.oscuro body .atl-carga .tip{background:#262b30}
 .atl-carga .nota-datos{font-size:12px}
 /* ===== Bienestar diario, aviso de RPE, carga del cliente y resumen de todos ===== */
 .bien-card{padding:12px 14px}
-.bien-cab{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px;font-size:15px}
-.bien-fila{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;padding:5px 0}
+.bien-card>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:15px}
+.bien-card>summary::-webkit-details-marker{display:none}
+.bien-card>summary::after{content:"▾";color:var(--acento,#b8860b);margin-left:6px;transition:transform .15s}
+.bien-card[open]>summary{margin-bottom:8px}
+.bien-card[open]>summary::after{transform:rotate(180deg)}
+.bien-cab{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:15px}
+.bien-fila{display:grid;grid-template-columns:minmax(0,1fr);gap:4px;padding:6px 0}
 .bien-et{font-size:14px;font-weight:600;line-height:1.2}
-.bien-ops{display:flex;gap:6px}
-.bien-op{width:38px;height:38px;min-width:38px;padding:0;margin:0;border:1px solid rgba(0,0,0,.18);border-radius:10px;background:rgba(255,255,255,.8);font-size:19px;line-height:1;cursor:pointer;filter:grayscale(1);opacity:.55}
+.bien-ops{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
+.bien-op .bien-em{font-size:20px;line-height:1}
+.bien-op small{font-size:10px;line-height:1.1;font-weight:600;text-align:center;white-space:normal}
+.bien-op{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:60px;min-width:0;padding:4px 2px;margin:0;border:1px solid rgba(0,0,0,.18);border-radius:10px;background:rgba(255,255,255,.8);font-size:19px;line-height:1;cursor:pointer;filter:grayscale(1);opacity:.55}
 .bien-op.on{filter:none;opacity:1;border-color:var(--acento,#b8860b);box-shadow:0 0 0 2px rgba(184,134,11,.3)}
 .bien-msg{font-size:12px;min-height:16px;margin-top:4px}
 html.oscuro .bien-op{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18)}
@@ -5603,10 +5612,10 @@ function abrirEditorRes(p, zonas, alGuardar) {
 
 /* ---------- 1. Bienestar diario ---------- */
 const BIEN_CAMPOS = [
-  { k: 'sueno',  et: 'Sueño',            bajo: 'Muy mal',      alto: 'Muy bien' },
-  { k: 'fatiga', et: 'Energía',          bajo: 'Agotado',      alto: 'Fresco' },
-  { k: 'dolor',  et: 'Agujetas / dolor', bajo: 'Muy dolorido', alto: 'Sin dolor' },
-  { k: 'animo',  et: 'Ánimo',            bajo: 'Muy bajo',     alto: 'Muy bien' }
+  { k: 'sueno',  et: 'Sueño',            bajo: 'Muy mal',      alto: 'Muy bien',   escala: ['Muy mal', 'Mal', 'Normal', 'Bien', 'Muy bien'] },
+  { k: 'fatiga', et: 'Energía',          bajo: 'Agotado',      alto: 'Fresco',     escala: ['Agotado', 'Cansado', 'Normal', 'Fresco', 'Muy fresco'] },
+  { k: 'dolor',  et: 'Agujetas / dolor', bajo: 'Muy dolorido', alto: 'Sin dolor',  escala: ['Muy dolorido', 'Dolorido', 'Algo', 'Poco', 'Sin dolor'] },
+  { k: 'animo',  et: 'Ánimo',            bajo: 'Muy bajo',     alto: 'Muy bien',   escala: ['Muy bajo', 'Bajo', 'Normal', 'Bien', 'Muy bien'] }
 ];
 const BIEN_CARAS = ['', '😖', '😕', '😐', '🙂', '😄'];
 
@@ -5623,13 +5632,16 @@ async function tarjetaBienestar(host) {
   const actual = await bienestarHoy(S.user.id, hoy) || {};
   if (actual.__falta) return;
   const val = Object.assign({}, actual);
+  let abierta = false;   // cerrada por defecto; recuerda si el usuario la abrió
   const pintar = () => {
     const puesto = BIEN_CAMPOS.filter(c => val[c.k] != null).length;
-    el.innerHTML = `<div class="card bien-card">
-      <div class="bien-cab"><b>¿Cómo estás hoy?</b><span class="muted">${puesto === 4 ? 'Guardado ✓' : 'Tarda 10 segundos'}</span></div>
+    el.innerHTML = `<details class="card bien-card"${abierta ? ' open' : ''}>
+      <summary class="bien-cab"><b>¿Cómo estás hoy?</b><span class="muted">${puesto === 4 ? 'Guardado ✓' : 'Tarda 10 segundos'}</span></summary>
       ${BIEN_CAMPOS.map(c => `<div class="bien-fila"><span class="bien-et">${c.et}</span>
-        <span class="bien-ops">${[1, 2, 3, 4, 5].map(n => `<button type="button" class="bien-op${val[c.k] === n ? ' on' : ''}" data-b="${c.k}" data-v="${n}" title="${n === 1 ? esc(c.bajo) : n === 5 ? esc(c.alto) : n}" aria-label="${esc(c.et)}: ${n} de 5">${BIEN_CARAS[n]}</button>`).join('')}</span></div>`).join('')}
-      <div class="bien-msg muted" id="bien-msg"></div></div>`;
+        <span class="bien-ops">${[1, 2, 3, 4, 5].map(n => `<button type="button" class="bien-op${val[c.k] === n ? ' on' : ''}" data-b="${c.k}" data-v="${n}" title="${esc(c.escala[n - 1])}" aria-label="${esc(c.et)}: ${esc(c.escala[n - 1])}, ${n} de 5"><span class="bien-em">${BIEN_CARAS[n]}</span><small>${esc(c.escala[n - 1])}</small></button>`).join('')}</span></div>`).join('')}
+      <div class="bien-msg muted" id="bien-msg"></div></details>`;
+    const det = el.querySelector('.bien-card');
+    if (det) det.addEventListener('toggle', () => { abierta = det.open; });
   };
   pintar();
   el.onclick = async ev => {
