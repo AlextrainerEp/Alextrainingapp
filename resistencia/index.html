@@ -88,6 +88,39 @@ h3{margin:12px 0 6px;font-size:15px}
 .tarjeta .tit{font-weight:700;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;line-height:1.25}
 .tarjeta .det{color:#555;margin:2px 0 4px}
 .tarjeta .acc{display:flex;gap:4px;align-items:center}
+.acc-hover{display:none;gap:4px;flex-wrap:wrap;margin-top:6px}
+/* ===== Tema «Negro y oro» (resistencia; mismas variables que la app de entrenamiento) ===== */
+html.tema-niebla{--n-sup:#181d22;--n-sup2:#1f252b;--n-linea:#2a3137;--n-txt:#eef0f2;--n-mut:#9aa3ab;--acento:#c9a13b}
+html,html.tema-niebla body{background:#0f1215 !important;color:var(--n-txt)}
+html.tema-niebla .fondo{background-color:#0f1215 !important}
+html.tema-niebla .fondo::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(rgba(15,18,21,.82),rgba(15,18,21,.96))}
+html.tema-niebla .frase{color:#f3e7c4}
+html.tema-niebla .frase .autor{color:var(--acento)}
+html.tema-niebla header{background:#0a0c0e;border-bottom:1px solid var(--n-linea)}
+html.tema-niebla .card,html.tema-niebla .dia{background:rgba(24,29,34,.94);color:var(--n-txt);border:1px solid #242b31;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+html.tema-niebla .tarjeta{background:#1c2227;color:var(--n-txt);box-shadow:0 2px 6px rgba(0,0,0,.35)}
+html.tema-niebla .mes-celda{background:#1a2026;color:#d9dde1;border:1px solid #242b31}
+html.tema-niebla h2,html.tema-niebla h3{color:#f4f5f6}
+html.tema-niebla .muted{color:var(--n-mut)}
+html.tema-niebla input,html.tema-niebla select,html.tema-niebla textarea{background:#12161a;color:var(--n-txt);border:1px solid var(--n-linea)}
+html.tema-niebla button{background:var(--n-sup2);color:var(--n-txt);border:1px solid var(--n-linea)}
+html.tema-niebla button.gold{background:linear-gradient(180deg,#e0b75a,#c9a13b);color:#15110a;border-color:transparent;font-weight:700}
+html.tema-niebla button.danger{background:#4a1d1d;color:#ffd9d9;border-color:#6b2a2a}
+html.tema-niebla .tabt,html.tema-niebla .subt{background:#1a2026;color:#c8ced4;border:1px solid var(--n-linea)}
+html.tema-niebla .tabt.on,html.tema-niebla .subt.on{background:linear-gradient(180deg,#e0b75a,#c9a13b) !important;color:#15110a !important;border-color:transparent;font-weight:700}
+html.tema-niebla .modal-caja{background:#171c21;color:var(--n-txt);border:1px solid #242b31}
+.acc-hover button{background:#e3e6e8;color:#1d1f21;border:0;border-radius:6px;padding:3px 7px;font-size:11px;cursor:pointer}
+.acc-hover button:hover{background:#d2d6da}
+.tarjeta.acc-on .acc-hover,.tarjeta:hover .acc-hover{display:flex}
+.resumen-ver{display:none;color:#333;margin-top:4px;white-space:pre-line}
+.tarjeta.expandido .resumen-ver{display:block}
+.tarjeta.expandido .tit{-webkit-line-clamp:unset;display:block}
+.mi{position:relative}
+.mi .acc-hover{position:absolute;left:0;top:100%;z-index:50;flex-direction:column;align-items:stretch;background:#fff;border:1px solid #c5c9cc;border-radius:8px;padding:4px;box-shadow:0 6px 16px rgba(0,0,0,.22)}
+.mi:hover .acc-hover{display:flex}
+.mi .acc-hover button{text-align:left}
+.mes-celda{overflow:visible}
+.mes-item.expandido{white-space:normal;overflow:visible;text-overflow:clip}
 .tarjeta select{width:auto;margin:0;padding:2px;font-size:11px;flex:1;min-width:0}
 .tarjeta button{width:auto;margin:0;padding:2px 6px;font-size:11px}
 .vacio-dia{color:#888;font-size:12px;text-align:center;margin-top:8px}
@@ -2001,7 +2034,7 @@ function mostrarMotivacion(txt){
   clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove("on"),15000);
 }
 
-async function abrirDetalleSesion(p) {
+async function abrirDetalleSesion(p, soloLectura = false) {
   const desc = String(p.descripcion || ''), i = desc.indexOf(' — ');
   const nombre = i > 0 ? desc.slice(0, i) : (desc || NOMBRES_TIPO[p.tipo] || 'Sesión');
   const explicacion = i > 0 ? desc.slice(i + 3) : '';
@@ -2022,6 +2055,10 @@ async function abrirDetalleSesion(p) {
   $('ms-notas').value = p.notas_atleta || '';
   $('ms-comentario').value = p.comentario_entrenador || '';
   $('ms-msg').textContent = '';
+  const ro = !!soloLectura;
+  document.querySelectorAll('#modal-sesion input, #modal-sesion select, #modal-sesion textarea').forEach(el => { el.disabled = ro; });
+  document.querySelectorAll('#modal-sesion button').forEach(b => { if (b.id !== 'ms-cerrar') b.style.display = ro ? 'none' : ''; });
+  document.querySelector('#modal-sesion .cab').textContent = ro ? 'Ver sesión' : 'Editar sesión';
   $('modal-sesion').classList.remove('oculto');
   const numero = t => { t = String(t ?? '').trim().replace(',', '.'); if (!t) return null; const n = Number(t); return Number.isFinite(n) ? n : NaN; };
   $('ms-guardar').onclick = async () => {
@@ -3383,7 +3420,10 @@ async function cargarMes() {
       t.ondragstart = (e) => { arrastrando = p; e.dataTransfer.setData('text/plain', p.id || ''); };
       t.ondragend = () => { arrastrando = null; };
       t.onclick = (e) => { if (modoBorrar) return; e.stopPropagation(); iniciarMover(p); };
-      celda.appendChild(t);
+      const mi = document.createElement('div');
+      mi.className = 'mi';
+      mi.append(t, accionesSesion(p, t));
+      celda.appendChild(mi);
     });
     if (delDia.length > 3) {
       const m = document.createElement('div');
@@ -3471,6 +3511,17 @@ async function cargarSemana() {
   $('semana' + (modoAtletaActivo ? '-a' : '')).appendChild(grid);
 }
 
+// Acciones al pasar el cursor (o tocar): Ver, Abrir y, para el entrenador, Editar
+function accionesSesion(p, el) {
+  const w = document.createElement('span');
+  w.className = 'acc-hover';
+  const b = (t, fn) => { const x = document.createElement('button'); x.type = 'button'; x.textContent = t; x.onclick = (e) => { e.stopPropagation(); fn(); }; return x; };
+  w.appendChild(b('👁 Ver', () => { el.classList.toggle('expandido'); }));
+  w.appendChild(b('↗ Abrir', () => { if (modoAtletaActivo) mostrarDetalle(p); else abrirDetalleSesion(p, true); }));
+  if (!modoAtletaActivo) w.appendChild(b('✏️ Editar', () => abrirDetalleSesion(p, false)));
+  return w;
+}
+
 function tarjetaSesion(p) {
   const card = document.createElement('div');
   card.className = 'tarjeta' + (p.estado === 'hecha' ? ' hecha' : '');
@@ -3497,17 +3548,19 @@ function tarjetaSesion(p) {
 
   if (modoAtletaActivo) {
     card.onclick = (e) => { if (seleccion) return; mostrarDetalle(p); };
-    card.append(tit, det);
+    const resumenA = document.createElement('div');
+    resumenA.className = 'resumen-ver';
+    resumenA.textContent = p.descripcion || NOMBRES_TIPO[p.tipo] || '';
+    card.append(tit, det, resumenA, accionesSesion(p, card));
     return card;
   }
 
-  card.onclick = (e) => { if (!seleccion) e.stopPropagation(); };
-  const ver = document.createElement('button');
-  ver.className = 'mover-btn';
-  ver.textContent = p.notas_atleta ? 'editar ●' : 'editar';
-  ver.title = p.notas_atleta ? 'Editar la sesión (el atleta ha dejado notas)' : 'Editar cualquier campo de la sesión';
-  ver.onclick = (e) => { e.stopPropagation(); abrirDetalleSesion(p); };
-  det.appendChild(ver);
+  card.onclick = (e) => { if (!seleccion) { e.stopPropagation(); card.classList.toggle('acc-on'); } };
+  const resumen = document.createElement('div');
+  resumen.className = 'resumen-ver';
+  resumen.textContent = p.descripcion || NOMBRES_TIPO[p.tipo] || '';
+  card.appendChild(resumen);
+  card.appendChild(accionesSesion(p, card));
   const acc = document.createElement('div');
   acc.className = 'acc';
 
