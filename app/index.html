@@ -114,7 +114,7 @@ html.oscuro .ecard{background:rgba(30,32,34,.92);color:#f2f2f2}
 .ec-chip{background:#2e3133;color:#fff;border-radius:999px;padding:4px 10px;font-size:13px;font-weight:600}
 .ec-nota{margin-top:5px;font-size:14px;line-height:1.4}
 html.oscuro .ecard{background:rgba(30,32,34,.92);color:#f2f2f2}
-.ghead2,html .grow.xr2{display:grid;grid-template-columns:.8fr .8fr .8fr .9fr 1.6fr .7fr .7fr;gap:4px;align-items:center}
+.ghead2,html .grow.xr2{display:grid;grid-template-columns:.8fr .8fr 1.8fr .8fr .8fr .8fr;gap:4px;align-items:center}
 .grow.xr2 .gint{font-size:12px;line-height:1.1;text-align:center;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 html.oscuro .grow.xr2 .gint{color:#ddd}
 .ghead2{font-size:11px;font-weight:700;color:#555;text-align:center;padding:2px 0;border-bottom:1px solid #ccc}
@@ -138,7 +138,7 @@ html .grow.xp input.pl-ej{height:34px;text-align:left;font-size:15px;font-weight
 html .grow.xp input.pl-vid{text-align:left;font-size:12px;padding-left:6px}
 .grow.xp .gsub{font-size:12px;margin-top:3px}
 html.oscuro .ghead2{color:#bbb}html.oscuro .grow.xr2 .gdet{color:#ddd}
-@media(min-width:700px){.ghead2 span:first-child,.grow.xr2 .gname{grid-column:auto}.ghead2,html .grow.xr2{grid-template-columns:minmax(0,1fr) 56px 56px 70px 90px 120px 56px 56px}.xpg{grid-template-columns:60px 70px minmax(0,1fr) 60px 60px}}
+@media(min-width:700px){.ghead2 span:first-child,.grow.xr2 .gname{grid-column:auto}.ghead2,html .grow.xr2{grid-template-columns:minmax(0,1fr) 56px 56px 150px 120px 56px 56px}.xpg{grid-template-columns:60px 70px minmax(0,1fr) 60px 60px}}
 #pushbar{position:fixed;left:10px;right:10px;bottom:10px;z-index:9999;background:#2e3133;color:#fff;border-radius:14px;padding:12px 14px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;box-shadow:0 4px 18px rgba(0,0,0,.35);font-size:14px;line-height:1.3}
 #pushbar>div{flex:1 1 200px}#pushbar small{color:#ddd}
 #pushbar button{margin:0;padding:8px 14px;font-size:14px;width:auto}
@@ -700,10 +700,10 @@ html body:not(.cli) .login .msg.ok{color:#bfe8b0!important}
 html.oscuro{--acento:#c9a13b;--n-bg:#0f1215;--n-sup:#181d22;--n-sup2:#1f252b;--n-linea:#2a3137;--n-txt:#eef0f2;--n-mut:#9aa3ab}
 html.oscuro body{background:var(--n-bg);color:var(--n-txt)}
 html.oscuro .fondo{background-color:var(--n-bg)}
-html.oscuro .fondo::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(rgba(15,18,21,.82),rgba(15,18,21,.96))}
+html.oscuro .fondo::before{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(120% 55% at 50% -5%,rgba(58,70,80,.55) 0%,rgba(15,18,21,0) 70%),linear-gradient(rgba(15,18,21,.78),rgba(15,18,21,.95))}
 html.oscuro .frase{color:#f3e7c4}
 html.oscuro .frase .autor{color:var(--acento)}
-html.oscuro header{background:#0a0c0e;border-bottom:1px solid var(--n-linea)}
+html.oscuro header{background:linear-gradient(180deg,#1f262d 0%,#161b20 100%);border-bottom:1px solid rgba(201,161,59,.28)}
 html.oscuro .card{background:rgba(24,29,34,.94);color:var(--n-txt);border:1px solid #242b31;box-shadow:0 8px 24px rgba(0,0,0,.35)}
 html.oscuro h2,html.oscuro h3{color:#f4f5f6}
 html.oscuro .muted{color:var(--n-mut)}
@@ -1303,7 +1303,7 @@ function sesionHTML(s,editable,conLeyenda=editable,plan=false){
     if(esPrin&&ult&&ult.principal){ult.items.push(...items);return}
     grupos.push({nombre:esPrin?"Parte principal":(b.nombre||""),principal:esPrin,items});
   });
-  const cabeza=`<div class="ghead"><span>Ejercicio</span><span>Series</span><span>Reps</span><span>Hechas</span><span>Kg</span><span>Intensidad</span><span>RIR</span><span>RPE</span></div>`;
+  const cabeza=`<div class="ghead"><span>Ejercicio</span><span>Series</span><span>Reps</span><span>Hechas</span><span>Carga</span><span>RIR</span><span>RPE</span></div>`;
   const bloques=grupos.map(g=>{
     const cab=`<div class="cab">${esc(g.nombre)}</div>`;
     const letra=x=>String((normEj(x).cod)||"").replace(/[^A-Za-z]/g,"").charAt(0).toUpperCase();
@@ -1316,7 +1316,7 @@ function sesionHTML(s,editable,conLeyenda=editable,plan=false){
     const itemsFza=separar?g.items.filter(it=>!esResis(it.x)):g.items;
     if(itemsRes.length&&!itemsFza.length) return cab+itemsRes.map(tarjeta).join("");
     const gItems=itemsFza;
-    const cab2=(!plan&&gItems.length)?`<div class="ghead2"><span>Ejercicio</span><span>Series</span><span>Reps</span><span>Kg</span><span>Intensidad</span><span>Estado</span><span>RIR</span><span>RPE</span></div>`:"";
+    const cab2=(!plan&&gItems.length)?`<div class="ghead2"><span>Ejercicio</span><span>Series</span><span>Reps</span><span>Carga</span><span>Estado</span><span>RIR</span><span>RPE</span></div>`:"";
     return cab+itemsRes.map(tarjeta).join("")+cab2+gItems.map(({x,bi,ei},idx)=>{const e=normEj(x),k=bi+"-"+ei,r=R[k]||{};const sep=idx>0&&letra(x)!==letra(gItems[idx-1].x)?" sep":"";
       const dosis=[e.ser,e.rep].filter(v=>String(v).trim()!=="").map(v=>esc(String(v))).join(" × ");
       if(plan){
@@ -1327,7 +1327,6 @@ function sesionHTML(s,editable,conLeyenda=editable,plan=false){
         <div class="xf"><i>Series</i><input class="pl" data-pk="${k}" data-pf="ser" value="${esc(e.ser)}"></div>
         <div class="xf"><i>Reps</i><input class="pl" data-pk="${k}" data-pf="rep" value="${esc(e.rep)}"></div>
         <div class="xf"><i>Intensidad</i><input class="pl pl-int" data-pk="${k}" data-pf="int" value="${esc(e.int)}" placeholder="kg, %, ritmo…"></div>
-        <div class="xf"><i>Kg hechos</i><input data-k="${k}" data-f="kg" inputmode="decimal" value="${esc(r.kg??"")}"></div>
         <div class="xf"><i>RIR</i><input class="pl" data-pk="${k}" data-pf="rir" inputmode="decimal" value="${esc(e.rir)}"></div>
         <div class="xf"><i>RPE</i><input class="pl" data-pk="${k}" data-pf="rpe" inputmode="decimal" value="${esc(e.rpe)}"></div>
       </div>
@@ -1340,8 +1339,7 @@ function sesionHTML(s,editable,conLeyenda=editable,plan=false){
       <div class="gname">${e.cod?`<b>${esc(e.cod)}</b> `:""}${nombreVideo(e)}${btnVideoMini(e)}</div>
       <input data-k="${k}" data-f="ser" inputmode="numeric" placeholder="${esc(e.ser)}" value="${esc(r.ser)}" ${dis} aria-label="Series hechas">
       <input data-k="${k}" data-f="reps" inputmode="numeric" placeholder="${esc(e.rep)}" value="${esc(r.reps)}" ${dis} aria-label="Reps de la última serie">
-      <input data-k="${k}" data-f="kg" inputmode="decimal" placeholder="${kgPlan?esc(kgPlan[1]):"kg"}" value="${esc(r.kg)}" ${dis}>
-      <div class="gint" title="Material o intensidad indicada por el entrenador">${e.int?esc(e.int):"–"}</div>
+      <input data-k="${k}" data-f="int" value="${esc(r.int??(r.kg?r.kg+" kg":""))}" placeholder="${esc(e.int||"kg, gomas, lastre…")}" ${dis} aria-label="Carga: kg, gomas, lastre…">
       ${estadoSel(k,r.estado,dis)}
       ${pick(k,"rir",r.rir,false,editable,e.rir)}
       ${pick(k,"rpe",r.rpe,true,editable,e.rpe)}
@@ -1350,7 +1348,7 @@ function sesionHTML(s,editable,conLeyenda=editable,plan=false){
   }).join("");
   const hayObj=grupos.some(g=>g.items.some(({x})=>{const e=normEj(x);const res=/['’′]|\bmin\b|\bkm\b|\d\s*h\b/i.test(String(e.rep))||/\bZ\s?[1-8]\b|\bFC\b|min\/km|ritmo/i.test(String(e.int));return !res&&(e.rir||e.rpe)}));
   if(plan) return `<div class="plan-edit">`+bloques+`</div>`+`<p class="obj-ayuda">Puedes escribir directamente en <b>Ejercicio</b>, <b>Series</b>, <b>Reps</b>, <b>Intensidad</b>, <b>Enlace del vídeo</b>, <b>RIR</b> y <b>RPE</b>, y guardar con «Guardar cambios». Para añadir o quitar ejercicios y bloques, usa «Editar».</p>`+`<div class="muted" style="margin-top:10px">Comentario del entrenamiento</div><textarea data-k="s" data-f="com" placeholder="Cómo ha ido la sesión" rows="2">${esc((R.s||{}).com)}</textarea>`;
-  return bloques+(hayObj?`<p class="obj-ayuda">En <b>RIR</b> y <b>RPE</b> ves en gris el <b>objetivo</b> que te marca tu entrenador. Tócalo para apuntar lo que has hecho de verdad. En <b>Kg</b> apunta el peso que has usado: con él se calcula tu fuerza estimada.</p>`:"")+`<div class="rpe-tot"><b>RPE total del entrenamiento</b><div class="rpe-tot-pick">${pick("s","rpe",(R.s||{}).rpe,true,editable)}</div></div><div class="rpe-tot"><b>Duración del entrenamiento (min)</b><div class="rpe-tot-pick"><input data-k="s" data-f="min" inputmode="numeric" placeholder="min" value="${esc((R.s||{}).min??"")}" ${dis} style="margin:0;text-align:center;font-weight:700"></div></div><div class="muted" style="margin-top:10px">Comentario del entrenamiento</div><textarea data-k="s" data-f="com" placeholder="Cómo ha ido la sesión" rows="2" ${dis}>${esc((R.s||{}).com)}</textarea>${conLeyenda?`<div style="margin-top:12px">${leyendaRPE()}</div>`:""}`;
+  return bloques+(hayObj?`<p class="obj-ayuda">En <b>RIR</b> y <b>RPE</b> ves en gris el <b>objetivo</b> que te marca tu entrenador. Tócalo para apuntar lo que has hecho de verdad. En <b>Carga</b> apunta el peso en kg o el material que has usado (gomas, lastre…): con los kilos se calcula tu fuerza estimada.</p>`:"")+`<div class="rpe-tot"><b>RPE total del entrenamiento</b><div class="rpe-tot-pick">${pick("s","rpe",(R.s||{}).rpe,true,editable)}</div></div><div class="rpe-tot"><b>Duración del entrenamiento (min)</b><div class="rpe-tot-pick"><input data-k="s" data-f="min" inputmode="numeric" placeholder="min" value="${esc((R.s||{}).min??"")}" ${dis} style="margin:0;text-align:center;font-weight:700"></div></div><div class="muted" style="margin-top:10px">Comentario del entrenamiento</div><textarea data-k="s" data-f="com" placeholder="Cómo ha ido la sesión" rows="2" ${dis}>${esc((R.s||{}).com)}</textarea>${conLeyenda?`<div style="margin-top:12px">${leyendaRPE()}</div>`:""}`;
 }
 // Lee lo que el entrenador haya escrito en la tarjeta (ejercicio, series, reps, intensidad)
 function leerPlan(raiz,s){
@@ -1368,6 +1366,13 @@ function leerPlan(raiz,s){
 function leerRegistro(raiz){
   const reg={};
   raiz.querySelectorAll("[data-k]").forEach(el=>{const k=el.dataset.k;reg[k]=reg[k]||{};reg[k][el.dataset.f]=el.classList.contains("pick")?el.dataset.v:el.value});
+  // La carga se escribe en «Carga» (kg, gomas, lastre…). Si trae kilos, se guardan también como kg.
+  Object.values(reg).forEach(r=>{
+    if(r.int===undefined) return;
+    const t=String(r.int).replace(",",".");
+    const m=t.match(/(\d+(?:\.\d+)?)\s*kg/i)||t.match(/^\s*(\d+(?:\.\d+)?)\s*$/);
+    r.kg=m?m[1]:"";
+  });
   return reg;
 }
 function estadisticas(sesiones){
@@ -1726,6 +1731,7 @@ function rachaSemanas(hechos){
 }
 // Carga en kg de una marca del registro (solo cifras seguidas de "kg")
 function kgDe(v){
+  if(v?.kg!==undefined&&v.kg!==""&&!isNaN(parseFloat(v.kg))) return parseFloat(v.kg);
   const m=String(v?.int??"").replace(",",".").match(/(\d+(?:\.\d+)?)\s*kg/i);
   return m?parseFloat(m[1]):null;
 }
