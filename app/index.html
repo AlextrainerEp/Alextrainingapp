@@ -684,6 +684,47 @@ html body:not(.cli) .login .msg.ok{color:#bfe8b0!important}
 /* Entrada única: avisos de disciplina sin asignar */
 .pend-aviso{padding:10px 13px;font-size:13.5px;border-left:4px solid #eda100;margin-bottom:10px}
 .ent-abrir.pendiente{border-left:4px solid #eda100}
+/* Lista de entrenados: panel oscuro premium (versión comercial) */
+.an-panel.ent-lista{background:linear-gradient(180deg,#1c2126 0%,#121518 100%);color:#e8eaed;border:1px solid #2a3137;border-radius:16px;padding:20px;box-shadow:0 12px 32px rgba(0,0,0,.28)}
+.an-panel.ent-lista .ent-tit{color:#fff;font-weight:700;letter-spacing:.01em;margin:0 0 6px}
+.an-panel.ent-lista .ent-grp{color:var(--acento);font-weight:700;letter-spacing:.08em;margin:18px 0 10px}
+.an-panel.ent-lista .muted{color:#9aa3ab}
+.an-panel.ent-lista .ent-abrir{background:#1f252b;color:#e8eaed;border:1px solid #2c343b;border-left:3px solid var(--acento);border-radius:10px;padding:9px 12px;margin-bottom:0;transition:background .15s,border-color .15s,transform .15s}
+.an-panel.ent-lista .ent-abrir:hover{background:#273039;border-color:#3b4650;transform:translateY(-1px)}
+.an-panel.ent-lista .ent-abrir.pendiente{border-left-color:#eda100}
+.an-panel.ent-lista .ent-grid{gap:10px}
+.an-panel.ent-lista .pend-chip{color:#eda100}
+.an-panel.ent-lista .ent-ini{background:#2c343b;color:var(--acento);font-weight:700;display:inline-flex;align-items:center;justify-content:center}
+.an-panel.ent-lista .pend-aviso{background:#2a2412;color:#f5d68a;border:1px solid #5a4a1c;border-radius:10px}
+/* ===== Tema «Negro y oro» (app de entrenamiento) ===== */
+html.oscuro{--acento:#c9a13b;--n-bg:#0f1215;--n-sup:#181d22;--n-sup2:#1f252b;--n-linea:#2a3137;--n-txt:#eef0f2;--n-mut:#9aa3ab}
+html.oscuro body{background:var(--n-bg);color:var(--n-txt)}
+html.oscuro .fondo{background-color:var(--n-bg)}
+html.oscuro .fondo::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(rgba(15,18,21,.82),rgba(15,18,21,.96))}
+html.oscuro .frase{color:#f3e7c4}
+html.oscuro .frase .autor{color:var(--acento)}
+html.oscuro header{background:#0a0c0e;border-bottom:1px solid var(--n-linea)}
+html.oscuro .card{background:rgba(24,29,34,.94);color:var(--n-txt);border:1px solid #242b31;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+html.oscuro h2,html.oscuro h3{color:#f4f5f6}
+html.oscuro .muted{color:var(--n-mut)}
+html.oscuro input,html.oscuro select,html.oscuro textarea{background:#12161a;color:var(--n-txt);border:1px solid var(--n-linea)}
+html.oscuro button{background:var(--n-sup2);color:var(--n-txt);border:1px solid var(--n-linea)}
+html.oscuro button.gold,html.oscuro button.primario{background:linear-gradient(180deg,#e0b75a,#c9a13b);color:#15110a;border-color:transparent;font-weight:700}
+html.oscuro button.danger{background:#4a1d1d;color:#ffd9d9;border-color:#6b2a2a}
+html.oscuro button.sec{background:transparent;color:var(--n-txt);border:1px solid #3a444d}
+html.oscuro .tabs button,html.oscuro .cli-nav button{background:#1a2026;color:#c8ced4;border:1px solid var(--n-linea)}
+html.oscuro .tabs button.on,html.oscuro .cli-nav button.on{background:linear-gradient(180deg,#e0b75a,#c9a13b);color:#15110a;border-color:transparent;font-weight:700}
+html.oscuro .modal-card{background:#171c21;color:var(--n-txt)}
+html.oscuro details.card.sesion{border-left-color:#4a535c}
+html.oscuro details.card.sesion.hecha{border-left-color:#3c8d4a}
+html.oscuro .cal-d{background:#1a2026;color:#d9dde1;border:1px solid #242b31}
+html.oscuro .cal-d.vacio{background:transparent;border-color:transparent}
+html.oscuro .cal-d.hoy{border-color:var(--acento)}
+html.oscuro .cal-d.sel{background:#232a31;outline:2px solid var(--acento)}
+html.oscuro .cal-num{color:#e8ebee}
+html.oscuro .cal-mas{color:var(--n-mut)}
+html.oscuro .resumen div{background:var(--n-sup);color:var(--n-txt);box-shadow:none;border:1px solid #242b31}
+html.oscuro .resumen small{color:var(--n-mut)}
 .pend-chip{display:block;font-size:11px;opacity:.75;font-weight:600}
 .res-acceso{margin-bottom:8px}
 .res-acceso button{width:100%;text-align:left;font-size:13.5px}
@@ -1741,10 +1782,10 @@ function graficoEj(puntos){
 // 6. Modo oscuro (aplicado a toda la app)
 function aplicarTema(oscuro){
   document.documentElement.classList.toggle("oscuro",!!oscuro);
-  try{localStorage.setItem("tema",oscuro?"oscuro":"claro")}catch(e){}
+  try{localStorage.setItem("tema2",oscuro?"oscuro":"claro")}catch(e){}
 }
 function temaOscuro(){
-  try{return localStorage.getItem("tema")==="oscuro"}catch(e){return false}
+  try{const t=localStorage.getItem("tema2");return t?t==="oscuro":true}catch(e){return true}
 }
 aplicarTema(temaOscuro());
 
