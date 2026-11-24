@@ -3,6 +3,7 @@ Uso:  python3 tests/run_tests.py            (desde la carpeta base/)
 Requiere: Python 3, Node.js y Playwright con Chrome (executable_path abajo).
 Cada prueba imprime OK o FALLO; el código de salida es 1 si algo falla."""
 import asyncio, json, os, re, subprocess, sys, tempfile
+import shutil, glob
 from playwright.async_api import async_playwright
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -17,7 +18,20 @@ def registrar(nombre, ok, detalle=""):
 
 def inline_js(path):
     s = open(path, encoding="utf-8").read()
-    return "\n;\n".join(re.findall(r"<script(?![^>]*src)[^>]*>(.*?)</script>", s, re.S))
+    partes = re.findall(r"<script(?![^>]*src)[^>]*>(.*?)</script>", s, re.S)
+    for f in sorted(glob.glob(os.path.join(os.path.dirname(path), "js", "*.js"))):
+        partes.append(open(f, encoding="utf-8").read())
+    return "\n;\n".join(partes)
+
+def copia_app_con_wa():
+    # copia de la app con el número de WhatsApp puesto en el archivo JS que lo define
+    d = tempfile.mkdtemp()
+    shutil.copytree(os.path.dirname(APP), d, dirs_exist_ok=True)
+    for f in glob.glob(os.path.join(d, "js", "*.js")):
+        t = open(f, encoding="utf-8").read()
+        if 'const WA_ALEX=""' in t:
+            open(f, "w", encoding="utf-8").write(t.replace('const WA_ALEX="";', 'const WA_ALEX="34600111222";'))
+    return os.path.join(d, "index.html")
 
 # ---------- 1. Archivos ----------
 def pruebas_archivos():
@@ -51,6 +65,8 @@ def pruebas_archivos():
                 registrar(f"{carpeta} css url {u} existe", os.path.exists(os.path.normpath(os.path.join(os.path.dirname(css_extra), u))),
                           "ruta relativa a css/ incorrecta")
             html += css_txt
+        for f in sorted(glob.glob(os.path.join(os.path.dirname(ruta), "js", "*.js"))):
+            html += open(f, encoding="utf-8").read()
         refs = set(re.findall(r'["\'(]([A-Za-z0-9_\-]+\.(?:png|jpg|jpeg|webp|svg|mjs))["\')]', html))
         for f in sorted(refs):
             registrar(f"{carpeta} referencia {f} existe", os.path.exists(os.path.join(BASE, carpeta, f)),
@@ -97,9 +113,7 @@ async def pruebas_navegador(p):
     registrar("historial del entrenado muestra planificados y hechos", await con_pagina(p, APP, historial))
 
     async def wa(pg, errores):
-        html = open(APP, encoding="utf-8").read().replace('const WA_ALEX="";', 'const WA_ALEX="34600111222";')
-        tmp = os.path.join(tempfile.gettempdir(), "wa_test_index.html")
-        open(tmp, "w", encoding="utf-8").write(html)
+        tmp = copia_app_con_wa()
         await pg.goto("file://" + tmp); await pg.wait_for_timeout(600)
         await pg.evaluate("""()=>{%s db=async()=>[]; urlAudio=async()=>'';
           document.body.insertAdjacentHTML('beforeend','<div id=sub></div>'); tabMensajes('u1',false,'#sub'); }""" % STUB_S)
