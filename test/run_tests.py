@@ -27,7 +27,7 @@ def copia_app_con_wa():
     # copia de la app con el número de WhatsApp puesto en el archivo JS que lo define
     d = tempfile.mkdtemp()
     shutil.copytree(os.path.dirname(APP), d, dirs_exist_ok=True)
-    for f in glob.glob(os.path.join(d, "js", "*.js")):
+    for f in [os.path.join(d, "index.html")] + glob.glob(os.path.join(d, "js", "*.js")):
         t = open(f, encoding="utf-8").read()
         if 'const WA_ALEX=""' in t:
             open(f, "w", encoding="utf-8").write(t.replace('const WA_ALEX="";', 'const WA_ALEX="34600111222";'))
