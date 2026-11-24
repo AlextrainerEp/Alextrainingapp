@@ -1,0 +1,22 @@
+# Pruebas automáticas en cada cambio. No despliega nada: solo avisa si algo se rompe.
+name: Pruebas
+on:
+  push:
+  pull_request:
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Instalar dependencias
+        run: |
+          pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Ejecutar pruebas
+        run: python tests/run_tests.py
