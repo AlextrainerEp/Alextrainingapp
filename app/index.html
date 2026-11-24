@@ -250,7 +250,7 @@ function shell(inner,ficha){
   const vistaCliente=true;
   document.body.classList.toggle("cli",vistaCliente);
   const fotoCab=fotoSegura(ficha?ficha.foto:(p.rol!=="admin"?p.foto:""));
-  const cab=fotoCab?`<button class="foto-hdr" id="ir-foto" title="${ficha?"Perfil del entrenado":"Mi perfil"}"><img src="${esc(fotoCab)}" alt=""></button>`:`<img class="logo" src="logo-alex.png" alt="" onerror="this.remove()">`;
+  const cab=fotoCab?`<button class="foto-hdr" id="ir-foto" title="${ficha?"Perfil del entrenado":"Mi perfil"}"><img src="${esc(fotoCab)}" alt=""></button>`:`<img class="logo" src="logo-acceso.png" alt="" onerror="this.remove()">`;
   let centro;
   if(ficha) centro=`<span class="nombre-cli">${esc(ficha.nombre||"Sin nombre")}</span>`;
   else if(p.rol==="admin") centro=`<span class="t">Panel del entrenador</span>`;
