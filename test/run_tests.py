@@ -43,6 +43,14 @@ def pruebas_archivos():
     # imágenes referenciadas en el HTML deben existir en su carpeta
     for carpeta, ruta in [("app", APP), ("resistencia", RES)]:
         html = open(ruta, encoding="utf-8").read()
+        css_extra = os.path.join(os.path.dirname(ruta), "css", "app.css")
+        if os.path.exists(css_extra):
+            css_txt = open(css_extra, encoding="utf-8").read()
+            for u in sorted(set(re.findall(r'url\(["\']?([^"\')]+)["\']?\)', css_txt))):
+                if u.startswith(("http", "data:")): continue
+                registrar(f"{carpeta} css url {u} existe", os.path.exists(os.path.normpath(os.path.join(os.path.dirname(css_extra), u))),
+                          "ruta relativa a css/ incorrecta")
+            html += css_txt
         refs = set(re.findall(r'["\'(]([A-Za-z0-9_\-]+\.(?:png|jpg|jpeg|webp|svg|mjs))["\')]', html))
         for f in sorted(refs):
             registrar(f"{carpeta} referencia {f} existe", os.path.exists(os.path.join(BASE, carpeta, f)),
