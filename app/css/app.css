@@ -230,7 +230,7 @@ textarea{font-size:14px;width:100%;margin:4px 0 8px}
 .an-panel{background:rgba(255,255,255,.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1px solid rgba(208,211,214,.6);box-shadow:0 2px 8px rgba(0,0,0,.06)}
 #tab:has(.an-panel)>.tabs{background:rgba(255,255,255,.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1px solid rgba(208,211,214,.6)}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
-.cal-dh{font-size:12px;text-align:center;color:#333;font-weight:600;padding:2px 0}
+.cal-dh{font-size:13px;text-align:center;color:#1d1f21;font-weight:700;padding:2px 0}
 .cal-d{min-height:64px;background:rgba(255,255,255,.45);border:1px solid rgba(208,211,214,.6);border-radius:8px;padding:4px;font-size:12px;overflow:hidden}
 .cal-d.vacio{background:transparent;border:0}
 .cal-d.hoy{border-color:#2e3133}
@@ -725,6 +725,7 @@ html.oscuro .modal-card{background:#171c21;color:var(--n-txt)}
 html.oscuro details.card.sesion{border-left-color:#4a535c}
 html.oscuro details.card.sesion.hecha{border-left-color:#3c8d4a}
 html.oscuro .cal-d{background:#1a2026;color:#d9dde1;border:1px solid #242b31}
+html.oscuro .cal-dh{color:#f1f3f5}
 html.oscuro .cal-d.vacio{background:transparent;border-color:transparent}
 html.oscuro .cal-d.hoy{border-color:var(--acento)}
 html.oscuro .cal-d.sel{background:#232a31;outline:2px solid var(--acento)}
