@@ -254,6 +254,7 @@ let avisoInstalar=null;
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();avisoInstalar=e});
 window.addEventListener("appinstalled",()=>{avisoInstalar=null});
 function esInstalada(){return window.matchMedia&&matchMedia("(display-mode: standalone)").matches||navigator.standalone===true}
+function esIPhone(){return /iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1)}
 function claveB64(s){const p="=".repeat((4-s.length%4)%4),b=(s+p).replace(/-/g,"+").replace(/_/g,"/"),r=atob(b);return Uint8Array.from([...r].map(c=>c.charCodeAt(0)))}
 async function swPush(){
   if(!("serviceWorker" in navigator)) return null;
@@ -3180,7 +3181,7 @@ async function anValoracionVer(c){
 
 function tabPerfil(){
   const p=S.perfil;
-  const instalar=!esInstalada()&&avisoInstalar?`<div class="card"><b>📲 Instalar la app</b><p class="muted" style="margin:6px 0 10px">Ábrela desde el icono de tu pantalla de inicio, como una app más.</p><button type="button" id="instalar-app">Instalar</button></div>`:"";
+  const instalar=!esInstalada()&&avisoInstalar?`<div class="card"><b>📲 Instalar la app</b><p class="muted" style="margin:6px 0 10px">Ábrela desde el icono de tu pantalla de inicio, como una app más.</p><button type="button" id="instalar-app">Instalar</button></div>`:(!esInstalada()&&esIPhone()?`<div class="card"><b>📲 Instalar la app</b><p class="muted" style="margin:6px 0 0">En iPhone: pulsa el botón Compartir de Safari (el cuadrado con una flecha hacia arriba) y luego «Añadir a pantalla de inicio».</p></div>`:"");
   $("#sub").innerHTML=`${instalar}<div class="row">${fotoSegura(p.foto)?`<img class="avatar" style="width:90px;height:90px" src="${esc(fotoSegura(p.foto))}" alt="">`:`<span class="muted">Sin foto</span>`}
     <label>Foto de perfil <input type="file" id="foto" accept="image/*"></label></div>
     <h3>Apariencia</h3>
