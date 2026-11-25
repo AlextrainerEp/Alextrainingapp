@@ -91,7 +91,7 @@ function abrirEditorRes(p, zonas, alGuardar) {
       <div class="row">
         <label>Estado <select id="er-estado">${opt({ pendiente: 'Pendiente', hecha: 'Hecha', omitida: 'No hecha' }, p.estado || 'pendiente')}</select></label>
         <label>RPE (1-10) <select id="er-rpe">${opt(Object.assign({ '': '—' }, Object.fromEntries([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => [n, n]))), p.rpe ?? '')}</select></label>
-        <label>Minutos reales <input id="er-min" inputmode="numeric" value="${esc(p.duracion_real_min ?? '')}"></label>
+        <label>Tiempo real (mm:ss o h:mm:ss) <input id="er-min" inputmode="text" placeholder="53:45 o 1:25:40" value="${esc(minutosAHMS(p.duracion_real_min))}"></label>
         <label>Km reales <input id="er-km" inputmode="decimal" value="${esc(p.km_reales ?? '')}"></label></div>
       <label>Notas del cliente <textarea id="er-notas" rows="2">${esc(p.notas_atleta || '')}</textarea></label>
       <label>Tu comentario (lo verá el cliente) <textarea id="er-com" rows="2">${esc(p.comentario_entrenador || '')}</textarea></label>
@@ -139,12 +139,12 @@ function abrirEditorRes(p, zonas, alGuardar) {
         fecha: p.fecha || null, tipo: p.tipo || 'otro',
         descripcion: (partes[0] || RES_NOMBRE[p.tipo] || 'Sesión') + (partes[1].trim() ? ' — ' + partes[1].trim() : ''),
         duracion_min: dur, pasos: ps.length ? ps : null,
-        estado: p.estado || 'pendiente', rpe: num(p.rpe), duracion_real_min: num(p.duracion_real_min), km_reales: num(p.km_reales),
+        estado: p.estado || 'pendiente', rpe: num(p.rpe), duracion_real_min: minutosDesdeTexto(p.duracion_real_min), km_reales: num(p.km_reales),
         notas_atleta: p.notas_atleta || null, comentario_entrenador: p.comentario_entrenador || null
       };
       const m = ov.querySelector('#er-m');
       if (!cambios.fecha) { m.textContent = 'Pon una fecha'; m.className = 'msg err'; return; }
-      if ([cambios.duracion_min, cambios.duracion_real_min, cambios.km_reales].some(Number.isNaN)) { m.textContent = 'Duración, minutos y km tienen que ser números'; m.className = 'msg err'; return; }
+      if ([cambios.duracion_min, cambios.duracion_real_min, cambios.km_reales].some(Number.isNaN)) { m.textContent = 'Duración y km tienen que ser números; el tiempo, como 53:45 o 1:25:40'; m.className = 'msg err'; return; }
       try { await alGuardar(cambios); ov.remove(); }
       catch (err) { m.textContent = err.message; m.className = 'msg err'; }
     }
