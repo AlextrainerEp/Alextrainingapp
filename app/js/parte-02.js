@@ -254,6 +254,20 @@ let avisoInstalar=null;
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();avisoInstalar=e});
 window.addEventListener("appinstalled",()=>{avisoInstalar=null});
 function esInstalada(){return window.matchMedia&&matchMedia("(display-mode: standalone)").matches||navigator.standalone===true}
+function minutosDesdeTexto(t){
+  // "53:45" = 53 min 45 s · "1:25:40" = 1 h 25 min 40 s · "53,5" o "53.5" = minutos decimales · "" = sin dato
+  const x=String(t??"").trim().replace(",",".");
+  if(x==="") return null;
+  if(/^\d+:\d{1,2}$/.test(x)){const [m,q]=x.split(":").map(Number); return q>59?NaN:Math.round((m*60+q)/60*100)/100}
+  if(/^\d+:\d{1,2}:\d{1,2}$/.test(x)){const [h,m,q]=x.split(":").map(Number); return (m>59||q>59)?NaN:Math.round((h*3600+m*60+q)/60*100)/100}
+  const n=Number(x); return Number.isFinite(n)?n:NaN;
+}
+function minutosAHMS(m){
+  if(m==null||m===""||!Number.isFinite(Number(m))) return "";
+  const sg=Math.round(Number(m)*60), h=Math.floor(sg/3600), mi=Math.floor(sg%3600/60), se=sg%60;
+  const p2=n=>String(n).padStart(2,"0");
+  return h>0?`${h}:${p2(mi)}:${p2(se)}`:`${mi}:${p2(se)}`;
+}
 function esIPhone(){return /iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1)}
 function claveB64(s){const p="=".repeat((4-s.length%4)%4),b=(s+p).replace(/-/g,"+").replace(/_/g,"/"),r=atob(b);return Uint8Array.from([...r].map(c=>c.charCodeAt(0)))}
 async function swPush(){
@@ -1626,7 +1640,7 @@ const resTarjeta=(p,admin,zonas,abierta=false,verOn=false)=>{
         <label>Estado <select data-rf="estado">${sel(p.estado||"pendiente",ESTADOS_RES)}</select></label>
         <label>Esfuerzo (RPE 1-10) <select data-rf="rpe"><option value="">–</option>${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option${String(p.rpe)===String(n)?" selected":""}>${n}</option>`).join("")}</select></label>
         <label>Km <input data-rf="km_reales" inputmode="decimal" value="${esc(p.km_reales??"")}"></label>
-        <label>Minutos <input data-rf="duracion_real_min" inputmode="numeric" value="${esc(p.duracion_real_min??"")}"></label>
+        <label>Tiempo (mm:ss o h:mm:ss) <input data-rf="duracion_real_min" inputmode="text" placeholder="53:45 o 1:25:40" value="${esc(minutosAHMS(p.duracion_real_min))}"></label>
       </div>
       <label class="res-notas">Notas ${admin?"del cliente":"para tu entrenador"} <textarea data-rf="notas_atleta" rows="2">${esc(p.notas_atleta||"")}</textarea></label>
       ${admin?`<label class="res-notas">Tu comentario (lo verá el cliente) <textarea data-rf="comentario_entrenador" rows="2">${esc(p.comentario_entrenador||"")}</textarea></label>`:""}
@@ -2195,7 +2209,7 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
       const id=b.dataset.resguardar, card=cont.querySelector(`[data-res="${id}"]`), st=cont.querySelector(`[data-resst="${id}"]`);
       const v=f=>{const el=card.querySelector(`[data-rf="${f}"]`);return el?el.value.trim():undefined};
       const num=t=>{if(t===""||t===undefined)return null;const n=Number(String(t).replace(",","."));return Number.isFinite(n)?n:NaN};
-      const cambios={estado:v("estado"),rpe:num(v("rpe")),km_reales:num(v("km_reales")),duracion_real_min:num(v("duracion_real_min")),notas_atleta:v("notas_atleta")||null};
+      const cambios={estado:v("estado"),rpe:num(v("rpe")),km_reales:num(v("km_reales")),duracion_real_min:(()=>{const q=minutosDesdeTexto(v("duracion_real_min"));return q===null?null:q})(),notas_atleta:v("notas_atleta")||null};
       if(admin) cambios.comentario_entrenador=v("comentario_entrenador")||null;
       if([cambios.km_reales,cambios.duracion_real_min].some(Number.isNaN)){st.textContent="Km y minutos tienen que ser números";return}
       try{
