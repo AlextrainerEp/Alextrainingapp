@@ -1389,16 +1389,18 @@ async function tabWhatsApp(clienteId,esAdmin,host="#tab"){
   // Tarjeta sólida para que se lea sobre cualquier fondo. Cliente → WhatsApp de Alex; administrador → WhatsApp del cliente
   const caja=`background:#1d1f22;color:#f2f2f2;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:0 2px 10px rgba(0,0,0,.35);text-align:center;padding:20px;border-radius:12px;margin:24px 0`;
   let num=WA_ALEX, titulo="💬 Contactar a Alex por WhatsApp", boton="Abrir WhatsApp";
+  let texto="Hola Alex, soy "+((S&&S.perfil&&S.perfil.nombre)||"")+". Te escribo desde la app de Alex Training Lab.";
   if(esAdmin){
     const pf=(await db("GET","perfiles",`?id=eq.${clienteId}&select=nombre`).catch(()=>[]))[0]||{};
     const a=await leerAnamnesis(clienteId).catch(()=>({}));
     num=String((a&&a.telefono)||"").replace(/\D/g,"");
     if(num.length===9) num="34"+num;
     titulo="💬 WhatsApp de "+esc(pf.nombre||"el cliente");
+    texto="Hola "+(pf.nombre||"")+", soy Alex, tu entrenador. Te escribo desde la app de Alex Training Lab.";
     boton="Abrir chat en WhatsApp";
   }
   const html=num
-    ? `<div style="${caja}"><b>${titulo}</b><br><br><a class="wa-btn" href="https://wa.me/${num}" target="_blank" rel="noopener">${boton}</a></div>`
+    ? `<div style="${caja}"><b>${titulo}</b><br><br><a class="wa-btn" href="https://wa.me/${num}?text=${encodeURIComponent(texto)}" target="_blank" rel="noopener">${boton}</a></div>`
     : `<div style="${caja}"><b>${titulo}</b><p style="margin:10px 0 0;color:#b8bec4">Todavía no hay teléfono de contacto.</p></div>`;
   $(host).innerHTML=html;
 }
