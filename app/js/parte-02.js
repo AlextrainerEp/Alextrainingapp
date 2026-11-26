@@ -1330,11 +1330,8 @@ async function borrarAudio(path){
 const WA_ALEX="34681855603";
 function waBloque(){
   if(!WA_ALEX) return "";
-  const opc=[["No puedo entrenar hoy","Hola Alex, hoy no puedo entrenar."],["Tengo una duda de mi entreno","Hola Alex, tengo una duda sobre mi entreno."],["He terminado el entreno","Hola Alex, he terminado el entreno de hoy."]];
-  const enlace=t=>`https://wa.me/${WA_ALEX}?text=${encodeURIComponent(t)}`;
-  return `<div class="wa-bloque"><b>💬 Escribir a Alex por WhatsApp</b>
-    <div class="wa-opc">${opc.map(([l,t])=>`<a class="wa-btn" href="${enlace(t)}" target="_blank" rel="noopener">${esc(l)}</a>`).join("")}</div>
-    <a class="wa-btn wa-todo" href="${enlace("Hola Alex, te escribo desde Alex Training Lab.")}" target="_blank" rel="noopener">Escribir mensaje libre</a></div>`;
+  return `<div class="wa-bloque"><b>💬 Contactar a Alex por WhatsApp</b>
+    <a class="wa-btn wa-todo" href="https://wa.me/${WA_ALEX}" target="_blank" rel="noopener">Abrir WhatsApp</a></div>`;
 }
 // Botón para que el entrenador escriba al cliente por WhatsApp (usa el teléfono de su anamnesis)
 function waClienteBloque(pf){
@@ -1342,11 +1339,8 @@ function waClienteBloque(pf){
   const nombre=(pf&&pf.nombre)||"el cliente";
   if(!tel) return `<div class="wa-bloque"><b>💬 WhatsApp</b><p class="muted">${esc(nombre)} no tiene teléfono en su anamnesis.</p></div>`;
   const num=tel.length===9?"34"+tel:tel;
-  const primer=String(pf.nombre||"").split(" ")[0];
-  const txt=`Hola${primer?" "+primer:""}, te escribo desde Alex Training Lab.`;
-  return `<div class="wa-bloque"><b>💬 Escribir a ${esc(nombre)} por WhatsApp</b>
-    <a class="wa-btn wa-todo" href="https://wa.me/${num}?text=${encodeURIComponent(txt)}" target="_blank" rel="noopener">Abrir chat en WhatsApp</a>
-    <p class="muted">Se abre en el WhatsApp Business de este dispositivo, con el mensaje ya escrito.</p></div>`;
+  return `<div class="wa-bloque"><b>💬 WhatsApp de ${esc(nombre)}</b>
+    <a class="wa-btn wa-todo" href="https://wa.me/${num}" target="_blank" rel="noopener">Abrir chat en WhatsApp</a></div>`;
 }
 async function tabMensajes(clienteId,esAdmin,host="#tab"){
   const ms=await db("GET","mensajes",`?cliente_id=eq.${clienteId}&order=created_at.asc&select=*`);
