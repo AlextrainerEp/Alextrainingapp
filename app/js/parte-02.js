@@ -2530,10 +2530,10 @@ async function panelCliente(tab,sub){
   const lista=[[soloRes?"Mis carreras":"Entrenamientos",verEntrenosCli],["Mi carga",()=>{limpiarTab();return tabCargaCliente("#sub")}],["Historial",()=>{limpiarTab();return tabHistorialCliente("#sub")}]];
   if(subs.length) lista.push(["Valoración inicial",()=>subTabs(subs)]);
   if(misMods.includes("resistencia")) lista.push(["Strava y zonas",()=>{limpiarTab();embebido("#sub","tab=strava")}]);
-  lista.push(["Mensajes",()=>{limpiarTab();return tabMensajes(S.user.id,false,"#sub")}],["Foto y contraseña",()=>{limpiarTab();return tabPerfil()}]);
-  const claves={strava:"Strava y zonas",entrenamientos:lista[0][0],calendario:lista[0][0],carga:"Mi carga",historial:"Historial",valoracion:"Valoración inicial",mensajes:"Mensajes",anamnesis:"Valoración inicial",perfil:"Foto y contraseña"};
+  lista.push(["WhatsApp",()=>{limpiarTab();return tabWhatsApp(S.user.id,false,"#sub")}],["Foto y contraseña",()=>{limpiarTab();return tabPerfil()}]);
+  const claves={strava:"Strava y zonas",entrenamientos:lista[0][0],calendario:lista[0][0],carga:"Mi carga",historial:"Historial",valoracion:"Valoración inicial",mensajes:"WhatsApp",anamnesis:"Valoración inicial",perfil:"Foto y contraseña"};
   const key=tab==="perfil"?(sub||"perfil"):(tab||"entrenamientos");
-  const iconos={"Strava y zonas":"🔗","Entrenamientos":"🏋️","Mis carreras":"🏃","Mi carga":"📈","Historial":"🕘","Valoración inicial":"📋","Mensajes":"💬","Foto y contraseña":"👤"};
+  const iconos={"Strava y zonas":"🔗","Entrenamientos":"🏋️","Mis carreras":"🏃","Mi carga":"📈","Historial":"🕘","Valoración inicial":"📋","WhatsApp":"💬","Foto y contraseña":"👤"};
   shell(`<div id="tab"><div id="sub"></div></div>`);
   let idx=lista.findIndex(n=>n[0]===claves[key]);
   if(idx<0) idx=0;
