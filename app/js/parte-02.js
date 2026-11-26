@@ -1259,7 +1259,7 @@ async function fichaCliente(id){
   const [c]=await db("GET","perfiles",`?id=eq.${id}&select=*`);
   const ses=await db("GET","sesiones",`?cliente_id=eq.${id}&order=created_at.desc&select=*`);
   shell(`<div id="tab"></div>`,c);
-  navSet(`<button id="volver">← Clientes</button><button id="ta" class="on">Entrenamientos</button><button id="tf">📈 Carga</button><button id="tb">Anamnesis</button><button id="tc">Historial</button><button id="td">Mensajes<span class="badge-msg" data-bc="${id}"></span></button>`);
+  navSet(`<button id="volver">← Clientes</button><button id="ta" class="on">Entrenamientos</button><button id="tf">📈 Carga</button><button id="tb">Anamnesis</button><button id="tc">Historial</button><button id="td">💬 WhatsApp</button>`);
   $("#volver").onclick=listaClientes;
 
   const verEntrenos=()=>{
