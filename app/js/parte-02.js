@@ -73,6 +73,9 @@ async function cargarPerfil(){
   const r=await db("GET","perfiles",`?id=eq.${u.id}&select=*`);
   if(!r||!r.length) throw new Error("Tu cuenta no tiene perfil. Contacta con el entrenador.");
   S.perfil=r[0];
+  // Perfil entrenador: modo oscuro fijado (no depende de la preferencia ni del navegador)
+  if(S.perfil.rol==="admin") aplicarTema(true,false);
+  else if(S.perfil.tema) aplicarTema(S.perfil.tema==="oscuro");
 }
 /* Una sola cuenta para todo: la parte de resistencia usa el mismo proyecto y lee esta misma sesión
    (en el formato de supabase-js), así se pasa de un apartado a otro sin volver a identificarse. */
@@ -1167,12 +1170,22 @@ function graficoEj(puntos){
 }
 
 // 6. Modo oscuro (aplicado a toda la app)
-function aplicarTema(oscuro){
+// Cada cuenta tiene su propio modo: se guarda en su perfil y en caché por usuario en este navegador
+function claveTema(){
+  return "tema2:"+((typeof S!=="undefined"&&S&&S.user&&S.user.id)||"anon");
+}
+function aplicarTema(oscuro,guardar){
   document.documentElement.classList.toggle("oscuro",!!oscuro);
-  try{localStorage.setItem("tema2",oscuro?"oscuro":"claro")}catch(e){}
+  try{localStorage.setItem(claveTema(),oscuro?"oscuro":"claro")}catch(e){}
+  if(guardar&&typeof S!=="undefined"&&S&&S.user&&S.perfil){
+    S.perfil.tema=oscuro?"oscuro":"claro";
+    db("PATCH","perfiles",`?id=eq.${S.user.id}`,{tema:S.perfil.tema},"return=minimal").catch(()=>{});
+  }
 }
 function temaOscuro(){
-  try{const t=localStorage.getItem("tema2");return t?t==="oscuro":true}catch(e){return true}
+  try{const t=localStorage.getItem(claveTema()); if(t) return t==="oscuro";}catch(e){}
+  if(typeof S!=="undefined"&&S&&S.perfil&&S.perfil.tema) return S.perfil.tema==="oscuro";
+  return true;
 }
 aplicarTema(temaOscuro());
 
@@ -1375,13 +1388,30 @@ function waClienteBloque(pf){
 const MENSAJERIA_INTERNA=false;
 // Solo el botón de WhatsApp (cliente: el tuyo; administrador: el del cliente)
 async function tabWhatsApp(clienteId,esAdmin,host="#tab"){
-  let html;
+  // Mismo bloque de siempre (wa-bloque), con fondo sólido para que se vea sobre cualquier imagen
+  const caja="background:#1d1f22;color:#f2f2f2;border-color:#25d366;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:0 2px 10px rgba(0,0,0,.35);text-align:center;margin:24px 0;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px 12px";
+  let num=WA_ALEX, titulo="💬 Contactar a Alex por WhatsApp", boton="Abrir WhatsApp";
+  let texto="Hola Alex, soy "+((S&&S.perfil&&S.perfil.nombre)||"")+". Te escribo desde la app de Alex Training Lab.";
   if(esAdmin){
     const pf=(await db("GET","perfiles",`?id=eq.${clienteId}&select=nombre`).catch(()=>[]))[0]||{};
-    pf.anamnesis=await leerAnamnesis(clienteId).catch(()=>({}));
-    html=waClienteBloque(pf);
-  }else html=waBloque();
-  $(host).innerHTML=`<div class="card">${html}</div>`;
+    const a=await leerAnamnesis(clienteId).catch(()=>({}));
+    num=String((a&&a.telefono)||"").replace(/\D/g,"");
+    if(num.length===9) num="34"+num;
+    titulo="💬 WhatsApp de "+esc(pf.nombre||"el cliente");
+    boton="Abrir chat en WhatsApp";
+    texto="Hola "+(pf.nombre||"")+", soy Alex, tu entrenador. Te escribo desde la app de Alex Training Lab.";
+  }
+  // Respuestas predeterminadas para el cliente (se abren ya escritas en WhatsApp)
+  const rapidas=esAdmin?"":[
+    ["No he podido acabar el entrenamiento","Hola Alex, no he podido acabar el entrenamiento de hoy. Te cuento: "],
+    ["Tengo una duda","Hola Alex, tengo una duda sobre mi entrenamiento: "],
+    ["He terminado el entrenamiento","Hola Alex, he terminado el entrenamiento de hoy. Mis sensaciones: "]
+  ].map(([l,t])=>`<a class="wa-btn wa-todo" href="https://wa.me/${num}?text=${encodeURIComponent(t)}" target="_blank" rel="noopener">${l}</a>`).join(" ");
+  const html=num
+    ? `<div class="wa-bloque" style="${caja}"><b>${titulo}</b> <a class="wa-btn wa-todo" href="https://wa.me/${num}?text=${encodeURIComponent(texto)}" target="_blank" rel="noopener">${boton}</a>${rapidas?`<div style="width:100%;margin-top:4px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center">${rapidas}</div>`:""}</div>`
+    : `<div class="wa-bloque" style="${caja}"><b>${titulo}</b><p style="margin:10px 0 0;color:#b8bec4">Todavía no hay teléfono de contacto.${esAdmin?" Añádelo en la valoración inicial del cliente (campo Teléfono) y vuelve a abrir esta pestaña.":""}</p></div>`;
+  // El bloque va debajo del logo de fondo (cliente y entrenador), para que se vea y se pueda pulsar
+  $(host).innerHTML=`<div class="wa-bajo-logo">${html}</div>`;
 }
 async function tabMensajes(clienteId,esAdmin,host="#tab"){
   if(!MENSAJERIA_INTERNA) return tabWhatsApp(clienteId,esAdmin,host);
@@ -2524,10 +2554,10 @@ async function panelCliente(tab,sub){
   const lista=[[soloRes?"Mis carreras":"Entrenamientos",verEntrenosCli],["Mi carga",()=>{limpiarTab();return tabCargaCliente("#sub")}],["Historial",()=>{limpiarTab();return tabHistorialCliente("#sub")}]];
   if(subs.length) lista.push(["Valoración inicial",()=>subTabs(subs)]);
   if(misMods.includes("resistencia")) lista.push(["Strava y zonas",()=>{limpiarTab();embebido("#sub","tab=strava")}]);
-  lista.push(["Mensajes",()=>{limpiarTab();return tabMensajes(S.user.id,false,"#sub")}],["Foto y contraseña",()=>{limpiarTab();return tabPerfil()}]);
-  const claves={strava:"Strava y zonas",entrenamientos:lista[0][0],calendario:lista[0][0],carga:"Mi carga",historial:"Historial",valoracion:"Valoración inicial",mensajes:"Mensajes",anamnesis:"Valoración inicial",perfil:"Foto y contraseña"};
+  lista.push(["WhatsApp",()=>{limpiarTab();return tabWhatsApp(S.user.id,false,"#sub")}],["Foto y contraseña",()=>{limpiarTab();return tabPerfil()}]);
+  const claves={strava:"Strava y zonas",entrenamientos:lista[0][0],calendario:lista[0][0],carga:"Mi carga",historial:"Historial",valoracion:"Valoración inicial",mensajes:"WhatsApp",anamnesis:"Valoración inicial",perfil:"Foto y contraseña"};
   const key=tab==="perfil"?(sub||"perfil"):(tab||"entrenamientos");
-  const iconos={"Strava y zonas":"🔗","Entrenamientos":"🏋️","Mis carreras":"🏃","Mi carga":"📈","Historial":"🕘","Valoración inicial":"📋","Mensajes":"💬","Foto y contraseña":"👤"};
+  const iconos={"Strava y zonas":"🔗","Entrenamientos":"🏋️","Mis carreras":"🏃","Mi carga":"📈","Historial":"🕘","Valoración inicial":"📋","WhatsApp":"💬","Foto y contraseña":"👤"};
   shell(`<div id="tab"><div id="sub"></div></div>`);
   let idx=lista.findIndex(n=>n[0]===claves[key]);
   if(idx<0) idx=0;
@@ -3269,7 +3299,7 @@ function tabPerfil(){
   $("#sub").innerHTML=`${instalar}<div class="row">${fotoSegura(p.foto)?`<img class="avatar" style="width:90px;height:90px" src="${esc(fotoSegura(p.foto))}" alt="">`:`<span class="muted">Sin foto</span>`}
     <label>Foto de perfil <input type="file" id="foto" accept="image/*"></label></div>
     <h3>Apariencia</h3>
-    <label class="row"><input type="checkbox" id="oscuro" ${temaOscuro()?"checked":""}> Modo oscuro</label>
+    ${S.perfil.rol==="admin"?`<p class="muted" style="margin:0 0 12px">Modo oscuro fijado en el perfil del entrenador.</p>`:`<label class="row"><input type="checkbox" id="oscuro" ${temaOscuro()?"checked":""}> Modo oscuro</label>`}
     <div id="cicloCfg"></div>
     <h3>Cambiar contraseña</h3>
     <input id="np" type="password" placeholder="Nueva contraseña (mín. 6 caracteres)">
@@ -3284,7 +3314,7 @@ function tabPerfil(){
       S.perfil.foto=d;panelCliente("perfil");
     }catch(e){msg("#m",e.message,false)}
   };
-  $("#oscuro").onchange=ev=>aplicarTema(ev.target.checked);
+  const oscuroCk=$("#oscuro"); if(oscuroCk) oscuroCk.onchange=ev=>aplicarTema(ev.target.checked,true);
   const ib=$("#instalar-app");
   if(ib) ib.onclick=async()=>{ if(!avisoInstalar) return; avisoInstalar.prompt(); try{await avisoInstalar.userChoice}catch(e){} avisoInstalar=null; ib.closest(".card")?.remove(); };
   $("#cp").onclick=async()=>{
