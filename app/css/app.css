@@ -901,5 +901,5 @@ html.oscuro .carga-nav button{background:rgba(255,255,255,.08);border-color:rgba
 /* WhatsApp del entrenador: el bloque empieza debajo del logo de fondo */
 html body .wa-bajo-logo{padding-top:calc(min(80vw,600px)*0.37 + 16px)}
 /* Selección de texto en gris ceniza (en lugar del azul del navegador) */
-::selection{background:#b4b8bc;color:#15181b}
-::-moz-selection{background:#b4b8bc;color:#15181b}
+::selection{background:#6b7179;color:#ffffff}
+::-moz-selection{background:#6b7179;color:#ffffff}
