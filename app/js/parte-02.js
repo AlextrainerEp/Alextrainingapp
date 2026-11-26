@@ -2274,7 +2274,10 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
           // Si se mantiene sobre ‹ o › unos 0,6 s, el calendario cambia de mes sin soltar la sesión
           const bajo=document.elementFromPoint(ev.clientX,ev.clientY);
           const flecha=bajo&&bajo.closest?bajo.closest("[data-prev],[data-next]"):null;
-          const dir=flecha?(flecha.hasAttribute("data-prev")?-1:1):0;
+          // Bordes del calendario: arrastrar a la derecha pasa al mes siguiente y a la izquierda al anterior
+          const g=cont.querySelector(".cal-grid"), gr=g?g.getBoundingClientRect():null;
+          const borde=gr?(ev.clientX>gr.right-30?1:(ev.clientX<gr.left+30?-1:0)):0;
+          const dir=flecha?(flecha.hasAttribute("data-prev")?-1:1):borde;
           if(dir!==navDir){
             clearTimeout(navTimer); navTimer=null; navDir=dir;
             if(dir) navTimer=setTimeout(()=>{ mes=new Date(mes.getFullYear(),mes.getMonth()+dir,1); navTimer=null; pintar(); },600);
