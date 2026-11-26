@@ -1336,8 +1336,22 @@ function waBloque(){
     <div class="wa-opc">${opc.map(([l,t])=>`<a class="wa-btn" href="${enlace(t)}" target="_blank" rel="noopener">${esc(l)}</a>`).join("")}</div>
     <a class="wa-btn wa-todo" href="${enlace("Hola Alex, te escribo desde Alex Training Lab.")}" target="_blank" rel="noopener">Escribir mensaje libre</a></div>`;
 }
+// Botón para que el entrenador escriba al cliente por WhatsApp (usa el teléfono de su anamnesis)
+function waClienteBloque(pf){
+  const tel=String((pf&&pf.anamnesis&&pf.anamnesis.telefono)||"").replace(/\D/g,"");
+  const nombre=(pf&&pf.nombre)||"el cliente";
+  if(!tel) return `<div class="wa-bloque"><b>💬 WhatsApp</b><p class="muted">${esc(nombre)} no tiene teléfono en su anamnesis.</p></div>`;
+  const num=tel.length===9?"34"+tel:tel;
+  const primer=String(pf.nombre||"").split(" ")[0];
+  const txt=`Hola${primer?" "+primer:""}, te escribo desde Alex Training Lab.`;
+  return `<div class="wa-bloque"><b>💬 Escribir a ${esc(nombre)} por WhatsApp</b>
+    <a class="wa-btn wa-todo" href="https://wa.me/${num}?text=${encodeURIComponent(txt)}" target="_blank" rel="noopener">Abrir chat en WhatsApp</a>
+    <p class="muted">Se abre en el WhatsApp Business de este dispositivo, con el mensaje ya escrito.</p></div>`;
+}
 async function tabMensajes(clienteId,esAdmin,host="#tab"){
   const ms=await db("GET","mensajes",`?cliente_id=eq.${clienteId}&order=created_at.asc&select=*`);
+  let waAdmin="";
+  if(esAdmin){ const pf=(await db("GET","perfiles",`?id=eq.${clienteId}&select=nombre,anamnesis`).catch(()=>[]))[0]; waAdmin=waClienteBloque(pf||{}); }
   const porId=new Map(ms.map(m=>[m.id,m]));
   const urls=await Promise.all(ms.map(m=>m.audio_path?urlAudio(m.audio_path):""));
   const burbujas=ms.map((m,i)=>{
@@ -1356,7 +1370,7 @@ async function tabMensajes(clienteId,esAdmin,host="#tab"){
     return `<div class="burbuja ${mio?"mia":"suya"}"><small>${quien} · ${hora}</small>${cuerpo}${acc}</div>`;
   }).join("");
   $(host).innerHTML=`
-    ${esAdmin?"":waBloque()}
+    ${esAdmin?waAdmin:waBloque()}
     <div class="chat" id="chat">${burbujas||'<p class="muted">Todavía no hay mensajes. Escribe o envía un audio.</p>'}</div>
     <div class="chat-caja">
       <textarea id="txt" rows="2" placeholder="Escribe un mensaje"></textarea>
