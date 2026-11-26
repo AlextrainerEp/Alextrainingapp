@@ -1407,7 +1407,7 @@ async function tabWhatsApp(clienteId,esAdmin,host="#tab"){
   ].map(([l,t])=>`<a class="wa-btn wa-todo" href="https://wa.me/${num}?text=${encodeURIComponent(t)}" target="_blank" rel="noopener">${l}</a>`).join(" ");
   const html=num
     ? `<div class="wa-bloque" style="${caja}"><b>${titulo}</b> <a class="wa-btn wa-todo" href="https://wa.me/${num}?text=${encodeURIComponent(texto)}" target="_blank" rel="noopener">${boton}</a>${rapidas?`<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center">${rapidas}</div>`:""}</div>`
-    : `<div class="wa-bloque" style="${caja}"><b>${titulo}</b><p style="margin:10px 0 0;color:#b8bec4">Todavía no hay teléfono de contacto.</p></div>`;
+    : `<div class="wa-bloque" style="${caja}"><b>${titulo}</b><p style="margin:10px 0 0;color:#b8bec4">Todavía no hay teléfono de contacto.${esAdmin?" Añádelo en la valoración inicial del cliente (campo Teléfono) y vuelve a abrir esta pestaña.":""}</p></div>`;
   $(host).innerHTML=html;
 }
 async function tabMensajes(clienteId,esAdmin,host="#tab"){
