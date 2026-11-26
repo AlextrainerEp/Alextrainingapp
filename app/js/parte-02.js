@@ -1375,18 +1375,20 @@ function waClienteBloque(pf){
 const MENSAJERIA_INTERNA=false;
 // Solo el botón de WhatsApp (cliente: el tuyo; administrador: el del cliente)
 async function tabWhatsApp(clienteId,esAdmin,host="#tab"){
-  // Solo el botón: cliente → WhatsApp de Alex; administrador → WhatsApp del cliente
-  let num=WA_ALEX, texto="💬 Escribir a Alex por WhatsApp";
+  // Tarjeta sólida para que se lea sobre cualquier fondo. Cliente → WhatsApp de Alex; administrador → WhatsApp del cliente
+  const caja=`background:#1d1f22;color:#f2f2f2;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:0 2px 10px rgba(0,0,0,.35);text-align:center;padding:20px;border-radius:12px;margin:24px 0`;
+  let num=WA_ALEX, titulo="💬 Contactar a Alex por WhatsApp", boton="Abrir WhatsApp";
   if(esAdmin){
     const pf=(await db("GET","perfiles",`?id=eq.${clienteId}&select=nombre`).catch(()=>[]))[0]||{};
     const a=await leerAnamnesis(clienteId).catch(()=>({}));
     num=String((a&&a.telefono)||"").replace(/\D/g,"");
     if(num.length===9) num="34"+num;
-    texto="💬 Escribir a "+esc(pf.nombre||"el cliente")+" por WhatsApp";
+    titulo="💬 WhatsApp de "+esc(pf.nombre||"el cliente");
+    boton="Abrir chat en WhatsApp";
   }
   const html=num
-    ? `<div style="text-align:center;margin:24px 0"><a class="wa-btn" href="https://wa.me/${num}" target="_blank" rel="noopener">${texto}</a></div>`
-    : `<p class="muted" style="text-align:center">Todavía no hay teléfono de contacto.</p>`;
+    ? `<div style="${caja}"><b>${titulo}</b><br><br><a class="wa-btn" href="https://wa.me/${num}" target="_blank" rel="noopener">${boton}</a></div>`
+    : `<div style="${caja}"><b>${titulo}</b><p style="margin:10px 0 0;color:#b8bec4">Todavía no hay teléfono de contacto.</p></div>`;
   $(host).innerHTML=html;
 }
 async function tabMensajes(clienteId,esAdmin,host="#tab"){
