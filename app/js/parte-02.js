@@ -1400,7 +1400,7 @@ async function tabWhatsApp(clienteId,esAdmin,host="#tab"){
     boton="Abrir chat en WhatsApp";
   }
   const html=num
-    ? `<div style="${caja}"><b>${titulo}</b><br><br><a class="wa-btn" href="https://wa.me/${num}?text=${encodeURIComponent(texto)}" target="_blank" rel="noopener">${boton}</a></div>`
+    ? `<div style="${caja};display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:14px"><b>${titulo}</b><a class="wa-btn" href="https://wa.me/${num}?text=${encodeURIComponent(texto)}" target="_blank" rel="noopener">${boton}</a></div>`
     : `<div style="${caja}"><b>${titulo}</b><p style="margin:10px 0 0;color:#b8bec4">Todavía no hay teléfono de contacto.</p></div>`;
   $(host).innerHTML=html;
 }
