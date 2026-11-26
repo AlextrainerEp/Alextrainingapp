@@ -898,3 +898,5 @@ html.oscuro .carga-nav button{background:rgba(255,255,255,.08);border-color:rgba
 .an-panel.ent-lista .sem-stats b{color:#d4af37}
 .an-panel.ent-lista .sem-n{color:#f2f2f2;border-color:#d4af37}
 .an-panel.ent-lista .sem-lista{color:#f2f2f2}
+/* WhatsApp del entrenador: el bloque empieza debajo del logo de fondo */
+html body .wa-bajo-logo{padding-top:calc(min(80vw,600px)*0.37 + 16px)}
