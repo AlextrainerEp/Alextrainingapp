@@ -1327,7 +1327,7 @@ async function borrarAudio(path){
   await fetch(`${SB_URL}/storage/v1/object/audios/${path}`,{method:"DELETE",headers:{apikey:SB_KEY,Authorization:"Bearer "+S.access}});
 }
 // WhatsApp de Alex: número en formato internacional sin «+» (ej. 34600111222). Vacío = no se muestra el bloque.
-const WA_ALEX="";
+const WA_ALEX="34681855603";
 function waBloque(){
   if(!WA_ALEX) return "";
   const opc=[["No puedo entrenar hoy","Hola Alex, hoy no puedo entrenar."],["Tengo una duda de mi entreno","Hola Alex, tengo una duda sobre mi entreno."],["He terminado el entreno","Hola Alex, he terminado el entreno de hoy."]];
