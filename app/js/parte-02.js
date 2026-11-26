@@ -73,6 +73,7 @@ async function cargarPerfil(){
   const r=await db("GET","perfiles",`?id=eq.${u.id}&select=*`);
   if(!r||!r.length) throw new Error("Tu cuenta no tiene perfil. Contacta con el entrenador.");
   S.perfil=r[0];
+  if(S.perfil.tema) aplicarTema(S.perfil.tema==="oscuro");
 }
 /* Una sola cuenta para todo: la parte de resistencia usa el mismo proyecto y lee esta misma sesión
    (en el formato de supabase-js), así se pasa de un apartado a otro sin volver a identificarse. */
@@ -1167,12 +1168,22 @@ function graficoEj(puntos){
 }
 
 // 6. Modo oscuro (aplicado a toda la app)
-function aplicarTema(oscuro){
+// Cada cuenta tiene su propio modo: se guarda en su perfil y en caché por usuario en este navegador
+function claveTema(){
+  return "tema2:"+((typeof S!=="undefined"&&S&&S.user&&S.user.id)||"anon");
+}
+function aplicarTema(oscuro,guardar){
   document.documentElement.classList.toggle("oscuro",!!oscuro);
-  try{localStorage.setItem("tema2",oscuro?"oscuro":"claro")}catch(e){}
+  try{localStorage.setItem(claveTema(),oscuro?"oscuro":"claro")}catch(e){}
+  if(guardar&&typeof S!=="undefined"&&S&&S.user&&S.perfil){
+    S.perfil.tema=oscuro?"oscuro":"claro";
+    db("PATCH","perfiles",`?id=eq.${S.user.id}`,{tema:S.perfil.tema},"return=minimal").catch(()=>{});
+  }
 }
 function temaOscuro(){
-  try{const t=localStorage.getItem("tema2");return t?t==="oscuro":true}catch(e){return true}
+  try{const t=localStorage.getItem(claveTema()); if(t) return t==="oscuro";}catch(e){}
+  if(typeof S!=="undefined"&&S&&S.perfil&&S.perfil.tema) return S.perfil.tema==="oscuro";
+  return true;
 }
 aplicarTema(temaOscuro());
 
@@ -3292,7 +3303,7 @@ function tabPerfil(){
       S.perfil.foto=d;panelCliente("perfil");
     }catch(e){msg("#m",e.message,false)}
   };
-  $("#oscuro").onchange=ev=>aplicarTema(ev.target.checked);
+  $("#oscuro").onchange=ev=>aplicarTema(ev.target.checked,true);
   const ib=$("#instalar-app");
   if(ib) ib.onclick=async()=>{ if(!avisoInstalar) return; avisoInstalar.prompt(); try{await avisoInstalar.userChoice}catch(e){} avisoInstalar=null; ib.closest(".card")?.remove(); };
   $("#cp").onclick=async()=>{
