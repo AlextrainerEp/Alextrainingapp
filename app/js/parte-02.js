@@ -1386,8 +1386,8 @@ function waClienteBloque(pf){
 const MENSAJERIA_INTERNA=false;
 // Solo el botón de WhatsApp (cliente: el tuyo; administrador: el del cliente)
 async function tabWhatsApp(clienteId,esAdmin,host="#tab"){
-  // Tarjeta sólida para que se lea sobre cualquier fondo. Cliente → WhatsApp de Alex; administrador → WhatsApp del cliente
-  const caja=`background:#1d1f22;color:#f2f2f2;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:0 2px 10px rgba(0,0,0,.35);text-align:center;padding:20px;border-radius:12px;margin:24px 0`;
+  // Mismo bloque de siempre (wa-bloque), con fondo sólido para que se vea sobre cualquier imagen
+  const caja="background:#1d1f22;color:#f2f2f2;border-color:#25d366;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:0 2px 10px rgba(0,0,0,.35);text-align:center;margin:24px 0";
   let num=WA_ALEX, titulo="💬 Contactar a Alex por WhatsApp", boton="Abrir WhatsApp";
   let texto="Hola Alex, soy "+((S&&S.perfil&&S.perfil.nombre)||"")+". Te escribo desde la app de Alex Training Lab.";
   if(esAdmin){
@@ -1396,12 +1396,12 @@ async function tabWhatsApp(clienteId,esAdmin,host="#tab"){
     num=String((a&&a.telefono)||"").replace(/\D/g,"");
     if(num.length===9) num="34"+num;
     titulo="💬 WhatsApp de "+esc(pf.nombre||"el cliente");
-    texto="Hola "+(pf.nombre||"")+", soy Alex, tu entrenador. Te escribo desde la app de Alex Training Lab.";
     boton="Abrir chat en WhatsApp";
+    texto="Hola "+(pf.nombre||"")+", soy Alex, tu entrenador. Te escribo desde la app de Alex Training Lab.";
   }
   const html=num
-    ? `<div style="${caja};display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:14px"><b>${titulo}</b><a class="wa-btn" href="https://wa.me/${num}?text=${encodeURIComponent(texto)}" target="_blank" rel="noopener">${boton}</a></div>`
-    : `<div style="${caja}"><b>${titulo}</b><p style="margin:10px 0 0;color:#b8bec4">Todavía no hay teléfono de contacto.</p></div>`;
+    ? `<div class="wa-bloque" style="${caja}"><b>${titulo}</b> <a class="wa-btn wa-todo" href="https://wa.me/${num}?text=${encodeURIComponent(texto)}" target="_blank" rel="noopener">${boton}</a></div>`
+    : `<div class="wa-bloque" style="${caja}"><b>${titulo}</b><p style="margin:10px 0 0;color:#b8bec4">Todavía no hay teléfono de contacto.</p></div>`;
   $(host).innerHTML=html;
 }
 async function tabMensajes(clienteId,esAdmin,host="#tab"){
