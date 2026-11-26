@@ -906,3 +906,8 @@ html body .wa-bajo-logo{padding-top:calc(min(80vw,600px)*0.37 + 16px)}
 /* Modo oscuro: logo de fondo en blanco (en claro sigue en negro) */
 html.oscuro .fondo{background-image:url("../logo-blanco.png")}
 html.oscuro body.cli .logo-fondo{background-image:url("../logo-blanco.png")}
+/* Lista de entrenados: botón de WhatsApp junto a cada entrenado */
+.an-panel.ent-lista .ent-fila{display:flex;gap:8px;align-items:stretch;min-width:0}
+.an-panel.ent-lista .ent-fila .ent-abrir{flex:1;min-width:0}
+.an-panel.ent-lista .wa-mini{display:flex;align-items:center;justify-content:center;flex:0 0 46px;border-radius:10px;background:#25d366;color:#0b2e16;text-decoration:none;font-size:20px}
+.an-panel.ent-lista .wa-mini.off{background:#2c343b;opacity:.45}

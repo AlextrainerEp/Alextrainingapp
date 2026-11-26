@@ -1228,13 +1228,32 @@ async function resumenSemanaEntrenador(cs){
     </div>`;
   }catch(e){ return ""; }
 }
+// Teléfonos de todos los entrenados (desde la anamnesis en perfil_atleta), por id de cuenta
+async function telefonosClientes(){
+  const rs=await db("GET","atletas","?select=user_id,perfil_atleta(anamnesis)").catch(()=>[]);
+  const m={};
+  (rs||[]).forEach(a=>{
+    const pa=Array.isArray(a.perfil_atleta)?a.perfil_atleta[0]:a.perfil_atleta;
+    const t=String((((pa&&pa.anamnesis)||{}).telefono)||"").replace(/\D/g,"");
+    if(t) m[a.user_id]=t.length===9?"34"+t:t;
+  });
+  return m;
+}
 async function listaClientes(){
   const cs=await db("GET","perfiles","?rol=eq.cliente&order=nombre.asc&select=id,nombre,foto,modulos");
   const pendiente=c=>!modulosDe(c).length;
   cs.sort((a,b)=>(pendiente(b)-pendiente(a))||String(a.nombre||"").localeCompare(String(b.nombre||"")));
   const nPend=cs.filter(pendiente).length;
+  const tels=await telefonosClientes();
   const semanaHTML=await resumenSemanaEntrenador(cs);
-  const botonEnt=c=>`<button class="ent-abrir${pendiente(c)?" pendiente":""}" data-c="${c.id}">${fotoSegura(c.foto)?`<img class="ent-av" src="${esc(fotoSegura(c.foto))}" alt="">`:`<span class="ent-av ent-ini">${esc((c.nombre||"?")[0].toUpperCase())}</span>`}<span>${esc(c.nombre||"Sin nombre")}${pendiente(c)?'<small class="pend-chip">⏳ sin asignar</small>':""}</span><span class="badge-msg" data-bc="${c.id}"></span></button>`;
+  const waMini=c=>{
+    const num=tels[c.id];
+    if(!num) return `<span class="wa-mini off" title="Sin teléfono en su valoración">💬</span>`;
+    const txt="Hola "+(c.nombre||"")+", soy Alex, tu entrenador. Te escribo desde la app de Alex Training Lab.";
+    return `<a class="wa-mini" href="https://wa.me/${num}?text=${encodeURIComponent(txt)}" target="_blank" rel="noopener" title="WhatsApp de ${esc(c.nombre||"el entrenado")}">💬</a>`;
+  };
+  const botonEnt=c=>`<div class="ent-fila">${botonEntBase(c)}${waMini(c)}</div>`;
+  const botonEntBase=c=>`<button class="ent-abrir${pendiente(c)?" pendiente":""}" data-c="${c.id}">${fotoSegura(c.foto)?`<img class="ent-av" src="${esc(fotoSegura(c.foto))}" alt="">`:`<span class="ent-av ent-ini">${esc((c.nombre||"?")[0].toUpperCase())}</span>`}<span>${esc(c.nombre||"Sin nombre")}${pendiente(c)?'<small class="pend-chip">⏳ sin asignar</small>':""}</span><span class="badge-msg" data-bc="${c.id}"></span></button>`;
   const norm=t=>String(t||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
   const gruposHTML=q=>{const n=norm(q.trim());const f=cs.filter(c=>!n||norm(c.nombre).includes(n));
     if(!f.length) return `<p class="muted">Ningún entrenado coincide con «${esc(q)}».</p>`;
