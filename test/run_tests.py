@@ -119,8 +119,8 @@ async def pruebas_navegador(p):
           document.body.insertAdjacentHTML('beforeend','<div id=sub></div>'); tabMensajes('u1',false,'#sub'); }""" % STUB_S)
         await pg.wait_for_timeout(300)
         n = await pg.evaluate("document.querySelectorAll('.wa-btn').length")
-        return n == 4 and not errores
-    registrar("WhatsApp: botones con número configurado", await con_pagina(p, APP, wa))
+        return n == 1 and not errores
+    registrar("WhatsApp: botón de WhatsApp con número configurado", await con_pagina(p, APP, wa))
 
     async def ciclo(pg, errores):
         await pg.evaluate("""()=>{%s window.__c=[]; db=async(m,t,q,body)=>{__c.push([m,t]); return t==='ciclo_config'&&m==='GET'?[{activo:false}]:[]};
