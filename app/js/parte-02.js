@@ -1375,13 +1375,19 @@ function waClienteBloque(pf){
 const MENSAJERIA_INTERNA=false;
 // Solo el botón de WhatsApp (cliente: el tuyo; administrador: el del cliente)
 async function tabWhatsApp(clienteId,esAdmin,host="#tab"){
-  let html;
+  // Solo el botón: cliente → WhatsApp de Alex; administrador → WhatsApp del cliente
+  let num=WA_ALEX, texto="💬 Escribir a Alex por WhatsApp";
   if(esAdmin){
     const pf=(await db("GET","perfiles",`?id=eq.${clienteId}&select=nombre`).catch(()=>[]))[0]||{};
-    pf.anamnesis=await leerAnamnesis(clienteId).catch(()=>({}));
-    html=waClienteBloque(pf);
-  }else html=waBloque();
-  $(host).innerHTML=`<div class="card">${html}</div>`;
+    const a=await leerAnamnesis(clienteId).catch(()=>({}));
+    num=String((a&&a.telefono)||"").replace(/\D/g,"");
+    if(num.length===9) num="34"+num;
+    texto="💬 Escribir a "+esc(pf.nombre||"el cliente")+" por WhatsApp";
+  }
+  const html=num
+    ? `<div style="text-align:center;margin:24px 0"><a class="wa-btn" href="https://wa.me/${num}" target="_blank" rel="noopener">${texto}</a></div>`
+    : `<p class="muted" style="text-align:center">Todavía no hay teléfono de contacto.</p>`;
+  $(host).innerHTML=html;
 }
 async function tabMensajes(clienteId,esAdmin,host="#tab"){
   if(!MENSAJERIA_INTERNA) return tabWhatsApp(clienteId,esAdmin,host);
