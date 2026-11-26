@@ -903,3 +903,6 @@ html body .wa-bajo-logo{padding-top:calc(min(80vw,600px)*0.37 + 16px)}
 /* Selección de texto en gris ceniza (en lugar del azul del navegador) */
 ::selection{background:#6b7179;color:#ffffff}
 ::-moz-selection{background:#6b7179;color:#ffffff}
+/* Modo oscuro: logo de fondo en blanco (en claro sigue en negro) */
+html.oscuro .fondo{background-image:url("../logo-blanco.png")}
+html.oscuro body.cli .logo-fondo{background-image:url("../logo-blanco.png")}
