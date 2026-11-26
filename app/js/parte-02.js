@@ -73,7 +73,9 @@ async function cargarPerfil(){
   const r=await db("GET","perfiles",`?id=eq.${u.id}&select=*`);
   if(!r||!r.length) throw new Error("Tu cuenta no tiene perfil. Contacta con el entrenador.");
   S.perfil=r[0];
-  if(S.perfil.tema) aplicarTema(S.perfil.tema==="oscuro");
+  // Perfil entrenador: modo oscuro fijado (no depende de la preferencia ni del navegador)
+  if(S.perfil.rol==="admin") aplicarTema(true,false);
+  else if(S.perfil.tema) aplicarTema(S.perfil.tema==="oscuro");
 }
 /* Una sola cuenta para todo: la parte de resistencia usa el mismo proyecto y lee esta misma sesión
    (en el formato de supabase-js), así se pasa de un apartado a otro sin volver a identificarse. */
@@ -1387,7 +1389,7 @@ const MENSAJERIA_INTERNA=false;
 // Solo el botón de WhatsApp (cliente: el tuyo; administrador: el del cliente)
 async function tabWhatsApp(clienteId,esAdmin,host="#tab"){
   // Mismo bloque de siempre (wa-bloque), con fondo sólido para que se vea sobre cualquier imagen
-  const caja="background:#1d1f22;color:#f2f2f2;border-color:#25d366;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:0 2px 10px rgba(0,0,0,.35);text-align:center;margin:24px 0";
+  const caja="background:#1d1f22;color:#f2f2f2;border-color:#25d366;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:0 2px 10px rgba(0,0,0,.35);text-align:center;margin:24px 0;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px 12px";
   let num=WA_ALEX, titulo="💬 Contactar a Alex por WhatsApp", boton="Abrir WhatsApp";
   let texto="Hola Alex, soy "+((S&&S.perfil&&S.perfil.nombre)||"")+". Te escribo desde la app de Alex Training Lab.";
   if(esAdmin){
@@ -1406,7 +1408,7 @@ async function tabWhatsApp(clienteId,esAdmin,host="#tab"){
     ["He terminado el entrenamiento","Hola Alex, he terminado el entrenamiento de hoy. Mis sensaciones: "]
   ].map(([l,t])=>`<a class="wa-btn wa-todo" href="https://wa.me/${num}?text=${encodeURIComponent(t)}" target="_blank" rel="noopener">${l}</a>`).join(" ");
   const html=num
-    ? `<div class="wa-bloque" style="${caja}"><b>${titulo}</b> <a class="wa-btn wa-todo" href="https://wa.me/${num}?text=${encodeURIComponent(texto)}" target="_blank" rel="noopener">${boton}</a>${rapidas?`<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center">${rapidas}</div>`:""}</div>`
+    ? `<div class="wa-bloque" style="${caja}"><b>${titulo}</b> <a class="wa-btn wa-todo" href="https://wa.me/${num}?text=${encodeURIComponent(texto)}" target="_blank" rel="noopener">${boton}</a>${rapidas?`<div style="width:100%;margin-top:4px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center">${rapidas}</div>`:""}</div>`
     : `<div class="wa-bloque" style="${caja}"><b>${titulo}</b><p style="margin:10px 0 0;color:#b8bec4">Todavía no hay teléfono de contacto.${esAdmin?" Añádelo en la valoración inicial del cliente (campo Teléfono) y vuelve a abrir esta pestaña.":""}</p></div>`;
   $(host).innerHTML=html;
 }
@@ -3296,7 +3298,7 @@ function tabPerfil(){
   $("#sub").innerHTML=`${instalar}<div class="row">${fotoSegura(p.foto)?`<img class="avatar" style="width:90px;height:90px" src="${esc(fotoSegura(p.foto))}" alt="">`:`<span class="muted">Sin foto</span>`}
     <label>Foto de perfil <input type="file" id="foto" accept="image/*"></label></div>
     <h3>Apariencia</h3>
-    <label class="row"><input type="checkbox" id="oscuro" ${temaOscuro()?"checked":""}> Modo oscuro</label>
+    ${S.perfil.rol==="admin"?`<p class="muted" style="margin:0 0 12px">Modo oscuro fijado en el perfil del entrenador.</p>`:`<label class="row"><input type="checkbox" id="oscuro" ${temaOscuro()?"checked":""}> Modo oscuro</label>`}
     <div id="cicloCfg"></div>
     <h3>Cambiar contraseña</h3>
     <input id="np" type="password" placeholder="Nueva contraseña (mín. 6 caracteres)">
@@ -3311,7 +3313,7 @@ function tabPerfil(){
       S.perfil.foto=d;panelCliente("perfil");
     }catch(e){msg("#m",e.message,false)}
   };
-  $("#oscuro").onchange=ev=>aplicarTema(ev.target.checked,true);
+  const oscuroCk=$("#oscuro"); if(oscuroCk) oscuroCk.onchange=ev=>aplicarTema(ev.target.checked,true);
   const ib=$("#instalar-app");
   if(ib) ib.onclick=async()=>{ if(!avisoInstalar) return; avisoInstalar.prompt(); try{await avisoInstalar.userChoice}catch(e){} avisoInstalar=null; ib.closest(".card")?.remove(); };
   $("#cp").onclick=async()=>{
