@@ -38,6 +38,35 @@ async function db(method,tabla,query="",body,prefer,reintento){
   if(!r.ok) throw new Error((j&&(j.message||j.hint))||("Error "+r.status));
   return j;
 }
+const AN_VERSION="v1-2026-11";
+// La anamnesis vive en perfil_atleta (atleta y entrenador tienen acceso por RLS)
+async function atletaIdDe(userId){
+  const r=await db("GET","atletas",`?user_id=eq.${userId}&select=id`);
+  return r&&r[0]?r[0].id:null;
+}
+async function leerAnamnesis(userId){
+  const id=await atletaIdDe(userId);
+  if(!id) return {};
+  const r=await db("GET","perfil_atleta",`?atleta_id=eq.${id}&select=anamnesis`);
+  return (r&&r[0]&&r[0].anamnesis)||{};
+}
+// Devuelve el id del atleta. Si el cliente aún no tiene ficha, reclama la que creó el entrenador con su email o crea una nueva.
+async function guardarAnamnesis(userId,data,crear){
+  let id=await atletaIdDe(userId);
+  if(!id&&crear){
+    const libres=await db("GET","atletas",`?user_id=is.null&email=ilike.${encodeURIComponent(S.user.email)}&select=id`).catch(()=>[]);
+    if(libres&&libres[0]){
+      await db("PATCH","atletas",`?id=eq.${libres[0].id}`,{user_id:userId},"return=minimal");
+      id=libres[0].id;
+    }else{
+      const [n]=await db("POST","atletas","",{user_id:userId,nombre:(S.perfil&&S.perfil.nombre)||"Sin nombre",entrenador_id:null},"return=representation");
+      id=n.id;
+    }
+  }
+  if(!id) throw new Error("No se encuentra tu ficha de atleta. Contacta con el entrenador.");
+  await db("POST","perfil_atleta","?on_conflict=atleta_id",{atleta_id:id,anamnesis:data},"resolution=merge-duplicates,return=minimal");
+  return id;
+}
 async function cargarPerfil(){
   const u=await auth("user",null,"GET",S.access);
   S.user=u;
@@ -1345,7 +1374,7 @@ function waClienteBloque(pf){
 async function tabMensajes(clienteId,esAdmin,host="#tab"){
   const ms=await db("GET","mensajes",`?cliente_id=eq.${clienteId}&order=created_at.asc&select=*`);
   let waAdmin="";
-  if(esAdmin){ const pf=(await db("GET","perfiles",`?id=eq.${clienteId}&select=nombre,anamnesis`).catch(()=>[]))[0]; waAdmin=waClienteBloque(pf||{}); }
+  if(esAdmin){ const pf=(await db("GET","perfiles",`?id=eq.${clienteId}&select=nombre`).catch(()=>[]))[0]||{}; pf.anamnesis=await leerAnamnesis(clienteId).catch(()=>({})); waAdmin=waClienteBloque(pf); }
   const porId=new Map(ms.map(m=>[m.id,m]));
   const urls=await Promise.all(ms.map(m=>m.audio_path?urlAudio(m.audio_path):""));
   const burbujas=ms.map((m,i)=>{
@@ -2459,8 +2488,7 @@ async function panelCliente(tab,sub){
   const err=val&&val.__error;
   const vis=(val&&val.datos&&val.datos._vis)||{};
   try{
-    const [fp]=await db("GET","perfiles",`?id=eq.${S.user.id}&select=anamnesis`);
-    if(fp) S.perfil.anamnesis=fp.anamnesis||{};
+    S.perfil.anamnesis=await leerAnamnesis(S.user.id);
   }catch(e){}
   const anaOn=((S.perfil.anamnesis||{})._vis||{}).ana!==false;
   const subs=[];
@@ -3145,13 +3173,13 @@ function tabAnamnesis(){
     }
     try{
       // Se conserva lo que haya guardado el entrenador (valoración) y las respuestas antiguas
-      const [fresca]=await db("GET","perfiles",`?id=eq.${S.user.id}&select=anamnesis`);
-      const previa=(fresca&&fresca.anamnesis)||{};
+      const previa=await leerAnamnesis(S.user.id);
       const data={...v,consent:true,actualizada:new Date().toISOString()};
       ANAM_OLD.forEach(([k])=>{if(previa[k])data[k]=previa[k]});
       if(previa.valoracion)data.valoracion=previa.valoracion;
       if(previa._vis)data._vis=previa._vis;
-      await db("PATCH","perfiles",`?id=eq.${S.user.id}`,{anamnesis:data},"return=minimal");
+      const atletaId=await guardarAnamnesis(S.user.id,data,true);
+      await db("POST","consentimientos","?on_conflict=atleta_id,tipo,version_texto",{atleta_id:atletaId,tipo:"datos_salud",version_texto:AN_VERSION},"resolution=ignore-duplicates,return=minimal");
       S.perfil.anamnesis=data;
       msg("#m",faltan?`Guardado ✓ · Te faltan ${faltan} campos obligatorios, marcados en rojo.`:"Guardado ✓",true);
       if(!faltan) setTimeout(()=>panelCliente("valoracion"),900);
@@ -3201,17 +3229,15 @@ async function anValoracionEntrenador(c,k="ini"){
 }
 // Entrenador: anamnesis (respuestas) con interruptor para que el cliente pueda rellenarla
 async function anamnesisEntrenador(c){
-  const [p]=await db("GET","perfiles",`?id=eq.${c.id}&select=anamnesis`);
-  const a=(p&&p.anamnesis)||{};
+  const a=await leerAnamnesis(c.id);
   c.anamnesis=Object.keys(a).length?a:null;
   anRespuestasEntrenador(c);
   const on=(a._vis||{}).ana!==false;
   $("#sub").insertAdjacentHTML("afterbegin",`<div class="an-panel"><label class="row"><input type="checkbox" id="visA" ${on?"checked":""}> Mostrar al cliente (puede rellenar la anamnesis)</label><div class="msg" id="mvA"></div></div>`);
   $("#visA").onchange=async()=>{
     try{
-      const [f]=await db("GET","perfiles",`?id=eq.${c.id}&select=anamnesis`);
-      const cur=(f&&f.anamnesis)||{};
-      await db("PATCH","perfiles",`?id=eq.${c.id}`,{anamnesis:{...cur,_vis:{...(cur._vis||{}),ana:$("#visA").checked}}},"return=minimal");
+      const cur=await leerAnamnesis(c.id);
+      await guardarAnamnesis(c.id,{...cur,_vis:{...(cur._vis||{}),ana:$("#visA").checked}});
       msg("#mvA","Guardado ✓",true);
     }catch(e){msg("#mvA",e.message,false)}
   };
