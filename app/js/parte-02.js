@@ -2262,7 +2262,7 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
       el.addEventListener("pointerdown",e=>{
         if(e.button!==undefined&&e.button!==0) return;
         const id=el.dataset.arr||el.dataset.chip, x0=e.clientX, y0=e.clientY;
-        let moviendo=false;
+        let moviendo=false, navTimer=null, navDir=0;
         const celdaBajo=ev=>{const b=document.elementFromPoint(ev.clientX,ev.clientY);return b&&b.closest?b.closest(".cal-d[data-dia]"):null};
         const mover=ev=>{
           if(!moviendo){
@@ -2271,8 +2271,17 @@ async function tabEntrenosCal(host="#sub",clienteId=S.user.id,admin=false,irA=nu
           }
           cont.querySelectorAll(".cal-d.destino").forEach(c=>c.classList.remove("destino"));
           const c=celdaBajo(ev); if(c) c.classList.add("destino");
+          // Si se mantiene sobre ‹ o › unos 0,6 s, el calendario cambia de mes sin soltar la sesión
+          const bajo=document.elementFromPoint(ev.clientX,ev.clientY);
+          const flecha=bajo&&bajo.closest?bajo.closest("[data-prev],[data-next]"):null;
+          const dir=flecha?(flecha.hasAttribute("data-prev")?-1:1):0;
+          if(dir!==navDir){
+            clearTimeout(navTimer); navTimer=null; navDir=dir;
+            if(dir) navTimer=setTimeout(()=>{ mes=new Date(mes.getFullYear(),mes.getMonth()+dir,1); navTimer=null; pintar(); },600);
+          }
         };
         const soltar=ev=>{
+          clearTimeout(navTimer);
           window.removeEventListener("pointermove",mover);
           window.removeEventListener("pointerup",soltar);
           window.removeEventListener("pointercancel",soltar);
