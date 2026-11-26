@@ -1371,7 +1371,20 @@ function waClienteBloque(pf){
   return `<div class="wa-bloque"><b>💬 WhatsApp de ${esc(nombre)}</b>
     <a class="wa-btn wa-todo" href="https://wa.me/${num}" target="_blank" rel="noopener">Abrir chat en WhatsApp</a></div>`;
 }
+// Chat interno apagado: el contacto se hace por WhatsApp hasta comprobar que la mensajería funciona bien
+const MENSAJERIA_INTERNA=false;
+// Solo el botón de WhatsApp (cliente: el tuyo; administrador: el del cliente)
+async function tabWhatsApp(clienteId,esAdmin,host="#tab"){
+  let html;
+  if(esAdmin){
+    const pf=(await db("GET","perfiles",`?id=eq.${clienteId}&select=nombre`).catch(()=>[]))[0]||{};
+    pf.anamnesis=await leerAnamnesis(clienteId).catch(()=>({}));
+    html=waClienteBloque(pf);
+  }else html=waBloque();
+  $(host).innerHTML=`<div class="card">${html}</div>`;
+}
 async function tabMensajes(clienteId,esAdmin,host="#tab"){
+  if(!MENSAJERIA_INTERNA) return tabWhatsApp(clienteId,esAdmin,host);
   const ms=await db("GET","mensajes",`?cliente_id=eq.${clienteId}&order=created_at.asc&select=*`);
   let waAdmin="";
   if(esAdmin){ const pf=(await db("GET","perfiles",`?id=eq.${clienteId}&select=nombre`).catch(()=>[]))[0]||{}; pf.anamnesis=await leerAnamnesis(clienteId).catch(()=>({})); waAdmin=waClienteBloque(pf); }
@@ -1482,6 +1495,7 @@ async function marcarLeidos(clienteId){
 }
 // Cliente: un globo en "Mensajes". Entrenador: un globo por cada cliente.
 async function refrescarBadges(){
+  if(!MENSAJERIA_INTERNA) return;
   if(!S||!S.perfil||!document.querySelector(".badge-msg")) return;
   try{
     // Si la conversación está abierta y la pestaña visible, lo que llega ya se está viendo: se marca como leído
