@@ -1764,6 +1764,7 @@ async function tabCalendario(clienteId,puedeMover,host="#tab"){
     const x0=e.clientX,y0=e.clientY;
     let moviendo=false;
     const celdaBajo=(ev)=>{const b=document.elementFromPoint(ev.clientX,ev.clientY);return b&&b.closest?b.closest(".cal-d[data-dia]"):null};
+    let navTimer=null, navDir=0;
     const mover=ev=>{
       if(!moviendo){
         if(Math.hypot(ev.clientX-x0,ev.clientY-y0)<6) return;
@@ -1771,8 +1772,17 @@ async function tabCalendario(clienteId,puedeMover,host="#tab"){
       }
       document.querySelectorAll(".cal-d.destino").forEach(c=>c.classList.remove("destino"));
       const c=celdaBajo(ev); if(c) c.classList.add("destino");
+      // Arrastrando sobre ‹ o › el calendario cambia de mes solo, para poder mover la sesión a otro mes
+      const bajo=document.elementFromPoint(ev.clientX,ev.clientY);
+      const flecha=bajo&&bajo.closest?bajo.closest("#calPrev,#calNext"):null;
+      const dir=flecha?(flecha.id==="calPrev"?-1:1):0;
+      if(dir!==navDir){
+        clearTimeout(navTimer); navTimer=null; navDir=dir;
+        if(dir) navTimer=setTimeout(()=>{ mes=new Date(mes.getFullYear(),mes.getMonth()+dir,1); navDir=0; navTimer=null; pintar(); },600);
+      }
     };
     const soltar=ev=>{
+      clearTimeout(navTimer);
       window.removeEventListener("pointermove",mover);
       window.removeEventListener("pointerup",soltar);
       window.removeEventListener("pointercancel",soltar);
